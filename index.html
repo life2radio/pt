@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#143A52">
 <title>물리치료실 관리</title>
 <style>
@@ -405,6 +408,8 @@
   .pm-text { white-space: pre-wrap; }
   .pm-img { max-width: 100%; background: #fff; border-radius: 10px; margin-top: 10px; }
   .pm-empty { font-size: 1.3rem; color: #9FB2BF; text-align: center; margin-top: 60px; }
+  .update-banner { display: none; position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 10000; background: var(--navy); color: #fff; padding: 12px 18px; border-radius: 30px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); align-items: center; gap: 10px; font-size: 14px; }
+  .update-banner button { background: var(--amber); color: #fff; border: none; border-radius: 20px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
   .tq-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .tq-label { font-size: 12px; color: var(--muted); min-width: 62px; }
   .tq-btn { font-size: 12.5px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 14px; background: #fff; cursor: pointer; }
@@ -6240,9 +6245,35 @@ function importData(ev){
 }
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
+// ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
+const APP_VERSION = '2026-07-09-01';
+function checkForUpdate(){
+  try{
+    const base=location.pathname;
+    fetch(base + '?_ck=' + Date.now(), {cache:'no-store'})
+      .then(r=>r.text()).then(txt=>{
+        const m=txt.match(/APP_VERSION\s*=\s*'([^']+)'/);
+        if(!m) return;
+        const remoteV=m[1];
+        if(remoteV && remoteV!==APP_VERSION){
+          // 이미 이 버전으로 새로고침 시도했으면 루프 방지
+          const cur=new URLSearchParams(location.search).get('v');
+          if(cur===remoteV){ showUpdateBanner(remoteV); return; }
+          location.replace(base + '?v=' + encodeURIComponent(remoteV));
+        }
+      }).catch(()=>{});
+  }catch(e){}
+}
+function showUpdateBanner(v){
+  let b=document.getElementById('update-banner');
+  if(!b){ b=document.createElement('div'); b.id='update-banner'; b.className='update-banner'; document.body.appendChild(b); }
+  b.innerHTML='🔄 새 버전이 있어요. <button onclick="location.replace(location.pathname+\'?v=\'+Date.now())">지금 업데이트</button>';
+  b.style.display='flex';
+}
+
 // ===== 구글 시트 자동 동기화 =====
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbzFpDGk4SVD1SapnbmgV-n9uS0kHY3RM56O6tYIYUYLuIVuA9RM7mXwlYy_1NIgEMrxiw/exec';
-const SYNC_META_KEY = 'pt_clinic_sync';
+var SYNC_URL = 'https://script.google.com/macros/s/AKfycbzFpDGk4SVD1SapnbmgV-n9uS0kHY3RM56O6tYIYUYLuIVuA9RM7mXwlYy_1NIgEMrxiw/exec';
+var SYNC_META_KEY = 'pt_clinic_sync';
 let _syncTimer=null, _syncing=false, _syncBusy=false;
 function payloadStr(){ return JSON.stringify(state); }
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return String(h>>>0); }
@@ -6327,6 +6358,7 @@ function manualPull(){ pullSync(true); }
 renderPlanForm(); renderElders(); renderDash(); initLock();
 updateSyncUI('ok');
 setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
+setTimeout(checkForUpdate, 1500);
 </script>
 </body>
 </html>
