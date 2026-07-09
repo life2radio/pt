@@ -6005,7 +6005,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 구글 시트 자동 동기화 =====
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyxMrYn5El__Pul6XfI3BavyURUaMVZJtVP8IILBwv_0kN_y0BMbnqojMD7sMp6fECQPw/exec';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbzFpDGk4SVD1SapnbmgV-n9uS0kHY3RM56O6tYIYUYLuIVuA9RM7mXwlYy_1NIgEMrxiw/exec';
 const SYNC_META_KEY = 'pt_clinic_sync';
 let _syncTimer=null, _syncing=false, _syncBusy=false;
 function payloadStr(){ return JSON.stringify(state); }
