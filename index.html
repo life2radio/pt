@@ -373,6 +373,34 @@
   .bmt.on { background: var(--teal); color: #fff; border-color: var(--teal); }
   .brief-pad-sec { aspect-ratio: 2/1; }
   .brief-pad-big { aspect-ratio: 5/6; }
+  .dash-todo-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 12px; }
+  .todo-add { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+  .todo-add input[type="text"] { flex: 1; min-width: 140px; }
+  .todo-add input[type="date"] { width: auto; }
+  .todo-group-label { font-size: 11.5px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
+  .todo-group-label.overdue { color: var(--danger); }
+  .todo-list { display: flex; flex-direction: column; }
+  .todo-row { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  .todo-row:last-child { border-bottom: none; }
+  .todo-check { width: 24px; height: 24px; flex-shrink: 0; border: 2px solid var(--teal); border-radius: 6px; background: #fff; color: var(--teal); cursor: pointer; font-size: 14px; font-weight: 700; line-height: 1; }
+  .todo-row.done .todo-check { background: var(--teal); color: #fff; }
+  .todo-text { flex: 1; font-size: 14px; color: var(--ink); }
+  .todo-row.done .todo-text { text-decoration: line-through; color: var(--muted); }
+  .todo-date-tag { font-size: 11px; color: var(--amber); font-weight: 600; }
+  .todo-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 6px; }
+  .todo-empty { font-size: 13px; color: var(--muted); padding: 10px 4px; }
+  .quick-fab { position: fixed; right: 18px; bottom: 22px; z-index: 9998; width: 60px; height: 60px; border-radius: 50%; background: var(--amber); color: #fff; border: none; font-size: 26px; box-shadow: 0 6px 18px rgba(0,0,0,0.28); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .quick-fab:active { transform: scale(0.94); }
+  .quick-overlay { display: none; position: fixed; inset: 0; z-index: 10001; background: rgba(15,36,52,0.55); align-items: flex-end; justify-content: center; }
+  .quick-box { background: var(--bg,#fff); width: 100%; max-width: 640px; max-height: 90vh; border-radius: 18px 18px 0 0; display: flex; flex-direction: column; overflow: hidden; }
+  .quick-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--navy); color: #fff; font-size: 16px; font-weight: 600; }
+  .quick-close { background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 15px; cursor: pointer; }
+  .quick-body { padding: 16px 18px; overflow-y: auto; }
+  .qm-sec { margin-bottom: 18px; }
+  .qm-h { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .qm-sub { font-size: 11.5px; font-weight: 400; color: var(--muted); }
+  .qm-pad { aspect-ratio: 5/3; }
+  .qm-todo-list { margin-top: 6px; }
   .brief-past { display: flex; flex-direction: column; gap: 2px; }
   .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
   .brief-past-row:hover { background: var(--sand); }
@@ -1797,6 +1825,7 @@ function renderBriefing(){
       '</div>'+
     '</div>'+
     briefAutoHtml()+
+    briefTodoHtml()+
     briefSectionHtml('morning','조회 (아침)','🌅','전달받은 내용, 오늘 중점, 주의할 어르신 등을 적어요.','예) 낙상 예방 강조 / 201호 김○○ 어르신 컨디션 주의 / 오늘 촉탁의 방문 예정…',b)+
     briefSectionHtml('evening','석회 (저녁)','🌙','오늘 있었던 일, 특이사항, 내일로 넘길 내용을 적어요.','예) 오늘 치료 미실시 2명(사유 기록함) / 202호 통증 호소 → 촉탁의 보고 / 내일 낙상교육 자료 준비…',b)+
     '<div class="card">'+
@@ -1808,6 +1837,43 @@ function renderBriefing(){
     '</div>'+
     briefPastHtml();
   initPads();
+}
+function briefTodoHtml(){
+  const all=(state.todos||[]).slice();
+  // 이 날짜 관련: 해당 날짜 할 일 + (오늘 보고 있으면 밀린 일도)
+  const forDate=all.filter(t=>t.date===briefDate).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+  const overdue = briefDate===today ? all.filter(t=>!t.done && t.date<today).sort((a,b)=>a.date.localeCompare(b.date)) : [];
+  const wd=WEEKDAYS[new Date(briefDate+'T00:00:00').getDay()]||'';
+  let rows='';
+  if(overdue.length){
+    rows+='<div class="todo-group-label overdue">⚠️ 밀린 일</div>';
+    overdue.forEach(t=>{ rows+=todoRow(t, true); });
+  }
+  rows+='<div class="todo-group-label">'+briefDate+' ('+wd+') 할 일</div>';
+  if(forDate.length) forDate.forEach(t=>{ rows+=todoRow(t,false); });
+  else rows+='<div class="todo-empty">이 날짜에 등록된 할 일이 없어요.</div>';
+  return '<div class="card"><div class="card-title">📌 할 일</div>'+
+    '<p class="hint">조회·석회 때 생긴 "다음에 할 일"을 날짜와 함께 등록해요. 그날 오늘 화면에도 떠서 안 잊어요.</p>'+
+    '<div class="todo-add no-print">'+
+      '<input type="date" id="todo-date" value="'+briefDate+'">'+
+      '<input type="text" id="todo-text" placeholder="할 일 (예: 낙상교육 자료 준비, 202호 보호자 연락)" onkeydown="if(event.key===\'Enter\')briefAddTodo()">'+
+      '<button class="btn teal" onclick="briefAddTodo()">＋ 추가</button>'+
+    '</div>'+
+    '<div class="todo-list">'+rows+'</div></div>';
+}
+function todoRow(t, showDate){
+  return '<div class="todo-row'+(t.done?' done':'')+'">'+
+    '<button class="todo-check" onclick="toggleTodo('+t.id+')">'+(t.done?'✓':'')+'</button>'+
+    '<span class="todo-text">'+(showDate?'<span class="todo-date-tag">'+esc(t.date)+'</span> ':'')+esc(t.text)+'</span>'+
+    '<button class="todo-del no-print" onclick="deleteTodo('+t.id+')">✕</button></div>';
+}
+function briefAddTodo(){
+  const dt=document.getElementById('todo-date').value||briefDate;
+  const tx=document.getElementById('todo-text').value;
+  if(!tx.trim()){ return; }
+  addTodo(dt, tx);
+  document.getElementById('todo-text').value='';
+  renderBriefing(); renderDash();
 }
 function briefSectionHtml(sec, label, icon, hint, ph, b){
   const pen=briefPen[sec];
@@ -1947,8 +2013,15 @@ function padSaveC(id, targetKey){
   const tmp=document.createElement('canvas'); tmp.width=s.canvas.width; tmp.height=s.canvas.height;
   const t=tmp.getContext('2d'); t.fillStyle='#ffffff'; t.fillRect(0,0,tmp.width,tmp.height); t.drawImage(s.canvas,0,0);
   const url=tmp.toDataURL('image/png');
-  const b=ensureBriefings(); if(!b[targetKey]) b[targetKey]=[]; b[targetKey].push(url);
-  save(); renderBriefing();
+  const isQuick = (id==='quick-pad');
+  const dateKey = isQuick ? today : briefDate;
+  if(!state.briefings) state.briefings={};
+  if(!state.briefings[dateKey]) state.briefings[dateKey]={};
+  const b=state.briefings[dateKey];
+  if(!b[targetKey]) b[targetKey]=[]; b[targetKey].push(url);
+  save();
+  if(isQuick){ s.ctx.clearRect(0,0,s.canvas.width,s.canvas.height); s.dirty=false; alert('손글씨를 오늘 기록에 저장했어요.'); renderDash(); }
+  else renderBriefing();
 }
 function padDelDraw(targetKey,i){
   const b=state.briefings&&state.briefings[briefDate]; if(!b||!b[targetKey]) return;
@@ -1958,6 +2031,63 @@ function padDelDraw(targetKey,i){
   save(); renderBriefing();
 }
 function setBriefPen(sec, on){ if(briefPen[sec]===on) return; briefPen[sec]=on; renderBriefing(); }
+
+// ===== 할 일 (To-do, 날짜 지정) =====
+function ensureTodos(){ if(!state.todos) state.todos=[]; return state.todos; }
+function addTodo(dateStr, text){
+  text=(text||'').trim(); if(!text) return;
+  ensureTodos().push({ id:Date.now()+Math.floor(Math.random()*999), date:dateStr||today, text:text, done:false });
+  save();
+}
+function toggleTodo(id){
+  const t=(state.todos||[]).find(x=>x.id===id); if(!t) return;
+  t.done=!t.done; t.doneAt=t.done?today:null; save();
+  renderDash(); if(document.getElementById('briefing').classList.contains('active')) renderBriefing();
+}
+function deleteTodo(id){
+  if(!state.todos) return;
+  state.todos=state.todos.filter(x=>x.id!==id); save();
+  renderDash(); if(document.getElementById('briefing').classList.contains('active')) renderBriefing();
+}
+// 오늘 화면용: 오늘 할 일 + 밀린 일(지났는데 미완료)
+function todosForDash(){
+  const list=(state.todos||[]).filter(t=>!t.done);
+  const overdue=list.filter(t=>t.date<today).sort((a,b)=>a.date.localeCompare(b.date));
+  const todayT=list.filter(t=>t.date===today);
+  const soon=list.filter(t=>t.date>today && t.date<=addDaysStr(today,2)).sort((a,b)=>a.date.localeCompare(b.date));
+  return {overdue, todayT, soon};
+}
+function addDaysStr(dateStr, n){ const d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+
+// ===== 빠른 메모 (플로팅) — 할 일 + 손글씨 바로 =====
+function openQuickMemo(){
+  const ov=document.getElementById('quick-overlay'); if(!ov) return;
+  const body=document.getElementById('quick-body');
+  const wd=WEEKDAYS[new Date(today+'T00:00:00').getDay()]||'';
+  const undone=(state.todos||[]).filter(t=>!t.done).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+  body.innerHTML=
+    '<div class="qm-sec"><div class="qm-h">📌 할 일 빠른 추가</div>'+
+      '<div class="todo-add"><input type="date" id="qm-todo-date" value="'+today+'"><input type="text" id="qm-todo-text" placeholder="할 일 입력 후 추가" onkeydown="if(event.key===\'Enter\')qmAddTodo()"><button class="btn teal" onclick="qmAddTodo()">＋</button></div>'+
+      '<div class="qm-todo-list" id="qm-todo-list">'+(undone.length?undone.map(t=>'<div class="todo-row"><button class="todo-check" onclick="toggleTodo('+t.id+');openQuickMemo()"></button><span class="todo-text"><span class="todo-date-tag">'+esc(t.date)+'</span> '+esc(t.text)+'</span></div>').join(''):'<div class="todo-empty">미완료 할 일이 없어요.</div>')+'</div>'+
+    '</div>'+
+    '<div class="qm-sec"><div class="qm-h">✍️ 손글씨 메모 <span class="qm-sub">('+today+' '+wd+')</span></div>'+
+      padToolbarHtml('quick-pad','drawings')+
+      '<canvas id="quick-pad" class="brief-pad qm-pad" width="1000" height="620"></canvas>'+
+      '<p class="hint" style="margin-top:6px;font-size:12px;">저장하면 오늘 조회·석회 기록에 손글씨로 남아요.</p>'+
+    '</div>';
+  ov.style.display='flex'; document.body.style.overflow='hidden';
+  setupPad('quick-pad');
+}
+function closeQuickMemo(){ const ov=document.getElementById('quick-overlay'); if(ov) ov.style.display='none'; document.body.style.overflow=''; }
+function qmAddTodo(){
+  const dt=(document.getElementById('qm-todo-date')||{}).value||today;
+  const tx=(document.getElementById('qm-todo-text')||{}).value||'';
+  if(!tx.trim()) return;
+  addTodo(dt, tx);
+  renderDash();
+  openQuickMemo(); // 목록 갱신
+  const el=document.getElementById('qm-todo-text'); if(el) el.focus();
+}
 function padToolbarHtml(id, targetKey){
   return '<div class="pad-tools no-print">'+
     '<button class="pad-btn on" data-padbtn="'+id+'" data-mode="pen" onclick="padMode(\''+id+'\',\'pen\')">✏️ 펜</button>'+
@@ -5911,6 +6041,18 @@ function goTab(name){
   if(btn) go(btn);
 }
 
+function dashAddTodo(){
+  const dt=(document.getElementById('dash-todo-date')||{}).value||today;
+  const tx=(document.getElementById('dash-todo-text')||{}).value||'';
+  if(!tx.trim()) return;
+  addTodo(dt, tx);
+  renderDash();
+}
+function dashTodoRow(t, showDate){
+  const wd=WEEKDAYS[new Date(t.date+'T00:00:00').getDay()]||'';
+  return '<div class="todo-row"><button class="todo-check" onclick="toggleTodo('+t.id+')"></button>'+
+    '<span class="todo-text">'+(showDate?'<span class="todo-date-tag">'+esc(t.date)+' ('+wd+')</span> ':'')+esc(t.text)+'</span></div>';
+}
 function renderDashEvents(now){
   const box=document.getElementById('ds-events');
   if(!box) return;
@@ -5925,27 +6067,27 @@ function renderDashEvents(now){
   let html='';
   const offToday=todayEvs.find(e=>e.type==='휴무');
   if(offToday){ html+='<div class="dash-off">🏖 오늘은 휴무일이에요 — '+esc(offToday.title)+'</div>'; }
-  // 재평가 알림 — 6개월 주기(1월·7월). 해당 달에만, 이번 주기에 아직 재평가 안 한 어르신 표시
-  const nowMonth = now.getMonth(); // 0=1월, 6=7월
-  if(nowMonth===0 || nowMonth===6){
-    const cycleStart = new Date(now.getFullYear(), nowMonth===0?0:6, 1);
-    const due=[];
-    state.elders.filter(e=>e.status==='치료중').forEach(e=>{
-      const evs=state.evals[e.id]||[];
-      if(!evs.length){ due.push({e,last:'평가 없음'}); return; }
-      const latest=evs.map(x=>x.date).sort().pop();
-      if(new Date(latest+'T00:00:00') < cycleStart) due.push({e,last:latest});
-    });
-    if(due.length){
-      const cycleName = nowMonth===0?'1월':'7월';
-      html+='<div class="dash-reassess-card"><div class="dash-evt-title">🔄 6개월 정기 재평가 시기예요 ('+cycleName+') — '+due.length+'명</div>';
-      due.forEach(({e,last})=>{
-        html+='<div class="dash-reassess">'+(e.room?'<b>'+esc(e.room)+'호</b> ':'')+esc(e.name)+' <span class="rea-sub">지난 평가 '+esc(last)+'</span></div>';
-      });
-      html+='<div class="rea-foot">6개월마다(1월·7월) 재평가를 권장해요. 평가 탭에서 재평가하면 목록에서 사라져요.</div></div>';
-    }
-  }
   const todayShow=todayEvs.filter(e=>e.type!=='휴무');
+  // 할 일 (오늘 + 밀린 일 + 곧 다가올) + 빠른 추가
+  const td=todosForDash();
+  html+='<div class="dash-todo-card"><div class="dash-evt-title">📌 할 일</div>';
+  html+='<div class="todo-add no-print"><input type="date" id="dash-todo-date" value="'+today+'"><input type="text" id="dash-todo-text" placeholder="할 일 추가 (예: 내일 낙상교육 준비)" onkeydown="if(event.key===\'Enter\')dashAddTodo()"><button class="btn teal" onclick="dashAddTodo()">＋</button></div>';
+  if(td.overdue.length){
+    html+='<div class="todo-group-label overdue">⚠️ 밀린 일</div>';
+    td.overdue.forEach(t=>{ html+=dashTodoRow(t, true); });
+  }
+  if(td.todayT.length){
+    html+='<div class="todo-group-label">오늘</div>';
+    td.todayT.forEach(t=>{ html+=dashTodoRow(t, false); });
+  }
+  if(td.soon.length){
+    html+='<div class="todo-group-label">곧 (내일·모레)</div>';
+    td.soon.forEach(t=>{ html+=dashTodoRow(t, true); });
+  }
+  if(!td.overdue.length && !td.todayT.length && !td.soon.length){
+    html+='<div class="todo-empty">오늘·다가오는 할 일이 없어요. 위에 적어 추가하세요.</div>';
+  }
+  html+='</div>';
   if(todayShow.length){
     html+='<div class="dash-evt-card"><div class="dash-evt-title">📅 오늘 일정</div>';
     todayShow.forEach(ev=>{ const m=evMeta(ev.type); html+='<div class="dash-evt '+m.cls+(ev.important?' imp':'')+'">'+(ev.important?'⭐ ':'')+m.icon+' <b>'+esc(ev.title)+'</b> <span class="meta">'+m.label+'</span></div>'; });
@@ -6241,7 +6383,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-03';
+const APP_VERSION = '2026-07-09-05';
 function checkForUpdate(){
   try{
     const base=location.pathname;
@@ -6355,5 +6497,13 @@ updateSyncUI('ok');
 setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
 setTimeout(checkForUpdate, 1500);
 </script>
+<button id="quick-fab" class="quick-fab" onclick="openQuickMemo()" title="빠른 메모">✏️</button>
+<div id="quick-overlay" class="quick-overlay">
+  <div class="quick-box">
+    <div class="quick-head"><span>⚡ 빠른 메모</span><button class="quick-close" onclick="closeQuickMemo()">✕</button></div>
+    <div class="quick-body" id="quick-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
