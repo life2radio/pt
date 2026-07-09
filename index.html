@@ -355,6 +355,9 @@
   .rec-tip { background: #FBF3E8; border: 1px solid var(--amber); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px; color: #7a5b1c; line-height: 1.6; }
   .rec-tip b { color: var(--navy); }
   .rec-tip-x { margin-left: 6px; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 2px 9px; font-size: 11.5px; cursor: pointer; }
+  .sync-status { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--sand); border-radius: 8px; }
+  .sync-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+  .sync-text { font-size: 13px; color: var(--ink); }
   .tq-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .tq-label { font-size: 12px; color: var(--muted); min-width: 62px; }
   .tq-btn { font-size: 12.5px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 14px; background: #fff; cursor: pointer; }
@@ -1463,8 +1466,19 @@
   <!-- 백업 -->
   <section id="data" class="panel">
     <div class="card">
-      <div class="card-title">데이터 백업</div>
-      <p class="hint" style="line-height:1.7;">모든 기록은 이 기기 안에만 저장돼요. <b>일주일에 한 번</b> 백업 파일을 내려받아 두면, 기기를 바꾸거나 문제가 생겨도 안전하게 복원할 수 있어요.</p>
+      <div class="card-title">☁️ 클라우드 자동 동기화</div>
+      <p class="hint" style="line-height:1.7;">컴퓨터와 휴대폰이 <b>같은 구글 시트</b>에 자동으로 저장·연동돼요. 한 기기에서 입력하면 다른 기기에서 열 때 불러올지 물어봐요. <b>덮어쓰기 전 항상 되돌림용 백업</b>을 만들어 안전해요.</p>
+      <div class="sync-status"><span id="sync-dot" class="sync-dot"></span><span id="sync-text" class="sync-text">준비 중…</span></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" onclick="manualPush()">☁️ 지금 올리기</button>
+        <button class="btn" onclick="manualPull()">⬇️ 지금 불러오기</button>
+        <button class="btn" onclick="undoRestore()">↩️ 되돌리기</button>
+      </div>
+      <p class="hint" style="margin-top:8px;font-size:12px;">※ 두 기기에서 <b>동시에</b> 작업하면 한쪽이 덮어써질 수 있어요. 한 기기에서 쓰고 다른 기기로 이어 쓰는 방식을 권장해요.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">데이터 백업 (파일)</div>
+      <p class="hint" style="line-height:1.7;">클라우드 외에, 가끔 <b>파일로도 백업</b>해두면 이중으로 안전해요. 기기를 바꾸거나 문제가 생겨도 복원할 수 있어요.</p>
       <div class="row">
         <button class="btn primary" onclick="exportData()">⬇ 백업 파일 내보내기</button>
         <label class="btn" style="cursor:pointer;">⬆ 백업 불러오기<input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
@@ -1613,7 +1627,7 @@ if(!state.slotsV2){
 }
 
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } }
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); if(typeof scheduleSync==='function') scheduleSync(); }
 
 // ===== 비밀번호 잠금 =====
 const LOCK_KEY = 'pt_clinic_lock';
@@ -5990,7 +6004,93 @@ function importData(ev){
 }
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
+// ===== 구글 시트 자동 동기화 =====
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyxMrYn5El__Pul6XfI3BavyURUaMVZJtVP8IILBwv_0kN_y0BMbnqojMD7sMp6fECQPw/exec';
+const SYNC_META_KEY = 'pt_clinic_sync';
+let _syncTimer=null, _syncing=false, _syncBusy=false;
+function payloadStr(){ return JSON.stringify(state); }
+function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return String(h>>>0); }
+function getSyncMeta(){ try{ return JSON.parse(localStorage.getItem(SYNC_META_KEY))||{}; }catch(e){ return {}; } }
+function setSyncMeta(m){ localStorage.setItem(SYNC_META_KEY, JSON.stringify(m)); }
+function fmtTime(iso){ if(!iso) return '-'; try{ const d=new Date(iso); if(isNaN(d)) return String(iso); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }catch(e){ return String(iso); } }
+function updateSyncUI(status){
+  const dot=document.getElementById('sync-dot'), txt=document.getElementById('sync-text');
+  if(!dot||!txt) return;
+  const meta=getSyncMeta();
+  const last=meta.lastSync?('마지막 동기화: '+fmtTime(meta.lastSync)):'아직 동기화 안 됨';
+  const map={ pending:['#C8862F','변경 감지 — 곧 저장'], syncing:['#2E7D6B','동기화 중…'], ok:['#2E7D6B',last], err:['#B4452F','동기화 실패 — 인터넷 확인'] };
+  const s=map[status]||map.ok; dot.style.background=s[0]; txt.textContent=s[1];
+}
+function scheduleSync(){
+  if(!SYNC_URL) return;
+  clearTimeout(_syncTimer); updateSyncUI('pending');
+  _syncTimer=setTimeout(pushSync, 2500);
+}
+function pushSync(force){
+  if(!SYNC_URL || _syncing) return;
+  _syncing=true; updateSyncUI('syncing');
+  const body=payloadStr();
+  return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload:body})})
+    .then(r=>r.json()).then(res=>{
+      if(res&&res.ok){ setSyncMeta({lastSync:res.savedAt, lastHash:strHash(body)}); updateSyncUI('ok'); }
+      else updateSyncUI('err');
+    }).catch(()=>updateSyncUI('err')).finally(()=>{ _syncing=false; });
+}
+function pullSync(forced){
+  if(!SYNC_URL || _syncBusy) return;
+  _syncBusy=true; updateSyncUI('syncing');
+  return fetch(SYNC_URL).then(r=>r.json()).then(res=>{
+    if(!res||!res.ok){ updateSyncUI('err'); return; }
+    const remote=res.payload||''; const savedAt=res.savedAt||'';
+    const meta=getSyncMeta();
+    const localStr=payloadStr(); const localHash=strHash(localStr);
+    if(!remote){ updateSyncUI('ok'); return; }               // 클라우드 비어있음 → 이 기기가 원본
+    const remoteHash=strHash(remote);
+    if(remoteHash===localHash){ setSyncMeta({lastSync:savedAt, lastHash:localHash}); updateSyncUI('ok'); return; } // 동일
+    const localChanged = meta.lastHash ? (meta.lastHash!==localHash) : true;
+    const remoteChanged = meta.lastSync ? (savedAt!==meta.lastSync) : true;
+    if(forced){
+      if(confirm('클라우드 백업('+fmtTime(savedAt)+')을 불러올까요?\n이 기기 데이터는 되돌림용으로 백업돼요.')) doRestore(remote, savedAt);
+      else updateSyncUI('ok');
+    } else if(remoteChanged && localChanged){
+      if(confirm('⚠️ 이 기기와 다른 기기 양쪽에서 데이터가 바뀌었어요.\n\n클라우드 백업 시각: '+fmtTime(savedAt)+'\n\n[확인]을 누르면 클라우드 것을 불러오고 이 기기의 최근 변경은 덮어써집니다.\n(덮어쓰기 전 자동으로 되돌림용 백업을 만들어요)\n[취소]를 누르면 이 기기 것을 유지하고, 다음 변경 때 클라우드에 올립니다.')){
+        doRestore(remote, savedAt);
+      } else { updateSyncUI('ok'); }
+    } else if(remoteChanged){
+      if(confirm('다른 기기에서 저장한 더 최신 백업이 있어요 ('+fmtTime(savedAt)+').\n불러올까요?\n(이 기기 데이터는 되돌림용으로 백업돼요)')){
+        doRestore(remote, savedAt);
+      } else { updateSyncUI('ok'); }
+    } else {
+      pushSync(); // 로컬만 변경 → 올리기
+    }
+  }).catch(()=>updateSyncUI('err')).finally(()=>{ _syncBusy=false; });
+}
+function doRestore(remoteStr, savedAt){
+  try{
+    JSON.parse(remoteStr); // 형식 검증
+    localStorage.setItem(KEY+'_prerestore', localStorage.getItem(KEY)||'');
+    localStorage.setItem(KEY+'_prerestore_at', new Date().toISOString());
+    localStorage.setItem(KEY, remoteStr);
+    setSyncMeta({lastSync:savedAt, lastHash:strHash(remoteStr)});
+    alert('클라우드 백업을 불러왔어요. 문제가 있으면 백업 탭 → "되돌리기"를 누르면 직전 상태로 복구돼요.');
+    location.reload();
+  }catch(e){ alert('불러오기 실패: 데이터 형식 오류'); updateSyncUI('err'); }
+}
+function undoRestore(){
+  const prev=localStorage.getItem(KEY+'_prerestore');
+  if(!prev){ alert('되돌릴 백업이 없어요.'); return; }
+  const at=localStorage.getItem(KEY+'_prerestore_at');
+  if(!confirm('되돌리기 직전('+fmtTime(at)+') 상태로 복구할까요?\n지금 데이터는 사라지고, 복구 후 클라우드에도 반영돼요.')) return;
+  localStorage.setItem(KEY, prev);
+  setSyncMeta({}); // 다시 동기화되도록
+  location.reload();
+}
+function manualPush(){ pushSync(true).then(()=>{ if(!_syncing) showMsg('클라우드에 올렸어요.','ok'); }); }
+function manualPull(){ pullSync(true); }
+
 renderPlanForm(); renderElders(); renderDash(); initLock();
+updateSyncUI('ok');
+setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
 </script>
 </body>
 </html>
