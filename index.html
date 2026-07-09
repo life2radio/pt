@@ -367,7 +367,12 @@
   .brief-date input { font-size: 14px; }
   .brief-wd { color: var(--muted); font-size: 13px; }
   .brief-today { background: var(--teal); color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
-  .brief-ta { width: 100%; font-size: 15px; line-height: 1.7; padding: 12px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; font-family: inherit; }
+  .brief-ta { width: 100%; min-height: 260px; font-size: 15px; line-height: 1.8; padding: 14px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; font-family: inherit; }
+  .brief-modetog { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
+  .bmt { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); background: #fff; border-radius: 14px; cursor: pointer; font-weight: 500; }
+  .bmt.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .brief-pad-sec { aspect-ratio: 2/1; }
+  .brief-pad-big { aspect-ratio: 5/6; }
   .brief-past { display: flex; flex-direction: column; gap: 2px; }
   .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
   .brief-past-row:hover { background: var(--sand); }
@@ -1792,32 +1797,32 @@ function renderBriefing(){
       '</div>'+
     '</div>'+
     briefAutoHtml()+
-    '<div class="card">'+
-      '<div class="card-title">🌅 조회 (아침)</div>'+
-      '<p class="hint">전달받은 내용, 오늘 중점, 주의할 어르신 등을 적어요. S펜 손글씨 입력으로 바로 쓸 수 있어요.</p>'+
-      '<textarea class="brief-ta" rows="6" placeholder="예) 낙상 예방 강조 / 201호 김○○ 어르신 컨디션 주의 / 오늘 촉탁의 방문 예정…" onchange="setBrief(\'morning\',this.value)">'+esc(b.morning||'')+'</textarea>'+
-    '</div>'+
-    '<div class="card">'+
-      '<div class="card-title">🌙 석회 (저녁)</div>'+
-      '<p class="hint">오늘 있었던 일, 특이사항, 내일로 넘길 내용을 적어요.</p>'+
-      '<textarea class="brief-ta" rows="6" placeholder="예) 오늘 치료 미실시 2명(사유 기록함) / 202호 통증 호소 → 촉탁의 보고 / 내일 낙상교육 자료 준비…" onchange="setBrief(\'evening\',this.value)">'+esc(b.evening||'')+'</textarea>'+
-    '</div>'+
+    briefSectionHtml('morning','조회 (아침)','🌅','전달받은 내용, 오늘 중점, 주의할 어르신 등을 적어요.','예) 낙상 예방 강조 / 201호 김○○ 어르신 컨디션 주의 / 오늘 촉탁의 방문 예정…',b)+
+    briefSectionHtml('evening','석회 (저녁)','🌙','오늘 있었던 일, 특이사항, 내일로 넘길 내용을 적어요.','예) 오늘 치료 미실시 2명(사유 기록함) / 202호 통증 호소 → 촉탁의 보고 / 내일 낙상교육 자료 준비…',b)+
     '<div class="card">'+
       '<div class="card-title">✍️ 손글씨 메모 (S펜)</div>'+
       '<p class="hint">S펜이나 손가락으로 자유롭게 그리고 쓰세요. 저장하면 이 날짜 기록에 그림으로 남고, 다른 기기에서도 볼 수 있어요.</p>'+
-      '<div class="pad-tools no-print">'+
-        '<button class="pad-btn" id="pad-pen" onclick="padSetMode(\'pen\')">✏️ 펜</button>'+
-        '<button class="pad-btn" id="pad-eraser" onclick="padSetMode(\'eraser\')">🩹 지우개</button>'+
-        '<span class="pad-colors">'+['#143A52','#B4452F','#2E7D6B','#C8862F'].map(c=>'<button class="pad-color" style="background:'+c+'" onclick="padSetColor(\''+c+'\')"></button>').join('')+'</span>'+
-        '<span class="pad-sizes">'+[2,4,7].map(s=>'<button class="pad-size" onclick="padSetSize('+s+')"><span style="width:'+s+'px;height:'+s+'px;"></span></button>').join('')+'</span>'+
-        '<button class="pad-btn" onclick="padClear()">🗑 전체 지우기</button>'+
-        '<button class="pad-btn primary" onclick="padSave()">💾 그림 저장</button>'+
-      '</div>'+
-      '<canvas id="brief-pad" class="brief-pad" width="1000" height="600"></canvas>'+
-      (b.drawings&&b.drawings.length ? '<div class="pad-saved"><div class="pad-saved-label">저장된 손글씨 ('+b.drawings.length+')</div><div class="pad-saved-list">'+b.drawings.map((img,i)=>'<div class="pad-thumb"><img src="'+img+'" alt=""><button class="pad-thumb-x" onclick="padDeleteDrawing('+i+')">✕</button></div>').join('')+'</div></div>' : '')+
+      padToolbarHtml('brief-pad','drawings')+
+      '<canvas id="brief-pad" class="brief-pad brief-pad-big" width="1000" height="1200"></canvas>'+
+      drawsThumbHtml('drawings', b.drawings)+
     '</div>'+
     briefPastHtml();
-  initPad();
+  initPads();
+}
+function briefSectionHtml(sec, label, icon, hint, ph, b){
+  const pen=briefPen[sec];
+  const canvasId='brief-pad-'+sec;
+  const draws=b[sec+'Draws'];
+  const toggle='<span class="brief-modetog no-print">'+
+    '<button class="bmt'+(!pen?' on':'')+'" onclick="setBriefPen(\''+sec+'\',false)">⌨️ 타자</button>'+
+    '<button class="bmt'+(pen?' on':'')+'" onclick="setBriefPen(\''+sec+'\',true)">✍️ 손글씨</button></span>';
+  let inner;
+  if(pen){
+    inner=padToolbarHtml(canvasId, sec+'Draws')+'<canvas id="'+canvasId+'" class="brief-pad brief-pad-sec" width="1000" height="500"></canvas>';
+  } else {
+    inner='<textarea class="brief-ta" rows="12" placeholder="'+ph+'" onchange="setBrief(\''+sec+'\',this.value)">'+esc(b[sec]||'')+'</textarea>';
+  }
+  return '<div class="card"><div class="card-title">'+icon+' '+label+' '+toggle+'</div><p class="hint">'+hint+'</p>'+inner+drawsThumbHtml(sec+'Draws', draws)+'</div>';
 }
 function setBriefDate(v){ if(!v) return; briefDate=v; renderBriefing(); }
 function moveBriefDate(delta){ const d=new Date(briefDate+'T00:00:00'); d.setDate(d.getDate()+delta); briefDate=d.toISOString().slice(0,10); renderBriefing(); }
@@ -1876,7 +1881,8 @@ function openPresentMode(){
   if(auto.length) sections.push('<div class="pm-sec"><div class="pm-h">🔔 오늘의 발표거리</div>'+auto.map(it=>'<div class="pm-item">'+it.icon+' '+esc(it.txt)+'</div>').join('')+'</div>');
   if(b.morning) sections.push('<div class="pm-sec"><div class="pm-h">🌅 조회</div><div class="pm-text">'+esc(b.morning).replace(/\n/g,'<br>')+'</div></div>');
   if(b.evening) sections.push('<div class="pm-sec"><div class="pm-h">🌙 석회</div><div class="pm-text">'+esc(b.evening).replace(/\n/g,'<br>')+'</div></div>');
-  if(b.drawings&&b.drawings.length) sections.push('<div class="pm-sec"><div class="pm-h">✍️ 손글씨 메모</div>'+b.drawings.map(img=>'<img class="pm-img" src="'+img+'">').join('')+'</div>');
+  const allDraws=[].concat(b.morningDraws||[], b.eveningDraws||[], b.drawings||[]);
+  if(allDraws.length) sections.push('<div class="pm-sec"><div class="pm-h">✍️ 손글씨 메모</div>'+allDraws.map(img=>'<img class="pm-img" src="'+img+'">').join('')+'</div>');
   if(!sections.length) sections.push('<div class="pm-empty">이 날짜에 기록된 내용이 없어요.</div>');
   ov.innerHTML='<div class="pm-top"><div class="pm-date">'+briefDate+' ('+wd+') 물리치료 조회·석회</div>'+
     '<div class="pm-ctrl"><button onclick="pmFont(-1)">가–</button><button onclick="pmFont(1)">가＋</button><button class="pm-close" onclick="closePresentMode()">✕ 닫기</button></div></div>'+
@@ -1890,17 +1896,20 @@ function pmFont(delta){ _pmFont=Math.max(0.9, Math.min(3, _pmFont+delta*0.15)); 
 function setBrief(field, val){
   const b=ensureBriefings();
   if(val && val.trim()) b[field]=val; else delete b[field];
-  if(!b.morning && !b.evening) delete state.briefings[briefDate];
+  const hasAny = b.morning||b.evening||(b.drawings&&b.drawings.length)||(b.morningDraws&&b.morningDraws.length)||(b.eveningDraws&&b.eveningDraws.length);
+  if(!hasAny) delete state.briefings[briefDate];
   save();
   renderBriefPastOnly();
 }
+function briefHasContent(bb){ return bb && (bb.morning||bb.evening||(bb.drawings&&bb.drawings.length)||(bb.morningDraws&&bb.morningDraws.length)||(bb.eveningDraws&&bb.eveningDraws.length)); }
 function briefPastHtml(){
-  const dates=Object.keys(state.briefings||{}).filter(d=>d!==briefDate && (state.briefings[d].morning||state.briefings[d].evening)).sort().reverse();
+  const dates=Object.keys(state.briefings||{}).filter(d=>d!==briefDate && briefHasContent(state.briefings[d])).sort().reverse();
   if(!dates.length) return '';
   return '<div class="card" id="brief-past-card"><div class="card-title">지난 기록</div>'+
     '<div class="brief-past">'+dates.slice(0,30).map(d=>{
       const bb=state.briefings[d]; const wd=WEEKDAYS[new Date(d+'T00:00:00').getDay()]||'';
-      const preview=((bb.morning||'')+' '+(bb.evening||'')).trim().slice(0,50);
+      const nDraw=(bb.morningDraws||[]).length+(bb.eveningDraws||[]).length+(bb.drawings||[]).length;
+      const preview=(((bb.morning||'')+' '+(bb.evening||'')).trim()+(nDraw?' ✍️'+nDraw:'')).slice(0,50);
       return '<div class="brief-past-row" onclick="setBriefDate(\''+d+'\')"><b>'+d+' ('+wd+')</b><span class="meta">'+esc(preview)+(preview.length>=50?'…':'')+'</span></div>';
     }).join('')+'</div></div>';
 }
@@ -1911,48 +1920,58 @@ function renderBriefPastOnly(){
 }
 
 // 손글씨 패드
-let _pad={mode:'pen', color:'#143A52', size:4, drawing:false, ctx:null, canvas:null, last:null, dirty:false};
-function initPad(){
-  const c=document.getElementById('brief-pad'); if(!c) return;
-  _pad.canvas=c; _pad.ctx=c.getContext('2d');
-  _pad.ctx.lineCap='round'; _pad.ctx.lineJoin='round';
-  _pad.dirty=false;
-  padSetMode('pen');
+let _padReg={};
+let briefPen={morning:false, evening:false};
+function setupPad(id){
+  const c=document.getElementById(id); if(!c) return;
+  const st={mode:'pen',color:'#143A52',size:4,drawing:false,ctx:c.getContext('2d'),canvas:c,last:null,dirty:false};
+  st.ctx.lineCap='round'; st.ctx.lineJoin='round';
+  _padReg[id]=st;
   const pos=(e)=>{ const r=c.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return { x:(t.clientX-r.left)*(c.width/r.width), y:(t.clientY-r.top)*(c.height/r.height) }; };
-  const start=(e)=>{ e.preventDefault(); _pad.drawing=true; _pad.last=pos(e); };
-  const move=(e)=>{ if(!_pad.drawing) return; e.preventDefault(); const p=pos(e); const ctx=_pad.ctx;
-    ctx.strokeStyle = _pad.mode==='eraser' ? '#ffffff' : _pad.color;
-    ctx.lineWidth = _pad.mode==='eraser' ? _pad.size*6 : _pad.size;
-    ctx.beginPath(); ctx.moveTo(_pad.last.x,_pad.last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
-    _pad.last=p; _pad.dirty=true; };
-  const end=()=>{ _pad.drawing=false; };
-  // 포인터 이벤트(S펜·마우스·터치 통합)
-  c.addEventListener('pointerdown', start);
-  c.addEventListener('pointermove', move);
-  c.addEventListener('pointerup', end);
-  c.addEventListener('pointerleave', end);
+  c.addEventListener('pointerdown', e=>{ e.preventDefault(); st.drawing=true; st.last=pos(e); });
+  c.addEventListener('pointermove', e=>{ if(!st.drawing) return; e.preventDefault(); const p=pos(e); const x=st.ctx;
+    x.strokeStyle=st.mode==='eraser'?'#ffffff':st.color; x.lineWidth=st.mode==='eraser'?st.size*6:st.size;
+    x.beginPath(); x.moveTo(st.last.x,st.last.y); x.lineTo(p.x,p.y); x.stroke(); st.last=p; st.dirty=true; });
+  const end=()=>{ st.drawing=false; };
+  c.addEventListener('pointerup', end); c.addEventListener('pointerleave', end);
   c.style.touchAction='none';
 }
-function padSetMode(m){ _pad.mode=m; const p=document.getElementById('pad-pen'), e=document.getElementById('pad-eraser'); if(p)p.classList.toggle('on',m==='pen'); if(e)e.classList.toggle('on',m==='eraser'); }
-function padSetColor(c){ _pad.color=c; _pad.mode='pen'; padSetMode('pen'); }
-function padSetSize(s){ _pad.size=s; }
-function padClear(){ if(_pad.ctx&&_pad.canvas){ _pad.ctx.clearRect(0,0,_pad.canvas.width,_pad.canvas.height); _pad.dirty=false; } }
-function padSave(){
-  if(!_pad.canvas){ return; }
-  if(!_pad.dirty){ alert('먼저 손글씨를 써주세요.'); return; }
-  // 흰 배경 깔아 저장(투명 방지)
-  const tmp=document.createElement('canvas'); tmp.width=_pad.canvas.width; tmp.height=_pad.canvas.height;
-  const tctx=tmp.getContext('2d'); tctx.fillStyle='#ffffff'; tctx.fillRect(0,0,tmp.width,tmp.height); tctx.drawImage(_pad.canvas,0,0);
-  const dataUrl=tmp.toDataURL('image/png');
-  const b=ensureBriefings(); if(!b.drawings) b.drawings=[]; b.drawings.push(dataUrl);
-  save(); padClear(); renderBriefing();
-}
-function padDeleteDrawing(i){
-  const b=state.briefings&&state.briefings[briefDate]; if(!b||!b.drawings) return;
-  if(!confirm('이 손글씨를 삭제할까요?')) return;
-  b.drawings.splice(i,1); if(!b.drawings.length) delete b.drawings;
-  if(!b.morning && !b.evening && !(b.drawings&&b.drawings.length)) delete state.briefings[briefDate];
+function initPads(){ ['brief-pad','brief-pad-morning','brief-pad-evening'].forEach(id=>{ if(document.getElementById(id)) setupPad(id); }); }
+function padMode(id,m){ const s=_padReg[id]; if(s)s.mode=m; document.querySelectorAll('[data-padbtn="'+id+'"]').forEach(b=>{ if(b.dataset.mode) b.classList.toggle('on', b.dataset.mode===m); }); }
+function padColor(id,c){ const s=_padReg[id]; if(s){ s.color=c; s.mode='pen'; } padMode(id,'pen'); }
+function padSize(id,sz){ const s=_padReg[id]; if(s) s.size=sz; }
+function padClearC(id){ const s=_padReg[id]; if(s){ s.ctx.clearRect(0,0,s.canvas.width,s.canvas.height); s.dirty=false; } }
+function padSaveC(id, targetKey){
+  const s=_padReg[id]; if(!s) return;
+  if(!s.dirty){ alert('먼저 손글씨를 써주세요.'); return; }
+  const tmp=document.createElement('canvas'); tmp.width=s.canvas.width; tmp.height=s.canvas.height;
+  const t=tmp.getContext('2d'); t.fillStyle='#ffffff'; t.fillRect(0,0,tmp.width,tmp.height); t.drawImage(s.canvas,0,0);
+  const url=tmp.toDataURL('image/png');
+  const b=ensureBriefings(); if(!b[targetKey]) b[targetKey]=[]; b[targetKey].push(url);
   save(); renderBriefing();
+}
+function padDelDraw(targetKey,i){
+  const b=state.briefings&&state.briefings[briefDate]; if(!b||!b[targetKey]) return;
+  if(!confirm('이 손글씨를 삭제할까요?')) return;
+  b[targetKey].splice(i,1); if(!b[targetKey].length) delete b[targetKey];
+  if(!b.morning&&!b.evening&&!(b.drawings&&b.drawings.length)&&!(b.morningDraws&&b.morningDraws.length)&&!(b.eveningDraws&&b.eveningDraws.length)) delete state.briefings[briefDate];
+  save(); renderBriefing();
+}
+function setBriefPen(sec, on){ if(briefPen[sec]===on) return; briefPen[sec]=on; renderBriefing(); }
+function padToolbarHtml(id, targetKey){
+  return '<div class="pad-tools no-print">'+
+    '<button class="pad-btn on" data-padbtn="'+id+'" data-mode="pen" onclick="padMode(\''+id+'\',\'pen\')">✏️ 펜</button>'+
+    '<button class="pad-btn" data-padbtn="'+id+'" data-mode="eraser" onclick="padMode(\''+id+'\',\'eraser\')">🩹 지우개</button>'+
+    '<span class="pad-colors">'+['#143A52','#B4452F','#2E7D6B','#C8862F'].map(c=>'<button class="pad-color" style="background:'+c+'" onclick="padColor(\''+id+'\',\''+c+'\')"></button>').join('')+'</span>'+
+    '<span class="pad-sizes">'+[2,4,7].map(s=>'<button class="pad-size" onclick="padSize(\''+id+'\','+s+')"><span style="width:'+s+'px;height:'+s+'px;"></span></button>').join('')+'</span>'+
+    '<button class="pad-btn" onclick="padClearC(\''+id+'\')">🗑 지우기</button>'+
+    '<button class="pad-btn primary" onclick="padSaveC(\''+id+'\',\''+targetKey+'\')">💾 저장</button>'+
+  '</div>';
+}
+function drawsThumbHtml(targetKey, arr){
+  if(!arr||!arr.length) return '';
+  return '<div class="pad-saved"><div class="pad-saved-label">저장된 손글씨 ('+arr.length+')</div><div class="pad-saved-list">'+
+    arr.map((img,i)=>'<div class="pad-thumb"><img src="'+img+'" alt=""><button class="pad-thumb-x" onclick="padDelDraw(\''+targetKey+'\','+i+')">✕</button></div>').join('')+'</div></div>';
 }
 
 let editingElderId = null;
@@ -2067,6 +2086,7 @@ function aiCogBadge(a){ if(!a||a==='미평가') return ''; const m=AICOG_META[a]
 function lastEvalDate(id){ const a=state.evals[id]||[]; if(!a.length) return null; return a.map(x=>x.date).sort().slice(-1)[0]; }
 function evaluatedThisMonth(id){ const a=state.evals[id]||[]; const cm=today.slice(0,7); return a.some(x=>(x.date||'').slice(0,7)===cm); }
 function addMonthStr(dateStr){ const d=new Date(dateStr+'T00:00:00'); if(isNaN(d)) return null; d.setMonth(d.getMonth()+1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addMonthsStr(dateStr, n){ const d=new Date(dateStr+'T00:00:00'); if(isNaN(d)) return null; d.setMonth(d.getMonth()+(n||1)); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function reassessInfo(id){ const last=lastEvalDate(id); if(!last) return null; const due=addMonthStr(last); if(!due) return null; const dleft=Math.round((new Date(due+'T00:00:00')-new Date(today+'T00:00:00'))/86400000); return {last, due, dleft, due_now: dleft<=0}; }
 function evalDoneBadge(id){ return evaluatedThisMonth(id) ? '<span class="eval-badge" title="이번 달 평가 완료">✔ 평가완료</span>' : ''; }
 function renderAiCogSummary(){
@@ -4881,7 +4901,7 @@ function autoGenCarePlan(){
   document.getElementById('cp-approach').value = approach.map(x=>'• '+x).join('\n');
   document.getElementById('cp-freq').value = '주 2~3회, 회당 20~30분 · 저강도에서 점진적 증가(반복 10~15회·2~3세트)';
   document.getElementById('cp-safety').value = safety.map(x=>'• '+x).join('\n');
-  const rea=addMonthStr(today); if(rea) document.getElementById('cp-reassess').value=rea;
+  const rea=addMonthsStr(today,6); if(rea) document.getElementById('cp-reassess').value=rea;
   // 운동 영역 칩 선택
   const sel=[...areas];
   document.querySelectorAll('#cp-body .ex-chip').forEach(c=>c.classList.toggle('on', sel.includes(c.dataset.exarea)));
@@ -5903,34 +5923,27 @@ function renderDashEvents(now){
     dayEvents(ds).forEach(ev=>{ upcoming.push({ds,ev,din:i}); });
   }
   let html='';
-  // 오늘의 요양원 정기 프로그램 알림
-  const twProg = state.programs[todayWeekday()];
-  if(twProg){
-    html+='<div class="dash-prog-card">'+
-      '<div class="dash-prog-ic">'+twProg.icon+'</div>'+
-      '<div class="dash-prog-main"><div class="dash-prog-name">오늘 '+esc(twProg.name)+'</div>'+
-      '<div class="dash-prog-time">🕐 '+twProg.start+' ~ '+twProg.end+'</div>'+
-      '<div class="dash-prog-note">이 시간은 치료를 배정하지 않아요</div></div></div>';
-  }
   const offToday=todayEvs.find(e=>e.type==='휴무');
   if(offToday){ html+='<div class="dash-off">🏖 오늘은 휴무일이에요 — '+esc(offToday.title)+'</div>'; }
-  // 재평가 알림 (마지막 평가 후 한 달 지난 어르신)
-  const dueList=[];
-  state.elders.filter(e=>e.status==='치료중').forEach(e=>{
-    const r=reassessInfo(e.id);
-    if(r && r.dleft<=7){ dueList.push({e, r}); }
-  });
-  if(dueList.length){
-    dueList.sort((a,b)=>a.r.dleft-b.r.dleft);
-    html+='<div class="dash-reassess-card"><div class="dash-evt-title">🔄 재평가가 필요한 어르신 ('+dueList.length+'명)</div>';
-    dueList.forEach(({e,r})=>{
-      const when = r.dleft<0 ? Math.abs(r.dleft)+'일 지남' : r.dleft===0 ? '오늘' : r.dleft+'일 뒤';
-      const cls = r.dleft<=0 ? ' overdue' : '';
-      html+='<div class="dash-reassess'+cls+'"><span class="rea-dday">'+when+'</span> '+
-        (e.room?'<b>'+esc(e.room)+'호</b> ':'')+esc(e.name)+
-        ' <span class="rea-sub">지난 평가 '+esc(r.last)+'</span></div>';
+  // 재평가 알림 — 6개월 주기(1월·7월). 해당 달에만, 이번 주기에 아직 재평가 안 한 어르신 표시
+  const nowMonth = now.getMonth(); // 0=1월, 6=7월
+  if(nowMonth===0 || nowMonth===6){
+    const cycleStart = new Date(now.getFullYear(), nowMonth===0?0:6, 1);
+    const due=[];
+    state.elders.filter(e=>e.status==='치료중').forEach(e=>{
+      const evs=state.evals[e.id]||[];
+      if(!evs.length){ due.push({e,last:'평가 없음'}); return; }
+      const latest=evs.map(x=>x.date).sort().pop();
+      if(new Date(latest+'T00:00:00') < cycleStart) due.push({e,last:latest});
     });
-    html+='<div class="rea-foot">마지막 평가 후 한 달이 되면 알려드려요. 평가 탭에서 다시 평가하면 알림이 갱신돼요.</div></div>';
+    if(due.length){
+      const cycleName = nowMonth===0?'1월':'7월';
+      html+='<div class="dash-reassess-card"><div class="dash-evt-title">🔄 6개월 정기 재평가 시기예요 ('+cycleName+') — '+due.length+'명</div>';
+      due.forEach(({e,last})=>{
+        html+='<div class="dash-reassess">'+(e.room?'<b>'+esc(e.room)+'호</b> ':'')+esc(e.name)+' <span class="rea-sub">지난 평가 '+esc(last)+'</span></div>';
+      });
+      html+='<div class="rea-foot">6개월마다(1월·7월) 재평가를 권장해요. 평가 탭에서 재평가하면 목록에서 사라져요.</div></div>';
+    }
   }
   const todayShow=todayEvs.filter(e=>e.type!=='휴무');
   if(todayShow.length){
@@ -5942,24 +5955,6 @@ function renderDashEvents(now){
   if(upImp.length){
     html+='<div class="dash-evt-card up"><div class="dash-evt-title">🔔 곧 다가오는 일정</div>';
     upImp.forEach(({ev,din})=>{ const m=evMeta(ev.type); const when=din===1?'내일':din===2?'모레':'3일 뒤'; html+='<div class="dash-evt '+m.cls+'"><span class="dday">'+when+'</span> '+m.icon+' <b>'+esc(ev.title)+'</b></div>'; });
-    html+='</div>';
-  }
-  // 재평가 예정 어르신 (오늘~7일 이내, 또는 지난 것)
-  const reassess=[];
-  state.elders.forEach(e=>{
-    if(e.careplan&&e.careplan.reassess){
-      const d=e.careplan.reassess;
-      const diff=Math.round((new Date(d+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);
-      if(diff<=7) reassess.push({e,d,diff});
-    }
-  });
-  if(reassess.length){
-    reassess.sort((a,b)=>a.diff-b.diff);
-    html+='<div class="dash-evt-card up"><div class="dash-evt-title">📋 재평가 예정</div>';
-    reassess.forEach(({e,diff})=>{
-      const when=diff<0?(-diff)+'일 지남':diff===0?'오늘':diff===1?'내일':diff+'일 뒤';
-      html+='<div class="dash-evt ev-edu"><span class="dday">'+when+'</span> '+(e.room?e.room+'호 ':'')+esc(e.name)+' 재평가</div>';
-    });
     html+='</div>';
   }
   box.innerHTML=html;
@@ -6246,7 +6241,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-01';
+const APP_VERSION = '2026-07-09-03';
 function checkForUpdate(){
   try{
     const base=location.pathname;
