@@ -358,6 +358,53 @@
   .sync-status { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--sand); border-radius: 8px; }
   .sync-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
   .sync-text { font-size: 13px; color: var(--ink); }
+  .brief-datebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .brief-nav { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .brief-date { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: center; }
+  .brief-date input { font-size: 14px; }
+  .brief-wd { color: var(--muted); font-size: 13px; }
+  .brief-today { background: var(--teal); color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+  .brief-ta { width: 100%; font-size: 15px; line-height: 1.7; padding: 12px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; font-family: inherit; }
+  .brief-past { display: flex; flex-direction: column; gap: 2px; }
+  .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
+  .brief-past-row:hover { background: var(--sand); }
+  .brief-past-row b { font-size: 13px; color: var(--navy); }
+  .pad-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .pad-btn { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .pad-btn.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .pad-btn.primary { background: var(--teal); color: #fff; border-color: var(--teal); font-weight: 600; }
+  .pad-colors { display: inline-flex; gap: 4px; margin: 0 4px; }
+  .pad-color { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+  .pad-sizes { display: inline-flex; gap: 4px; }
+  .pad-size { width: 30px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .pad-size span { display: block; background: var(--ink); border-radius: 50%; }
+  .brief-pad { width: 100%; height: auto; aspect-ratio: 5/3; background: #fff; border: 2px dashed var(--line); border-radius: 12px; touch-action: none; display: block; }
+  .pad-saved { margin-top: 12px; }
+  .pad-saved-label { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  .pad-saved-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pad-thumb { position: relative; }
+  .pad-thumb img { width: 160px; border: 1px solid var(--line); border-radius: 8px; }
+  .pad-thumb-x { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; }
+  .ba-sub { font-size: 11px; font-weight: 400; color: var(--muted); }
+  .ba-copy { font-size: 12px; padding: 3px 10px; border: 1px solid var(--teal); color: var(--teal); background: #fff; border-radius: 6px; cursor: pointer; margin-left: 6px; }
+  .ba-list { display: flex; flex-direction: column; gap: 8px; }
+  .ba-row { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.5; padding: 8px 10px; background: var(--sand); border-radius: 8px; }
+  .ba-row.ba-danger { background: #FCF1ED; }
+  .ba-ic { flex-shrink: 0; }
+  .brief-present { background: var(--amber); color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .present-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: #0F2434; color: #fff; flex-direction: column; }
+  .pm-top { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); flex-wrap: wrap; gap: 8px; }
+  .pm-date { font-size: 16px; font-weight: 600; color: #9FD3C7; }
+  .pm-ctrl { display: flex; gap: 6px; }
+  .pm-ctrl button { background: rgba(255,255,255,0.12); color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 15px; cursor: pointer; }
+  .pm-close { background: var(--danger) !important; }
+  .pm-body { flex: 1; overflow-y: auto; padding: 26px 30px; font-size: 1.5rem; line-height: 1.75; }
+  .pm-sec { margin-bottom: 30px; }
+  .pm-h { font-size: 1.15em; font-weight: 700; color: #C8862F; margin-bottom: 12px; border-bottom: 2px solid rgba(200,134,47,0.4); padding-bottom: 6px; }
+  .pm-item { padding: 8px 0; }
+  .pm-text { white-space: pre-wrap; }
+  .pm-img { max-width: 100%; background: #fff; border-radius: 10px; margin-top: 10px; }
+  .pm-empty { font-size: 1.3rem; color: #9FB2BF; text-align: center; margin-top: 60px; }
   .tq-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .tq-label { font-size: 12px; color: var(--muted); min-width: 62px; }
   .tq-btn { font-size: 12.5px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 14px; background: #fff; cursor: pointer; }
@@ -1037,6 +1084,7 @@
     <button class="lock-now-btn" onclick="lockNow()" title="잠그기">🔒 잠그기</button>
     <nav class="tabs">
       <button class="active" data-tab="dash" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>오늘</button>
+      <button data-tab="briefing" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v14H7l-4 4z"/><path d="M8 8h8M8 12h5"/></svg>조회·석회</button>
       <button data-tab="elders" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>어르신</button>
       <button data-tab="sched" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>스케줄</button>
       <button data-tab="record" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>치료기록</button>
@@ -1463,6 +1511,11 @@
     </div>
   </section>
 
+  <!-- 조회·석회 -->
+  <section id="briefing" class="panel">
+    <div id="briefing-body"></div>
+  </section>
+
   <!-- 백업 -->
   <section id="data" class="panel">
     <div class="card">
@@ -1712,6 +1765,189 @@ function go(btn){
   if(tab==='history') initHistory();
   if(tab==='program') initProgram();
   if(tab==='library') renderLibrary();
+  if(tab==='briefing') renderBriefing();
+}
+
+// ===== 조회·석회 =====
+let briefDate = today;
+function ensureBriefings(){ if(!state.briefings) state.briefings={}; if(!state.briefings[briefDate]) state.briefings[briefDate]={}; return state.briefings[briefDate]; }
+function renderBriefing(){
+  const box=document.getElementById('briefing-body'); if(!box) return;
+  if(!state.briefings) state.briefings={};
+  const b=state.briefings[briefDate]||{};
+  const wd=WEEKDAYS[new Date(briefDate+'T00:00:00').getDay()]||'';
+  box.innerHTML=
+    '<div class="card">'+
+      '<div class="brief-datebar">'+
+        '<button class="brief-nav" onclick="moveBriefDate(-1)">‹ 전날</button>'+
+        '<div class="brief-date"><input type="date" id="brief-date" value="'+briefDate+'" onchange="setBriefDate(this.value)"> <span class="brief-wd">('+wd+')</span></div>'+
+        '<button class="brief-nav" onclick="moveBriefDate(1)">다음날 ›</button>'+
+        '<button class="brief-today" onclick="setBriefDate(\''+today+'\')">오늘</button>'+
+        '<button class="brief-present no-print" onclick="openPresentMode()">🎤 발표 모드</button>'+
+      '</div>'+
+    '</div>'+
+    briefAutoHtml()+
+    '<div class="card">'+
+      '<div class="card-title">🌅 조회 (아침)</div>'+
+      '<p class="hint">전달받은 내용, 오늘 중점, 주의할 어르신 등을 적어요. S펜 손글씨 입력으로 바로 쓸 수 있어요.</p>'+
+      '<textarea class="brief-ta" rows="6" placeholder="예) 낙상 예방 강조 / 201호 김○○ 어르신 컨디션 주의 / 오늘 촉탁의 방문 예정…" onchange="setBrief(\'morning\',this.value)">'+esc(b.morning||'')+'</textarea>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-title">🌙 석회 (저녁)</div>'+
+      '<p class="hint">오늘 있었던 일, 특이사항, 내일로 넘길 내용을 적어요.</p>'+
+      '<textarea class="brief-ta" rows="6" placeholder="예) 오늘 치료 미실시 2명(사유 기록함) / 202호 통증 호소 → 촉탁의 보고 / 내일 낙상교육 자료 준비…" onchange="setBrief(\'evening\',this.value)">'+esc(b.evening||'')+'</textarea>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-title">✍️ 손글씨 메모 (S펜)</div>'+
+      '<p class="hint">S펜이나 손가락으로 자유롭게 그리고 쓰세요. 저장하면 이 날짜 기록에 그림으로 남고, 다른 기기에서도 볼 수 있어요.</p>'+
+      '<div class="pad-tools no-print">'+
+        '<button class="pad-btn" id="pad-pen" onclick="padSetMode(\'pen\')">✏️ 펜</button>'+
+        '<button class="pad-btn" id="pad-eraser" onclick="padSetMode(\'eraser\')">🩹 지우개</button>'+
+        '<span class="pad-colors">'+['#143A52','#B4452F','#2E7D6B','#C8862F'].map(c=>'<button class="pad-color" style="background:'+c+'" onclick="padSetColor(\''+c+'\')"></button>').join('')+'</span>'+
+        '<span class="pad-sizes">'+[2,4,7].map(s=>'<button class="pad-size" onclick="padSetSize('+s+')"><span style="width:'+s+'px;height:'+s+'px;"></span></button>').join('')+'</span>'+
+        '<button class="pad-btn" onclick="padClear()">🗑 전체 지우기</button>'+
+        '<button class="pad-btn primary" onclick="padSave()">💾 그림 저장</button>'+
+      '</div>'+
+      '<canvas id="brief-pad" class="brief-pad" width="1000" height="600"></canvas>'+
+      (b.drawings&&b.drawings.length ? '<div class="pad-saved"><div class="pad-saved-label">저장된 손글씨 ('+b.drawings.length+')</div><div class="pad-saved-list">'+b.drawings.map((img,i)=>'<div class="pad-thumb"><img src="'+img+'" alt=""><button class="pad-thumb-x" onclick="padDeleteDrawing('+i+')">✕</button></div>').join('')+'</div></div>' : '')+
+    '</div>'+
+    briefPastHtml();
+  initPad();
+}
+function setBriefDate(v){ if(!v) return; briefDate=v; renderBriefing(); }
+function moveBriefDate(delta){ const d=new Date(briefDate+'T00:00:00'); d.setDate(d.getDate()+delta); briefDate=d.toISOString().slice(0,10); renderBriefing(); }
+function briefAutoItems(){
+  const items=[]; const tw=todayWeekday();
+  // 오늘 치료 대상 인원
+  try{ const active=(state.elders||[]).filter(scheduledToday); if(active.length) items.push({icon:'🗓', txt:'오늘('+tw+') 치료 예정 '+active.length+'명'}); }catch(e){}
+  // 낙상 고위험 어르신 (치료중 + 최근 평가 낙상 높음/아주높음)
+  try{
+    const highs=[];
+    (state.elders||[]).filter(e=>e.status==='치료중').forEach(e=>{
+      const g=(typeof latestEvalData==='function')?latestEvalData(e.id):null;
+      if(g&&g.has){ const hi=(g.fall!=null&&g.fall>=5)||(g.fallJudge&&/높음|아주/.test(g.fallJudge)); if(hi) highs.push((e.room?e.room+'호 ':'')+e.name); }
+    });
+    if(highs.length) items.push({icon:'🚨', txt:'낙상 주의 어르신 '+highs.length+'명: '+highs.slice(0,6).join(', ')+(highs.length>6?' 외':''), danger:true});
+  }catch(e){}
+  // 오늘 치료 미실시 + 사유
+  try{
+    const rec=state.records[briefDate]||{}; const nd=[];
+    Object.keys(rec).forEach(id=>{ if(rec[id]&&rec[id].notDone){ const e=(state.elders||[]).find(x=>x.id==id); const nm=e?((e.room?e.room+'호 ':'')+e.name):'—'; nd.push(nm+'('+(typeof notDoneText==='function'?notDoneText(rec[id]):(rec[id].reason||''))+')'); } });
+    if(nd.length) items.push({icon:'⛔', txt:'치료 미실시 '+nd.length+'명: '+nd.join(', ')});
+  }catch(e){}
+  // 최근 7일 새 평가
+  try{
+    const wk=[]; const from=new Date(briefDate+'T00:00:00'); from.setDate(from.getDate()-6);
+    (state.elders||[]).forEach(e=>{ const evs=state.evals&&state.evals[e.id]; if(evs&&evs.length){ const recent=evs.some(x=>{ const dt=new Date(x.date+'T00:00:00'); return dt>=from && dt<=new Date(briefDate+'T00:00:00'); }); if(recent) wk.push((e.room?e.room+'호 ':'')+e.name); } });
+    if(wk.length) items.push({icon:'📋', txt:'최근 1주 평가 시행 '+wk.length+'명: '+wk.slice(0,6).join(', ')+(wk.length>6?' 외':'')});
+  }catch(e){}
+  // 촉탁의 방문(오늘 이후 가장 가까운)
+  try{
+    const up=(state.doctorVisits||[]).filter(v=>v.date>=briefDate).sort((a,b)=>a.date.localeCompare(b.date))[0];
+    if(up) items.push({icon:'🩺', txt:'촉탁의 방문 예정: '+up.date+(up.elderIds&&up.elderIds.length?' ('+up.elderIds.length+'명 대상)':'')});
+  }catch(e){}
+  return items;
+}
+function briefAutoHtml(){
+  const items=briefAutoItems();
+  if(!items.length) return '';
+  const lines=items.map(it=>'<div class="ba-row'+(it.danger?' ba-danger':'')+'"><span class="ba-ic">'+it.icon+'</span><span>'+esc(it.txt)+'</span></div>').join('');
+  return '<div class="card"><div class="card-title">🔔 오늘의 발표거리 <span class="ba-sub">(앱 데이터 자동)</span> <button class="ba-copy no-print" onclick="copyBriefAuto()">📋 복사</button></div>'+
+    '<div class="ba-list" id="ba-list">'+lines+'</div>'+
+    '<p class="hint" style="margin-top:8px;font-size:12px;">이 내용은 앱의 평가·치료·스케줄에서 자동으로 뽑은 거예요. 발표 때 참고하세요.</p></div>';
+}
+function copyBriefAuto(){
+  const items=briefAutoItems(); const txt=items.map(it=>'• '+it.txt).join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>alert('발표거리를 복사했어요.')); }
+  else { alert(txt); }
+}
+function openPresentMode(){
+  const b=(state.briefings&&state.briefings[briefDate])||{};
+  const wd=WEEKDAYS[new Date(briefDate+'T00:00:00').getDay()]||'';
+  const auto=briefAutoItems();
+  let ov=document.getElementById('present-overlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='present-overlay'; ov.className='present-overlay'; document.body.appendChild(ov); }
+  const sections=[];
+  if(auto.length) sections.push('<div class="pm-sec"><div class="pm-h">🔔 오늘의 발표거리</div>'+auto.map(it=>'<div class="pm-item">'+it.icon+' '+esc(it.txt)+'</div>').join('')+'</div>');
+  if(b.morning) sections.push('<div class="pm-sec"><div class="pm-h">🌅 조회</div><div class="pm-text">'+esc(b.morning).replace(/\n/g,'<br>')+'</div></div>');
+  if(b.evening) sections.push('<div class="pm-sec"><div class="pm-h">🌙 석회</div><div class="pm-text">'+esc(b.evening).replace(/\n/g,'<br>')+'</div></div>');
+  if(b.drawings&&b.drawings.length) sections.push('<div class="pm-sec"><div class="pm-h">✍️ 손글씨 메모</div>'+b.drawings.map(img=>'<img class="pm-img" src="'+img+'">').join('')+'</div>');
+  if(!sections.length) sections.push('<div class="pm-empty">이 날짜에 기록된 내용이 없어요.</div>');
+  ov.innerHTML='<div class="pm-top"><div class="pm-date">'+briefDate+' ('+wd+') 물리치료 조회·석회</div>'+
+    '<div class="pm-ctrl"><button onclick="pmFont(-1)">가–</button><button onclick="pmFont(1)">가＋</button><button class="pm-close" onclick="closePresentMode()">✕ 닫기</button></div></div>'+
+    '<div class="pm-body" id="pm-body">'+sections.join('')+'</div>';
+  ov.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closePresentMode(){ const ov=document.getElementById('present-overlay'); if(ov) ov.style.display='none'; document.body.style.overflow=''; }
+let _pmFont=1.5;
+function pmFont(delta){ _pmFont=Math.max(0.9, Math.min(3, _pmFont+delta*0.15)); const b=document.getElementById('pm-body'); if(b) b.style.fontSize=_pmFont+'rem'; }
+function setBrief(field, val){
+  const b=ensureBriefings();
+  if(val && val.trim()) b[field]=val; else delete b[field];
+  if(!b.morning && !b.evening) delete state.briefings[briefDate];
+  save();
+  renderBriefPastOnly();
+}
+function briefPastHtml(){
+  const dates=Object.keys(state.briefings||{}).filter(d=>d!==briefDate && (state.briefings[d].morning||state.briefings[d].evening)).sort().reverse();
+  if(!dates.length) return '';
+  return '<div class="card" id="brief-past-card"><div class="card-title">지난 기록</div>'+
+    '<div class="brief-past">'+dates.slice(0,30).map(d=>{
+      const bb=state.briefings[d]; const wd=WEEKDAYS[new Date(d+'T00:00:00').getDay()]||'';
+      const preview=((bb.morning||'')+' '+(bb.evening||'')).trim().slice(0,50);
+      return '<div class="brief-past-row" onclick="setBriefDate(\''+d+'\')"><b>'+d+' ('+wd+')</b><span class="meta">'+esc(preview)+(preview.length>=50?'…':'')+'</span></div>';
+    }).join('')+'</div></div>';
+}
+function renderBriefPastOnly(){
+  const card=document.getElementById('brief-past-card');
+  const html=briefPastHtml();
+  if(card){ card.outerHTML = html || '<div id="brief-past-card" style="display:none;"></div>'; }
+}
+
+// 손글씨 패드
+let _pad={mode:'pen', color:'#143A52', size:4, drawing:false, ctx:null, canvas:null, last:null, dirty:false};
+function initPad(){
+  const c=document.getElementById('brief-pad'); if(!c) return;
+  _pad.canvas=c; _pad.ctx=c.getContext('2d');
+  _pad.ctx.lineCap='round'; _pad.ctx.lineJoin='round';
+  _pad.dirty=false;
+  padSetMode('pen');
+  const pos=(e)=>{ const r=c.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return { x:(t.clientX-r.left)*(c.width/r.width), y:(t.clientY-r.top)*(c.height/r.height) }; };
+  const start=(e)=>{ e.preventDefault(); _pad.drawing=true; _pad.last=pos(e); };
+  const move=(e)=>{ if(!_pad.drawing) return; e.preventDefault(); const p=pos(e); const ctx=_pad.ctx;
+    ctx.strokeStyle = _pad.mode==='eraser' ? '#ffffff' : _pad.color;
+    ctx.lineWidth = _pad.mode==='eraser' ? _pad.size*6 : _pad.size;
+    ctx.beginPath(); ctx.moveTo(_pad.last.x,_pad.last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    _pad.last=p; _pad.dirty=true; };
+  const end=()=>{ _pad.drawing=false; };
+  // 포인터 이벤트(S펜·마우스·터치 통합)
+  c.addEventListener('pointerdown', start);
+  c.addEventListener('pointermove', move);
+  c.addEventListener('pointerup', end);
+  c.addEventListener('pointerleave', end);
+  c.style.touchAction='none';
+}
+function padSetMode(m){ _pad.mode=m; const p=document.getElementById('pad-pen'), e=document.getElementById('pad-eraser'); if(p)p.classList.toggle('on',m==='pen'); if(e)e.classList.toggle('on',m==='eraser'); }
+function padSetColor(c){ _pad.color=c; _pad.mode='pen'; padSetMode('pen'); }
+function padSetSize(s){ _pad.size=s; }
+function padClear(){ if(_pad.ctx&&_pad.canvas){ _pad.ctx.clearRect(0,0,_pad.canvas.width,_pad.canvas.height); _pad.dirty=false; } }
+function padSave(){
+  if(!_pad.canvas){ return; }
+  if(!_pad.dirty){ alert('먼저 손글씨를 써주세요.'); return; }
+  // 흰 배경 깔아 저장(투명 방지)
+  const tmp=document.createElement('canvas'); tmp.width=_pad.canvas.width; tmp.height=_pad.canvas.height;
+  const tctx=tmp.getContext('2d'); tctx.fillStyle='#ffffff'; tctx.fillRect(0,0,tmp.width,tmp.height); tctx.drawImage(_pad.canvas,0,0);
+  const dataUrl=tmp.toDataURL('image/png');
+  const b=ensureBriefings(); if(!b.drawings) b.drawings=[]; b.drawings.push(dataUrl);
+  save(); padClear(); renderBriefing();
+}
+function padDeleteDrawing(i){
+  const b=state.briefings&&state.briefings[briefDate]; if(!b||!b.drawings) return;
+  if(!confirm('이 손글씨를 삭제할까요?')) return;
+  b.drawings.splice(i,1); if(!b.drawings.length) delete b.drawings;
+  if(!b.morning && !b.evening && !(b.drawings&&b.drawings.length)) delete state.briefings[briefDate];
+  save(); renderBriefing();
 }
 
 let editingElderId = null;
