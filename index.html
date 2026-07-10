@@ -407,6 +407,14 @@
   .disch-toggle { width: 100%; text-align: left; background: var(--sand); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
   .disch-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
   .tt-lunch { background: #FBF3E8; color: #7a5b1c; font-weight: 600; border: 1px dashed var(--amber); }
+  .move-tog { display: block; margin: 4px auto 0; width: 26px; height: 22px; border: 1px solid var(--line); background: #fff; border-radius: 6px; font-size: 12px; cursor: pointer; line-height: 1; }
+  .tt-row.tt-move .tt-time { background: #EAF4F0; color: var(--teal); }
+  .tt-row.tt-move .move-tog { background: var(--teal); border-color: var(--teal); }
+  .tt-row.tt-move .tt-cell { box-shadow: inset 4px 0 0 var(--teal); }
+  .move-tag { display: inline-block; background: var(--teal); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin: 2px 4px 4px 0; }
+  .pw-move th.pw-time { background: #D8ECE5 !important; color: #1d6a58 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pw-move td { background: #F0F8F5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pw-move-legend { margin-top: 10px; font-size: 12px; color: #1d6a58; padding: 8px 12px; background: #EAF4F0; border-radius: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .brief-past { display: flex; flex-direction: column; gap: 2px; }
   .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
   .brief-past-row:hover { background: var(--sand); }
@@ -3065,12 +3073,22 @@ function renderSched(){
       return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-adhoc">📌 '+esc(adhocLabels[slot]||'임시 일정')+' <span class="tt-buffer-sub">(오늘 · 치료 배정 불가)</span></div></div>';
     }
     const inSlot=elders.filter(e=>slotOf(e,schedDay)===slot);
-    return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div>'+
+    const isMove=(state.moveSlots||[]).includes(slot);
+    return lunchRow+'<div class="tt-row'+(isMove?' tt-move':'')+'"><div class="tt-time">'+slot+
+      '<button class="move-tog no-print" onclick="toggleMoveSlot(event,\''+slot+'\')" title="물리치료실 이동 표시 켜기/끄기">'+(isMove?'🚶':'＋')+'</button></div>'+
       '<div class="tt-cell" ondragover="schedDragOver(event)" ondragleave="schedDragLeave(event)" ondrop="schedDrop(event,\''+slot+'\')" onclick="schedCellTap(\''+slot+'\')">'+
+      (isMove?'<span class="move-tag">🚶 물리치료실로 이동</span>':'')+
       (inSlot.length?inSlot.map(e=>schedChip(e,isToday,rec)).join(''):'<span class="tt-empty">—</span>')+'</div></div>';
   }).join('');
 }
 let pickedElderId=null;
+function toggleMoveSlot(ev, slot){
+  if(ev){ ev.stopPropagation(); }
+  if(!state.moveSlots) state.moveSlots=[];
+  const i=state.moveSlots.indexOf(slot);
+  if(i>=0) state.moveSlots.splice(i,1); else state.moveSlots.push(slot);
+  save(); renderSched();
+}
 function schedPick(id, ev){ if(ev) ev.stopPropagation(); pickedElderId = (pickedElderId===id)?null:id; renderSched(); }
 function schedDragStart(ev, id){ pickedElderId=id; if(ev.dataTransfer){ ev.dataTransfer.setData('text/plain',String(id)); ev.dataTransfer.effectAllowed='move'; } }
 function schedDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add('drop-on'); }
@@ -3131,15 +3149,17 @@ function printWeekSchedule(){
         tds+='<td>'+(names.length?names.map(esc).join('<br>'):'')+'</td>';
       }
     });
-    rows+='<tr><th class="pw-time">'+slot+'</th>'+tds+'</tr>';
+    const isMove=(state.moveSlots||[]).includes(slot);
+    rows+='<tr class="'+(isMove?'pw-move':'')+'"><th class="pw-time">'+(isMove?'🚶 ':'')+slot+'</th>'+tds+'</tr>';
   });
   const note=(state.schedNote||'').trim();
   const noteHtml = note ? '<div class="pw-note"><b>📝 참고사항</b><br>'+esc(note).replace(/\n/g,'<br>')+'</div>' : '';
+  const moveLegend = (state.moveSlots&&state.moveSlots.length) ? '<div class="pw-move-legend">🚶 표시된 시간: 해당 시간의 어르신을 <b>물리치료실로 이동</b> 도와주세요.</div>' : '';
   const box=document.getElementById('print-week');
   box.innerHTML='<div class="pw-title">물리치료실 주간 시간표</div>'+
     '<div class="pw-date">포시즌 요양원 · '+today+' 기준</div>'+
     '<table class="pw-table"><thead><tr><th class="pw-time">시간</th>'+days.map(d=>'<th>'+d+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>'+
-    noteHtml;
+    moveLegend+noteHtml;
   document.body.classList.add('printing-week','print-land');
   window.print();
   setTimeout(()=>document.body.classList.remove('printing-week','print-land'),800);
@@ -6460,7 +6480,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-08';
+const APP_VERSION = '2026-07-09-09';
 function checkForUpdate(){
   try{
     const base=location.pathname;
