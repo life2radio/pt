@@ -421,6 +421,16 @@
   .slot-mgr-row input[type="time"] { width: auto; font-size: 14px; }
   .slot-mgr-cnt { flex: 1; font-size: 12.5px; color: var(--muted); }
   .slot-mgr-add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  #print-week .rl-title { font-size: 22px; font-weight: 800; color: #143A52; text-align: center; margin-bottom: 4px; }
+  #print-week .rl-sub { font-size: 13px; color: #555; text-align: center; margin-bottom: 12px; }
+  #print-week .rl-guide { font-size: 12.5px; color: #7a5b1c; background: #FBF3E8; border: 1px solid #E8D5B0; border-radius: 8px; padding: 9px 12px; margin-bottom: 14px; line-height: 1.6; }
+  #print-week .rl-table { width: 100%; border-collapse: collapse; }
+  #print-week .rl-table th, #print-week .rl-table td { border: 1px solid #333; padding: 0 6px; font-size: 12.5px; }
+  #print-week .rl-table th { background: #143A52; color: #fff; height: 30px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #print-week .rl-table td { height: 34px; }
+  #print-week .rl-table .rl-no { width: 36px; text-align: center; color: #888; }
+  #print-week .rl-table .rl-cnt { width: 48px; text-align: center; }
+  #print-week .rl-foot { margin-top: 12px; font-size: 12px; color: #555; display: flex; justify-content: space-between; }
   .brief-past { display: flex; flex-direction: column; gap: 2px; }
   .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
   .brief-past-row:hover { background: var(--sand); }
@@ -1307,6 +1317,7 @@
           <option value="4">한 칸 4명</option>
         </select>
         <button class="btn" onclick="printWeekSchedule()">🖨 주간 시간표 인쇄 (월~금)</button>
+        <button class="btn" onclick="printRentalLog()">🧰 도구 대여 장부 인쇄</button>
       </div>
       <div class="no-print sched-note-box">
         <div class="fld-label">📝 인쇄 참고사항 (시간표와 함께 인쇄돼요)</div>
@@ -3147,6 +3158,22 @@ function removeFromSlot(id,ev){
   schedMsg('이 어르신을 '+schedDay+'요일 시간표에서 뺐어요. (미배정으로 돌아가요)','ok');
 }
 function setSchedDay(d){ schedDay=d; renderSched(); }
+function printRentalLog(){
+  const rows=20;
+  let body='';
+  for(let i=0;i<rows;i++){ body+='<tr><td class="rl-no">'+(i+1)+'</td><td></td><td></td><td class="rl-cnt"></td><td></td><td></td><td></td><td></td></tr>'; }
+  const box=document.getElementById('print-week');
+  box.innerHTML='<div class="rl-title">물리치료실 도구 대여 장부</div>'+
+    '<div class="rl-sub">포시즌 요양원 물리치료실</div>'+
+    '<div class="rl-guide">📌 물리치료실 도구를 가져가실 때는 아래에 <b>반드시 기록</b>해 주세요. 사용 후에는 <b>제자리에 반납</b>하고 반납 시간을 적어 주세요.</div>'+
+    '<table class="rl-table"><thead><tr>'+
+      '<th class="rl-no">번호</th><th>날짜</th><th>도구 이름</th><th class="rl-cnt">개수</th><th>빌려간 사람</th><th>대여 시간</th><th>반납 시간</th><th>확인(서명)</th>'+
+    '</tr></thead><tbody>'+body+'</tbody></table>'+
+    '<div class="rl-foot">※ 분실·파손이 있는 경우 물리치료사에게 알려 주세요.　　작성 월: ______월</div>';
+  document.body.classList.add('printing-week');
+  window.print();
+  setTimeout(()=>document.body.classList.remove('printing-week'),800);
+}
 // ===== 치료 시간대 관리 =====
 function toggleSlotSettings(){
   const box=document.getElementById('slot-settings');
@@ -6560,7 +6587,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-10';
+const APP_VERSION = '2026-07-09-11';
 function checkForUpdate(){
   try{
     const base=location.pathname;
