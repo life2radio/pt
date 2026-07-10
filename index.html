@@ -401,6 +401,11 @@
   .qm-sub { font-size: 11.5px; font-weight: 400; color: var(--muted); }
   .qm-pad { aspect-ratio: 5/3; }
   .qm-todo-list { margin-top: 6px; }
+  .elder.discharged { opacity: 0.72; }
+  .disch-line { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .disch-section { margin-top: 14px; }
+  .disch-toggle { width: 100%; text-align: left; background: var(--sand); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .disch-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
   .brief-past { display: flex; flex-direction: column; gap: 2px; }
   .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
   .brief-past-row:hover { background: var(--sand); }
@@ -427,6 +432,15 @@
   .ba-row { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.5; padding: 8px 10px; background: var(--sand); border-radius: 8px; }
   .ba-row.ba-danger { background: #FCF1ED; }
   .ba-ic { flex-shrink: 0; }
+  .ba-subhead { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .ba-none { font-size: 13px; color: var(--muted); padding: 8px 4px; }
+  .notice-add { display: flex; gap: 6px; margin-bottom: 8px; }
+  .notice-add input { flex: 1; }
+  .notice-list { display: flex; flex-direction: column; gap: 6px; }
+  .notice-row { display: flex; align-items: flex-start; gap: 8px; padding: 9px 11px; background: #FBF3E8; border: 1px solid #E8D5B0; border-radius: 8px; }
+  .notice-dot { flex-shrink: 0; }
+  .notice-txt { flex: 1; font-size: 14px; line-height: 1.5; color: var(--ink); }
+  .notice-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; }
   .brief-present { background: var(--amber); color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
   .present-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: #0F2434; color: #fff; flex-direction: column; }
   .pm-top { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); flex-wrap: wrap; gap: 8px; }
@@ -1926,14 +1940,37 @@ function briefAutoItems(){
 }
 function briefAutoHtml(){
   const items=briefAutoItems();
-  if(!items.length) return '';
-  const lines=items.map(it=>'<div class="ba-row'+(it.danger?' ba-danger':'')+'"><span class="ba-ic">'+it.icon+'</span><span>'+esc(it.txt)+'</span></div>').join('');
-  return '<div class="card"><div class="card-title">🔔 오늘의 발표거리 <span class="ba-sub">(앱 데이터 자동)</span> <button class="ba-copy no-print" onclick="copyBriefAuto()">📋 복사</button></div>'+
-    '<div class="ba-list" id="ba-list">'+lines+'</div>'+
-    '<p class="hint" style="margin-top:8px;font-size:12px;">이 내용은 앱의 평가·치료·스케줄에서 자동으로 뽑은 거예요. 발표 때 참고하세요.</p></div>';
+  const b=(state.briefings&&state.briefings[briefDate])||{};
+  const notices=b.notices||[];
+  const autoLines=items.length ? items.map(it=>'<div class="ba-row'+(it.danger?' ba-danger':'')+'"><span class="ba-ic">'+it.icon+'</span><span>'+esc(it.txt)+'</span></div>').join('') : '<div class="ba-none">자동으로 뽑을 항목이 없어요.</div>';
+  const noticeLines=notices.length ? notices.map((n,i)=>'<div class="notice-row"><span class="notice-dot">📢</span><span class="notice-txt">'+esc(n)+'</span><button class="notice-del no-print" onclick="delBriefNotice('+i+')">✕</button></div>').join('') : '<div class="ba-none">아직 적은 전달사항이 없어요. 아래에 추가하세요.</div>';
+  return '<div class="card"><div class="card-title">🔔 오늘의 발표거리 <button class="ba-copy no-print" onclick="copyBriefAuto()">📋 전체 복사</button></div>'+
+    '<div class="ba-subhead">📢 내가 전달할 사항 <span class="ba-sub">(직접 입력)</span></div>'+
+    '<div class="notice-add no-print"><input type="text" id="notice-input" placeholder="전달사항 입력 (예: 이번 주 낙상 예방 강조, 세라밴드 신청함)" onkeydown="if(event.key===\'Enter\')addBriefNotice()"><button class="btn teal" onclick="addBriefNotice()">＋ 추가</button></div>'+
+    '<div class="notice-list">'+noticeLines+'</div>'+
+    '<div class="ba-subhead" style="margin-top:14px;">🤖 앱 자동 발표거리 <span class="ba-sub">(평가·치료·스케줄에서 자동)</span></div>'+
+    '<div class="ba-list" id="ba-list">'+autoLines+'</div></div>';
+}
+function addBriefNotice(){
+  const el=document.getElementById('notice-input'); if(!el) return;
+  const tx=el.value.trim(); if(!tx) return;
+  const b=ensureBriefings(); if(!b.notices) b.notices=[]; b.notices.push(tx);
+  save(); renderBriefing();
+}
+function delBriefNotice(i){
+  const b=state.briefings&&state.briefings[briefDate]; if(!b||!b.notices) return;
+  b.notices.splice(i,1); if(!b.notices.length) delete b.notices;
+  if(!briefHasContent(b)) delete state.briefings[briefDate];
+  save(); renderBriefing();
 }
 function copyBriefAuto(){
-  const items=briefAutoItems(); const txt=items.map(it=>'• '+it.txt).join('\n');
+  const items=briefAutoItems();
+  const b=(state.briefings&&state.briefings[briefDate])||{};
+  const notices=b.notices||[];
+  let lines=[];
+  if(notices.length){ lines.push('[전달사항]'); notices.forEach(n=>lines.push('• '+n)); }
+  if(items.length){ lines.push('[자동 발표거리]'); items.forEach(it=>lines.push('• '+it.txt)); }
+  const txt=lines.join('\n');
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>alert('발표거리를 복사했어요.')); }
   else { alert(txt); }
 }
@@ -1944,6 +1981,7 @@ function openPresentMode(){
   let ov=document.getElementById('present-overlay');
   if(!ov){ ov=document.createElement('div'); ov.id='present-overlay'; ov.className='present-overlay'; document.body.appendChild(ov); }
   const sections=[];
+  if(b.notices&&b.notices.length) sections.push('<div class="pm-sec"><div class="pm-h">📢 전달사항</div>'+b.notices.map(n=>'<div class="pm-item">📢 '+esc(n)+'</div>').join('')+'</div>');
   if(auto.length) sections.push('<div class="pm-sec"><div class="pm-h">🔔 오늘의 발표거리</div>'+auto.map(it=>'<div class="pm-item">'+it.icon+' '+esc(it.txt)+'</div>').join('')+'</div>');
   if(b.morning) sections.push('<div class="pm-sec"><div class="pm-h">🌅 조회</div><div class="pm-text">'+esc(b.morning).replace(/\n/g,'<br>')+'</div></div>');
   if(b.evening) sections.push('<div class="pm-sec"><div class="pm-h">🌙 석회</div><div class="pm-text">'+esc(b.evening).replace(/\n/g,'<br>')+'</div></div>');
@@ -1967,7 +2005,7 @@ function setBrief(field, val){
   save();
   renderBriefPastOnly();
 }
-function briefHasContent(bb){ return bb && (bb.morning||bb.evening||(bb.drawings&&bb.drawings.length)||(bb.morningDraws&&bb.morningDraws.length)||(bb.eveningDraws&&bb.eveningDraws.length)); }
+function briefHasContent(bb){ return bb && (bb.morning||bb.evening||(bb.notices&&bb.notices.length)||(bb.drawings&&bb.drawings.length)||(bb.morningDraws&&bb.morningDraws.length)||(bb.eveningDraws&&bb.eveningDraws.length)); }
 function briefPastHtml(){
   const dates=Object.keys(state.briefings||{}).filter(d=>d!==briefDate && briefHasContent(state.briefings[d])).sort().reverse();
   if(!dates.length) return '';
@@ -2207,7 +2245,13 @@ function resetElderForm(){
   renderPlanForm();
 }
 function delElder(id){ if(!confirm('이 어르신을 삭제할까요?')) return; state.elders = state.elders.filter(e=>e.id!==id); save(); renderElders(); }
-function setStatus(id,val){ const e=state.elders.find(x=>x.id===id); if(e){ e.status=val; save(); } }
+function setStatus(id,val){
+  const e=state.elders.find(x=>x.id===id); if(!e) return;
+  const prev=e.status; e.status=val;
+  if(val==='퇴원' && prev!=='퇴원'){ e.dischargedAt=today; }
+  else if(val!=='퇴원' && prev==='퇴원'){ delete e.dischargedAt; }
+  save(); renderElders(); renderDash();
+}
 
 function riskTag(r){ const c=(r==='골다공증'||r==='욕창')?'danger':'warn'; return '<span class="tag '+c+'">'+r+'</span>'; }
 const AICOG_META={'가능':{ic:'✅',cls:'ai-ok'},'보조필요':{ic:'🤝',cls:'ai-mid'},'불가':{ic:'🚫',cls:'ai-no'},'미평가':{ic:'❔',cls:'ai-unk'}};
@@ -2223,7 +2267,7 @@ function renderAiCogSummary(){
   const box=document.getElementById('aicog-summary'); if(!box) return;
   if(!state.elders.length){ box.innerHTML=''; return; }
   const g={'가능':[],'보조필요':[],'불가':[],'미평가':[]};
-  state.elders.forEach(e=>{ const a=e.aicog||'미평가'; (g[a]||g['미평가']).push(e); });
+  state.elders.forEach(e=>{ if(e.status==='퇴원') return; const a=e.aicog||'미평가'; (g[a]||g['미평가']).push(e); });
   const chip=(status)=>{ const arr=g[status]; const m=AICOG_META[status];
     const names=arr.map(e=>(e.room?e.room+'호 ':'')+e.name).join(', ');
     return '<div class="aicog-row '+m.cls+'"><span class="aicog-count">'+m.ic+' '+status+' '+arr.length+'명</span>'+
@@ -2240,32 +2284,51 @@ function renderPlanForm(){
   box.innerHTML=state.treatments.map(t=>'<span class="chip" data-treat="'+esc(t)+'" onclick="this.classList.toggle(\'on\')">'+esc(t)+'</span>').join('');
 }
 
+function elderCardHtml(e){
+  const meta=[e.gender,e.age?e.age+'세':'',e.grade,e.diag].filter(Boolean).join(' · ');
+  const roomBadge = e.room ? '<span class="room-badge">'+esc(e.room)+'호</span>' : '';
+  const visitBadge = '<span class="visit-badge v-'+(e.visit==='호실'?'room':e.visit==='혼합'?'mix':'clinic')+'">'+visitIcon(e.visit)+'</span>';
+  const admitLine = e.admit ? '<div class="admit-line">입소일 '+esc(e.admit)+'</div>' : '';
+  const aiBadge = aiCogBadge(e.aicog);
+  const evBadge = evalDoneBadge(e.id);
+  const planLine = (e.plan&&e.plan.length) ? '<div class="plan-line">처방: '+e.plan.map(esc).join(' · ')+'</div>' : '';
+  const dischLine = (e.status==='퇴원'&&e.dischargedAt) ? '<div class="disch-line">🏠 퇴원일 '+esc(e.dischargedAt)+'</div>' : '';
+  return '<div class="elder'+(e.status==='퇴원'?' discharged':'')+'"><div class="photo" onclick="openElderProfile('+e.id+')" style="cursor:pointer;">'+esc(e.name.slice(0,1))+'</div>'+
+    '<div class="elder-main" onclick="openElderProfile('+e.id+')" style="cursor:pointer;"><div class="elder-name">'+roomBadge+esc(e.name)+visitBadge+aiBadge+evBadge+(e.risks||[]).map(riskTag).join('')+'</div>'+
+    '<div class="meta">'+(esc(meta)||'정보 없음')+'</div>'+admitLine+dischLine+planLine+'</div>'+
+    '<button class="del prof-btn" onclick="openElderProfile('+e.id+')" title="전체 정보 보기">📋</button>'+
+    '<select class="status" onchange="setStatus('+e.id+',this.value)">'+
+    ['치료중','입원','외출','거부','퇴원'].map(s=>'<option'+(e.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select>'+
+    '<button class="del edit-e" onclick="editElder('+e.id+')" aria-label="수정" title="수정">✎</button>'+
+    '<button class="del" onclick="delElder('+e.id+')" aria-label="삭제">✕</button></div>';
+}
 function renderElders(){
   const list = document.getElementById('e-list');
-  document.getElementById('e-count').textContent = state.elders.length ? '('+state.elders.length+'명)' : '';
+  const active = state.elders.filter(e=>e.status!=='퇴원');
+  document.getElementById('e-count').textContent = active.length ? '('+active.length+'명)' : '';
   renderAiCogSummary();
   if(!state.elders.length){ list.innerHTML='<div class="empty">아직 등록된 어르신이 없어요. 위에서 등록해 주세요.</div>'; return; }
   const q=((document.getElementById('e-search')||{}).value||'').trim().toLowerCase();
-  let arr=state.elders.slice().sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
-  if(q) arr=arr.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.room||'').toLowerCase().includes(q));
-  if(!arr.length){ list.innerHTML='<div class="empty">검색 결과가 없어요.</div>'; return; }
-  list.innerHTML = arr.map(e=>{
-    const meta=[e.gender,e.age?e.age+'세':'',e.grade,e.diag].filter(Boolean).join(' · ');
-    const roomBadge = e.room ? '<span class="room-badge">'+esc(e.room)+'호</span>' : '';
-    const visitBadge = '<span class="visit-badge v-'+(e.visit==='호실'?'room':e.visit==='혼합'?'mix':'clinic')+'">'+visitIcon(e.visit)+'</span>';
-    const admitLine = e.admit ? '<div class="admit-line">입소일 '+esc(e.admit)+'</div>' : '';
-    const aiBadge = aiCogBadge(e.aicog);
-    const evBadge = evalDoneBadge(e.id);
-    const planLine = (e.plan&&e.plan.length) ? '<div class="plan-line">처방: '+e.plan.map(esc).join(' · ')+'</div>' : '';
-    return '<div class="elder"><div class="photo" onclick="openElderProfile('+e.id+')" style="cursor:pointer;">'+esc(e.name.slice(0,1))+'</div>'+
-      '<div class="elder-main" onclick="openElderProfile('+e.id+')" style="cursor:pointer;"><div class="elder-name">'+roomBadge+esc(e.name)+visitBadge+aiBadge+evBadge+(e.risks||[]).map(riskTag).join('')+'</div>'+
-      '<div class="meta">'+(esc(meta)||'정보 없음')+'</div>'+admitLine+planLine+'</div>'+
-      '<button class="del prof-btn" onclick="openElderProfile('+e.id+')" title="전체 정보 보기">📋</button>'+
-      '<select class="status" onchange="setStatus('+e.id+',this.value)">'+
-      ['치료중','입원','외출','거부'].map(s=>'<option'+(e.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select>'+
-      '<button class="del edit-e" onclick="editElder('+e.id+')" aria-label="수정" title="수정">✎</button>'+
-      '<button class="del" onclick="delElder('+e.id+')" aria-label="삭제">✕</button></div>';
-  }).join('');
+  const byRoom=(a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true});
+  let act=active.slice().sort(byRoom);
+  let disc=state.elders.filter(e=>e.status==='퇴원').sort((a,b)=>(b.dischargedAt||'').localeCompare(a.dischargedAt||''));
+  if(q){ act=act.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.room||'').toLowerCase().includes(q));
+         disc=disc.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.room||'').toLowerCase().includes(q)); }
+  let html='';
+  if(act.length) html+=act.map(elderCardHtml).join('');
+  else if(!q) html+='<div class="empty">치료 대상 어르신이 없어요.</div>';
+  else if(!disc.length) html+='<div class="empty">검색 결과가 없어요.</div>';
+  if(disc.length){
+    html+='<div class="disch-section"><button class="disch-toggle" onclick="toggleDischarged(this)">🏠 퇴원한 어르신 ('+disc.length+') ▾</button>'+
+      '<div class="disch-list" hidden>'+disc.map(elderCardHtml).join('')+'</div></div>';
+  }
+  list.innerHTML=html;
+}
+function toggleDischarged(btn){
+  const box=btn.nextElementSibling; if(!box) return;
+  const open=box.hasAttribute('hidden');
+  if(open){ box.removeAttribute('hidden'); btn.textContent=btn.textContent.replace('▾','▴'); }
+  else { box.setAttribute('hidden',''); btn.textContent=btn.textContent.replace('▴','▾'); }
 }
 
 // ===== 촉탁의 방문 기록 =====
@@ -6383,7 +6446,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-05';
+const APP_VERSION = '2026-07-09-07';
 function checkForUpdate(){
   try{
     const base=location.pathname;
