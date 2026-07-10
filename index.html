@@ -415,6 +415,12 @@
   .pw-move th.pw-time { background: #D8ECE5 !important; color: #1d6a58 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .pw-move td { background: #F0F8F5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .pw-move-legend { margin-top: 10px; font-size: 12px; color: #1d6a58; padding: 8px 12px; background: #EAF4F0; border-radius: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slot-mgr { padding: 12px; background: var(--sand); border-radius: 10px; margin: 8px 0; }
+  .slot-mgr-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+  .slot-mgr-row { display: flex; align-items: center; gap: 10px; background: #fff; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); }
+  .slot-mgr-row input[type="time"] { width: auto; font-size: 14px; }
+  .slot-mgr-cnt { flex: 1; font-size: 12.5px; color: var(--muted); }
+  .slot-mgr-add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
   .brief-past { display: flex; flex-direction: column; gap: 2px; }
   .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
   .brief-past-row:hover { background: var(--sand); }
@@ -1309,6 +1315,8 @@
       <div id="s-msg" class="msg" style="margin-bottom:12px;"></div>
       <button class="btn settings-toggle" onclick="toggleProgSettings()" id="progset-btn">⚙ 정기 프로그램 시간 설정 (요일별 프로그램 추가·수정·삭제)</button>
       <div id="prog-settings" style="display:none;"></div>
+      <button class="btn settings-toggle" onclick="toggleSlotSettings()" id="slotset-btn">⏰ 치료 시간대 관리 (시간 추가·수정·삭제)</button>
+      <div id="slot-settings" style="display:none;"></div>
       <div id="adhoc-panel"></div>
       <div id="s-unassigned"></div>
       <div id="s-timetable" class="timetable"></div>
@@ -1624,9 +1632,16 @@
 <script>
 const DEFAULT_TREATMENTS = ['평가','온열','전기','적외선','공기압','운동치료','도수치료','초음파','경사침대(틸트)','평행봉','상지에르고','치료용자전거','볼운동','세라밴드','균형훈련'];
 const DAYS = ['월','화','수','목','금'];
-const AM = ['9:10','9:40','10:10','10:40','11:10'];
-const PM = ['13:10','13:40','14:10','14:40','15:10','15:40','16:10'];
-const SLOTS = AM.concat(PM);
+const DEFAULT_AM = ['9:10','9:40','10:10','10:40','11:10'];
+const DEFAULT_PM = ['13:10','13:40','14:10','14:40','15:10','15:40','16:10'];
+const DEFAULT_SLOTS = DEFAULT_AM.concat(DEFAULT_PM);
+let SLOTS = DEFAULT_SLOTS.slice();
+function normTime(t){ if(!t) return ''; const p=String(t).split(':'); if(p.length<2) return t; return parseInt(p[0],10)+':'+String(p[1]).padStart(2,'0'); }
+function refreshSlots(){
+  const arr = (state.slots && state.slots.length) ? state.slots.slice() : DEFAULT_SLOTS.slice();
+  SLOTS = arr.map(normTime).filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>toMin(a)-toMin(b));
+}
+function firstAfternoonSlot(){ return SLOTS.find(s=>toMin(s)>=toMin(LUNCH_END)); }
 const LUNCH_START = '11:30';
 const LUNCH_END = '13:00';
 // 정기 행사 프로그램 (이 시간은 치료 배정 불가)
@@ -1750,6 +1765,9 @@ if(!state.slotsV3){
   });
   state.slotsV3=true; save();
 }
+// 편집 가능한 시간 목록 초기화
+if(!state.slots || !state.slots.length){ state.slots = DEFAULT_SLOTS.slice(); save(); }
+refreshSlots();
 
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } }
 function save(){ localStorage.setItem(KEY, JSON.stringify(state)); if(typeof scheduleSync==='function') scheduleSync(); }
@@ -3056,7 +3074,7 @@ function renderSched(){
   const hint = elders.length ? (pickedElderId ? '<div class="move-hint no-print">옮길 시간을 누르세요 (또는 이름을 끌어다 놓으세요)</div>' : '<div class="move-hint-idle no-print">💡 이름을 끌어다 옮기거나, 이름을 누른 뒤 옮길 시간을 누르세요</div>') : '';
   let firstCore=true;
   tt.innerHTML=progBanner+emptyNote+hint+SLOTS.map(slot=>{
-    const lunchRow = (slot===PM[0]) ? '<div class="tt-row"><div class="tt-time">'+LUNCH_START+'</div><div class="tt-cell tt-lunch">🍚 점심시간 <span class="tt-buffer-sub">('+LUNCH_START+'~'+LUNCH_END+' · 치료 없음)</span></div></div>' : '';
+    const lunchRow = (slot===firstAfternoonSlot()) ? '<div class="tt-row"><div class="tt-time">'+LUNCH_START+'</div><div class="tt-cell tt-lunch">🍚 점심시간 <span class="tt-buffer-sub">('+LUNCH_START+'~'+LUNCH_END+' · 치료 없음)</span></div></div>' : '';
     const bt=blk[slot];
     if(bt==='core'){
       const label = firstCore ? (prog.icon+' <b>'+esc(prog.name)+'</b> <span class="tt-prog-time">'+prog.start+'~'+prog.end+'</span>') : '<span class="tt-prog-cont">프로그램 진행 중</span>';
@@ -3129,12 +3147,74 @@ function removeFromSlot(id,ev){
   schedMsg('이 어르신을 '+schedDay+'요일 시간표에서 뺐어요. (미배정으로 돌아가요)','ok');
 }
 function setSchedDay(d){ schedDay=d; renderSched(); }
+// ===== 치료 시간대 관리 =====
+function toggleSlotSettings(){
+  const box=document.getElementById('slot-settings');
+  const open=box.style.display==='none';
+  box.style.display=open?'block':'none';
+  document.getElementById('slotset-btn').classList.toggle('primary', open);
+  if(open) renderSlotSettings();
+}
+function renderSlotSettings(){
+  const box=document.getElementById('slot-settings'); if(!box) return;
+  refreshSlots();
+  box.innerHTML='<div class="slot-mgr">'+
+    '<div class="hint">치료 시간대를 추가·수정·삭제할 수 있어요. 시간을 <b>수정</b>하면 그 시간에 배정된 어르신도 함께 옮겨져요. <b>삭제</b>하면 그 시간 어르신은 미배정으로 빠져요. (점심 11:30~13:00은 자동 구분돼요)</div>'+
+    '<div class="slot-mgr-list">'+SLOTS.map(s=>{
+      const cnt=state.elders.filter(e=>e.status==='치료중'&&Object.values(e.slots||{}).includes(s)).length;
+      return '<div class="slot-mgr-row"><input type="time" value="'+toTimeInput(s)+'" onchange="editSlot(\''+s+'\',this.value)">'+
+        '<span class="slot-mgr-cnt">'+(cnt?cnt+'명 배정':'비어있음')+'</span>'+
+        '<button class="del" onclick="deleteSlot(\''+s+'\')">✕</button></div>';
+    }).join('')+'</div>'+
+    '<div class="slot-mgr-add"><input type="time" id="new-slot-time"><button class="btn teal" onclick="addSlot()">＋ 시간 추가</button>'+
+    '<button class="btn" onclick="resetSlots()">기본값으로</button></div>'+
+    '</div>';
+}
+function toTimeInput(s){ const [h,m]=s.split(':'); return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+function addSlot(){
+  const v=normTime((document.getElementById('new-slot-time')||{}).value||'');
+  if(!v){ alert('추가할 시간을 선택해 주세요.'); return; }
+  if(!state.slots) state.slots=DEFAULT_SLOTS.slice();
+  if(state.slots.map(normTime).includes(v)){ alert('이미 있는 시간이에요.'); return; }
+  state.slots.push(v); save(); refreshSlots(); renderSlotSettings(); renderSched();
+}
+function editSlot(oldT, newVal){
+  const nv=normTime(newVal); const ov=normTime(oldT);
+  if(!nv || nv===ov){ return; }
+  if(!state.slots) state.slots=DEFAULT_SLOTS.slice();
+  if(state.slots.map(normTime).includes(nv)){ alert('이미 있는 시간이에요. 다른 시간을 선택해 주세요.'); renderSlotSettings(); return; }
+  // 시간 목록 갱신
+  state.slots = state.slots.map(s=> normTime(s)===ov ? nv : s);
+  // 어르신 배정 이동 (모든 요일)
+  state.elders.forEach(e=>{ if(e.slots){ Object.keys(e.slots).forEach(d=>{ if(normTime(e.slots[d])===ov) e.slots[d]=nv; }); } if(e.slot&&normTime(e.slot)===ov) e.slot=nv; });
+  // 이동표시도 이동
+  if(state.moveSlots){ state.moveSlots=state.moveSlots.map(s=> normTime(s)===ov ? nv : s); }
+  save(); refreshSlots(); renderSlotSettings(); renderSched();
+  showSMsg('시간을 '+ov+' → '+nv+'로 바꿨어요. 배정된 어르신도 함께 옮겼어요.');
+}
+function deleteSlot(t){
+  const ov=normTime(t);
+  const cnt=state.elders.filter(e=>e.status==='치료중'&&Object.values(e.slots||{}).includes(ov)).length;
+  const msg = cnt ? (ov+' 시간을 삭제할까요?\n이 시간에 배정된 '+cnt+'명은 미배정으로 빠져요(정보는 유지).') : (ov+' 시간을 삭제할까요?');
+  if(!confirm(msg)) return;
+  state.slots = (state.slots||DEFAULT_SLOTS.slice()).filter(s=>normTime(s)!==ov);
+  state.elders.forEach(e=>{ if(e.slots){ Object.keys(e.slots).forEach(d=>{ if(normTime(e.slots[d])===ov) delete e.slots[d]; }); } });
+  if(state.moveSlots){ state.moveSlots=state.moveSlots.filter(s=>normTime(s)!==ov); }
+  save(); refreshSlots(); renderSlotSettings(); renderSched();
+}
+function resetSlots(){
+  if(!confirm('시간대를 기본값(9:10~16:10)으로 되돌릴까요?\n지금 시간과 다른 시간에 배정된 어르신은 미배정으로 빠질 수 있어요.')) return;
+  state.slots=DEFAULT_SLOTS.slice();
+  state.elders.forEach(e=>{ if(e.slots){ Object.keys(e.slots).forEach(d=>{ if(!DEFAULT_SLOTS.includes(normTime(e.slots[d]))) delete e.slots[d]; }); } });
+  save(); refreshSlots(); renderSlotSettings(); renderSched();
+}
+function showSMsg(t){ const m=document.getElementById('s-msg'); if(m){ m.textContent=t; m.className='msg show ok'; setTimeout(()=>{m.className='msg';},4000); } }
 function saveSchedNote(){ state.schedNote=(document.getElementById('sched-note').value||''); save(); }
 function printWeekSchedule(){
   const days=['월','화','수','목','금'];
   let rows='';
   SLOTS.forEach(slot=>{
-    if(slot===PM[0]){ rows+='<tr class="pw-lunch"><th class="pw-time">'+LUNCH_START+'</th><td colspan="'+days.length+'">🍚 점심시간 ('+LUNCH_START+'~'+LUNCH_END+')</td></tr>'; }
+    if(slot===firstAfternoonSlot()){ rows+='<tr class="pw-lunch"><th class="pw-time">'+LUNCH_START+'</th><td colspan="'+days.length+'">🍚 점심시간 ('+LUNCH_START+'~'+LUNCH_END+')</td></tr>'; }
     let tds='';
     days.forEach(day=>{
       const {map,adhocLabels}=slotBlockInfo(day);
@@ -6480,7 +6560,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-09';
+const APP_VERSION = '2026-07-09-10';
 function checkForUpdate(){
   try{
     const base=location.pathname;
