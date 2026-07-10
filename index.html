@@ -406,6 +406,7 @@
   .disch-section { margin-top: 14px; }
   .disch-toggle { width: 100%; text-align: left; background: var(--sand); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
   .disch-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .tt-lunch { background: #FBF3E8; color: #7a5b1c; font-weight: 600; border: 1px dashed var(--amber); }
   .brief-past { display: flex; flex-direction: column; gap: 2px; }
   .brief-past-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
   .brief-past-row:hover { background: var(--sand); }
@@ -1615,9 +1616,11 @@
 <script>
 const DEFAULT_TREATMENTS = ['평가','온열','전기','적외선','공기압','운동치료','도수치료','초음파','경사침대(틸트)','평행봉','상지에르고','치료용자전거','볼운동','세라밴드','균형훈련'];
 const DAYS = ['월','화','수','목','금'];
-const AM = ['9:00','9:30','10:00','10:30','11:00','11:30'];
-const PM = ['13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'];
+const AM = ['9:10','9:40','10:10','10:40','11:10'];
+const PM = ['13:10','13:40','14:10','14:40','15:10','15:40','16:10'];
 const SLOTS = AM.concat(PM);
+const LUNCH_START = '11:30';
+const LUNCH_END = '13:00';
 // 정기 행사 프로그램 (이 시간은 치료 배정 불가)
 const DEFAULT_PROGRAMS = {
   '월': { start:'10:30', end:'11:30', name:'노래프로그램', icon:'🎵' },
@@ -1729,6 +1732,15 @@ if(!state.slotsV2){
     if(!e.slots){ e.slots={}; if(e.slot){ (e.days&&e.days.length?e.days:DAYS).forEach(d=>{ e.slots[d]=e.slot; }); } }
   });
   state.slotsV2=true; save();
+}
+// 슬롯 시간 변경(9:00→9:10, 점심 반영) 1회 이관
+if(!state.slotsV3){
+  const REMAP={'9:00':'9:10','9:30':'9:40','10:00':'10:10','10:30':'10:40','11:00':'11:10','11:30':'11:10','13:00':'13:10','13:30':'13:40','14:00':'14:10','14:30':'14:40','15:00':'15:10','15:30':'15:40','16:00':'16:10','16:30':'16:10'};
+  (state.elders||[]).forEach(e=>{
+    if(e.slots){ Object.keys(e.slots).forEach(d=>{ const old=e.slots[d]; if(REMAP[old]) e.slots[d]=REMAP[old]; }); }
+    if(e.slot && REMAP[e.slot]) e.slot=REMAP[e.slot];
+  });
+  state.slotsV3=true; save();
 }
 
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } }
@@ -3036,23 +3048,24 @@ function renderSched(){
   const hint = elders.length ? (pickedElderId ? '<div class="move-hint no-print">옮길 시간을 누르세요 (또는 이름을 끌어다 놓으세요)</div>' : '<div class="move-hint-idle no-print">💡 이름을 끌어다 옮기거나, 이름을 누른 뒤 옮길 시간을 누르세요</div>') : '';
   let firstCore=true;
   tt.innerHTML=progBanner+emptyNote+hint+SLOTS.map(slot=>{
+    const lunchRow = (slot===PM[0]) ? '<div class="tt-row"><div class="tt-time">'+LUNCH_START+'</div><div class="tt-cell tt-lunch">🍚 점심시간 <span class="tt-buffer-sub">('+LUNCH_START+'~'+LUNCH_END+' · 치료 없음)</span></div></div>' : '';
     const bt=blk[slot];
     if(bt==='core'){
       const label = firstCore ? (prog.icon+' <b>'+esc(prog.name)+'</b> <span class="tt-prog-time">'+prog.start+'~'+prog.end+'</span>') : '<span class="tt-prog-cont">프로그램 진행 중</span>';
       firstCore=false;
-      return '<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-prog">'+label+'</div></div>';
+      return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-prog">'+label+'</div></div>';
     }
     if(bt==='buffer'){
-      return '<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-buffer">🚫 치료 배정 불가 <span class="tt-buffer-sub">(프로그램 전후 30분)</span></div></div>';
+      return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-buffer">🚫 치료 배정 불가 <span class="tt-buffer-sub">(프로그램 전후 30분)</span></div></div>';
     }
     if(bt==='meal'){
-      return '<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-meal">🍚 식사 준비 <span class="tt-buffer-sub">('+MEAL_START+' 식사 · 치료 배정 불가)</span></div></div>';
+      return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-meal">🍚 식사 준비 <span class="tt-buffer-sub">('+MEAL_START+' 식사 · 치료 배정 불가)</span></div></div>';
     }
     if(bt==='adhoc'){
-      return '<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-adhoc">📌 '+esc(adhocLabels[slot]||'임시 일정')+' <span class="tt-buffer-sub">(오늘 · 치료 배정 불가)</span></div></div>';
+      return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-adhoc">📌 '+esc(adhocLabels[slot]||'임시 일정')+' <span class="tt-buffer-sub">(오늘 · 치료 배정 불가)</span></div></div>';
     }
     const inSlot=elders.filter(e=>slotOf(e,schedDay)===slot);
-    return '<div class="tt-row"><div class="tt-time">'+slot+'</div>'+
+    return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div>'+
       '<div class="tt-cell" ondragover="schedDragOver(event)" ondragleave="schedDragLeave(event)" ondrop="schedDrop(event,\''+slot+'\')" onclick="schedCellTap(\''+slot+'\')">'+
       (inSlot.length?inSlot.map(e=>schedChip(e,isToday,rec)).join(''):'<span class="tt-empty">—</span>')+'</div></div>';
   }).join('');
@@ -3103,6 +3116,7 @@ function printWeekSchedule(){
   const days=['월','화','수','목','금'];
   let rows='';
   SLOTS.forEach(slot=>{
+    if(slot===PM[0]){ rows+='<tr class="pw-lunch"><th class="pw-time">'+LUNCH_START+'</th><td colspan="'+days.length+'">🍚 점심시간 ('+LUNCH_START+'~'+LUNCH_END+')</td></tr>'; }
     let tds='';
     days.forEach(day=>{
       const {map,adhocLabels}=slotBlockInfo(day);
@@ -6446,7 +6460,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-07';
+const APP_VERSION = '2026-07-09-08';
 function checkForUpdate(){
   try{
     const base=location.pathname;
