@@ -5066,10 +5066,40 @@ function deleteCarePlan(){
 }
 
 // ===== 평가 기반 치료계획 자동 생성 =====
-function evalAssessLines(g){
+const FALL_SEVERE = [
+  '평가상 낙상 위험이 아주 높아 이동·기립 시 지속적 밀착 감독이 필요함.',
+  '낙상 고위험군으로 확인되어 모든 이동 시 보조 및 낙상 예방이 요구됨.',
+  '낙상 위험도가 매우 높아 기립·보행 전반에 세심한 관찰이 필요한 상태임.',
+  '평가상 낙상 초고위험으로 환경 정비 및 밀착 보조가 지속 요구됨.',
+  '낙상 위험이 높은 수준으로 확인되어 안전 관리에 각별한 주의를 요함.'
+];
+const FALL_HIGH = [
+  '평가상 낙상 위험이 다소 높아 이동 시 주의 관찰이 필요함.',
+  '낙상 위험 요인이 관찰되어 기립·보행 시 보조를 병행함.',
+  '낙상 주의가 필요한 수준으로 안전한 보행 유도가 요구됨.',
+  '낙상 위험이 확인되어 무리한 이동을 피하고 관찰을 지속함.',
+  '경도~중등도 낙상 위험으로 이동 시 곁에서 주의를 기울임.'
+];
+const FALL_HIGH_AMB = [
+  '보행은 비교적 원활하나 낙상 위험 요인이 있어 주의가 필요함.',
+  '독립 보행 가능하나 낙상 예방을 위해 안전한 환경 유지가 권장됨.',
+  '스스로 보행 가능하며 낙상 위험은 있으나 과도한 제한 없이 관찰함.',
+  '보행 기능은 양호하나 낙상 주의가 필요하여 환경 정비를 권장함.',
+  '이동은 자립적이나 낙상 위험 고려하여 주변 정리·주의를 유지함.'
+];
+function evalAssessLines(g, saltKey){
+  saltKey = saltKey||'';
   const f=[];
-  const fallHigh=(g.fall!=null&&g.fall>=5)||(g.fallJudge&&/높음|아주/.test(g.fallJudge));
-  if(fallHigh) f.push('평가상 낙상 고위험으로 확인되어 이동·기립 시 지속적 감독과 낙상 예방이 필요한 상태임.');
+  // 낙상: 실제 평가가 있을 때만, 등급(아주높음/높음)·보행 수준 반영, 표현 다양화
+  const hasFall = (g.fall!=null) || (g.fallJudge&&/높음|아주/.test(g.fallJudge));
+  if(hasFall){
+    const severe = (g.fall!=null&&g.fall>10) || (g.fallJudge&&/아주/.test(g.fallJudge));
+    const high = !severe && ((g.fall!=null&&g.fall>=5) || (g.fallJudge&&/높음/.test(g.fallJudge)));
+    const walksWell = (g.adlWalk!=null && g.adlWalk<=1);
+    if(severe) f.push(FALL_SEVERE[noteHash('FS'+saltKey)%FALL_SEVERE.length]);
+    else if(high) f.push((walksWell?FALL_HIGH_AMB:FALL_HIGH)[noteHash('FH'+saltKey)%FALL_HIGH.length]);
+    // 낮음(4점 이하)은 낙상 문구 넣지 않음 (잘 걸으시는 분 등)
+  }
   let weak=false;
   if(g.power && g.power.grades){ if(Object.values(g.power.grades).some(v=>parseInt(v,10)<=3)) weak=true; }
   if(g.mmtU!=null&&g.mmtU<=3) weak=true; if(g.mmtL!=null&&g.mmtL<=3) weak=true;
@@ -5998,7 +6028,7 @@ function composeNote(e, treats, dateStr, salt, rec){
   const baseA = pick(aPool, noteHash('A'+idn+bucket));
   let A = baseA;
   if(g && g.has){
-    let frags = evalAssessLines(g);
+    let frags = evalAssessLines(g, String(idn)+'-'+bucket);
     // 오늘 통증 '없음' 또는 메모상 통증 없음/호전이면 통증 소견 제외(모순 방지)
     const noPainToday = (tq && tq.pain==='없음') || (memo && /(통증|아프|아픔|불편)\s*(없|않|호전|완화|나아|좋)/.test(memo));
     if(noPainToday){ frags = frags.filter(f=>!/통증|VAS/.test(f)); }
@@ -6587,7 +6617,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-11';
+const APP_VERSION = '2026-07-09-12';
 function checkForUpdate(){
   try{
     const base=location.pathname;
