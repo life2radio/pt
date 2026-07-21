@@ -375,6 +375,15 @@
   .brief-pad-big { aspect-ratio: 5/6; }
   .brief-collapse { font-size: 12px; padding: 3px 10px; border: 1px solid var(--line); background: #fff; border-radius: 14px; cursor: pointer; color: var(--muted); margin-left: auto; }
   .brief-collapsed-hint { font-size: 12.5px; color: var(--muted); padding: 4px 2px; }
+  .status-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .status-q { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .status-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .status-opt { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: #fff; }
+  .status-opt input { margin: 0; }
+  .status-opt:has(input:checked) { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .status-note-wrap { margin-top: 12px; }
+  .status-note-wrap label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .status-note { width: 100%; }
   .dash-todo-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 12px; }
   .todo-add { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
   .todo-add input[type="text"] { flex: 1; min-width: 140px; }
@@ -1408,6 +1417,7 @@
       <div class="card-title">정밀 평가 도구</div>
       <div class="hint">위에서 어르신과 평가일을 고른 뒤, 아래 검사를 눌러 실제 평가지를 그대로 작성하세요. 점수가 자동 계산되고, 해당 어르신의 평가 기록으로 바로 저장돼요.</div>
       <div class="assess-tools">
+        <button class="assess-tool at-priority" onclick="openAssess('status')"><span class="at-ic">🧭</span><span class="at-name">핵심 상태 체크</span><span class="at-desc">일지 정확도·꼭 하기</span></button>
         <button class="assess-tool at-priority" onclick="openAssess('fall')"><span class="at-ic">🚨</span><span class="at-name">낙상위험도</span><span class="at-desc">신규 필수·Huhn</span></button>
         <button class="assess-tool" onclick="openAssess('rom')"><span class="at-ic">📐</span><span class="at-name">ROM</span><span class="at-desc">관절가동범위</span></button>
         <button class="assess-tool" onclick="openAssess('mmt')"><span class="at-ic">💪</span><span class="at-name">MMT</span><span class="at-desc">도수근력</span></button>
@@ -3995,14 +4005,15 @@ function openAssess(tool){
   if(!id){ evMsg('먼저 위에서 어르신을 선택해 주세요','err'); document.getElementById('ev-elder').focus(); return; }
   assessTool=tool; assessElderId=id; assessDate=date;
   const e=state.elders.find(x=>x.id==id);
-  const titles={rom:'📐 ROM 관절가동범위',mmt:'💪 MMT 도수근력검사',bbs:'⚖️ BBS 버그균형척도',tug:'⏱️ TUG 일어나 걷기 검사',adl:'🧺 K-ADL 일상생활활동',vas:'😣 VAS 통증 척도',pain:'📍 통증 부위 표시',frt:'🙆 FRT 기능적 팔뻗기 검사',cist:'🧠 CIST 인지선별검사',fall:'🚨 낙상위험도 평가 (Huhn)',motor:'🦿 운동장애 및 관절제한 평가',power:'🏋️ 근력 평가',basic:'🧎 기본동작 평가'};
+  const titles={status:'🧭 핵심 상태 체크 (치료일지 정확도)',rom:'📐 ROM 관절가동범위',mmt:'💪 MMT 도수근력검사',bbs:'⚖️ BBS 버그균형척도',tug:'⏱️ TUG 일어나 걷기 검사',adl:'🧺 K-ADL 일상생활활동',vas:'😣 VAS 통증 척도',pain:'📍 통증 부위 표시',frt:'🙆 FRT 기능적 팔뻗기 검사',cist:'🧠 CIST 인지선별검사',fall:'🚨 낙상위험도 평가 (Huhn)',motor:'🦿 운동장애 및 관절제한 평가',power:'🏋️ 근력 평가',basic:'🧎 기본동작 평가'};
   document.getElementById('assess-title').textContent=titles[tool]||'평가';
   document.getElementById('assess-who').textContent=(e?((e.room?e.room+'호 ':'')+e.name):'')+' · 평가일 '+date;
   // 기존 저장된 상세 불러오기
   const entry=(state.evals[id]||[]).find(x=>x.date===date);
   const prev=entry&&entry.detail?entry.detail[tool]:null;
   const body=document.getElementById('assess-body');
-  if(tool==='bbs') body.innerHTML=renderBBS(prev);
+  if(tool==='status') body.innerHTML=renderStatus(prev);
+  else if(tool==='bbs') body.innerHTML=renderBBS(prev);
   else if(tool==='mmt') body.innerHTML=renderMMT(prev);
   else if(tool==='rom') body.innerHTML=renderROM(prev);
   else if(tool==='tug') body.innerHTML=renderTUG(prev);
@@ -4033,6 +4044,33 @@ function toggleCrit(btn){
 function closeAssess(){ document.getElementById('assess-modal').style.display='none'; assessTool=null; }
 
 // ---- BBS ----
+// ---- 핵심 상태 체크 ----
+const STATUS_FIELDS=[
+  {key:'gait', label:'🚶 보행', opts:['독립','감독하','보조(워커·지팡이)','부분보조(1인)','불가(휠체어)','침상']},
+  {key:'transfer', label:'🧍 기립·일어서기', opts:['독립','감독하','보조','불가']},
+  {key:'sitBal', label:'🪑 앉은 자세 유지', opts:['정상','보조','불가']},
+  {key:'bedMob', label:'🛏 침상 이동·돌아눕기', opts:['독립','보조','의존']},
+  {key:'fallRisk', label:'🚨 낙상 위험', opts:['낮음','중간','높음']},
+  {key:'cog', label:'🧠 인지·지시 수행', opts:['양호','부분','저하']},
+  {key:'pain', label:'😣 통증', opts:['없음','있음']}
+];
+function renderStatus(prev){
+  prev=prev||{};
+  let h='<div class="as-hint">이 체크는 <b>치료일지에 가장 먼저 반영</b>돼요. 정확히 고르면 일지가 정확해져요. (누워만 계시면 보행·기립을 불가/침상으로, 잘 걸으시면 독립으로 골라주세요)</div>';
+  STATUS_FIELDS.forEach(f=>{
+    h+='<div class="status-row"><div class="status-q">'+f.label+'</div><div class="status-opts">'+
+      f.opts.map(o=>'<label class="status-opt"><input type="radio" name="st-'+f.key+'" value="'+o+'" data-status="'+f.key+'"'+(prev[f.key]===o?' checked':'')+' onchange="computeAssess()">'+o+'</label>').join('')+
+      '</div></div>';
+  });
+  h+='<div class="status-note-wrap"><label>메모(선택)</label><input type="text" id="status-note" class="status-note" value="'+esc(prev.note||'')+'" placeholder="예: 오른쪽 편마비로 왼쪽 위주 사용, 워커 필요"></div>';
+  return h;
+}
+function statusSelected(){
+  const s={};
+  STATUS_FIELDS.forEach(f=>{ const el=document.querySelector('input[name="st-'+f.key+'"]:checked'); if(el) s[f.key]=el.value; });
+  const note=document.getElementById('status-note'); if(note&&note.value.trim()) s.note=note.value.trim();
+  return s;
+}
 function renderBBS(prev){
   prev=prev||{};
   let h='<div class="as-hint">각 항목을 0~4점으로 평가하세요. (0=불가능, 4=정상 수행)</div>';
@@ -4482,7 +4520,15 @@ function adlAllNormal(on){ if(!on) return; ADL_ITEMS.forEach(it=>{ const b=docum
 function computeAssess(){
   const box=document.getElementById('assess-result');
   let html='';
-  if(assessTool==='bbs'){
+  if(assessTool==='status'){
+    const s=statusSelected();
+    const done=STATUS_FIELDS.filter(f=>s[f.key]).length;
+    const parts=[];
+    if(s.gait) parts.push('보행 '+s.gait);
+    if(s.transfer) parts.push('기립 '+s.transfer);
+    if(s.fallRisk) parts.push('낙상 '+s.fallRisk);
+    html='<b>'+done+'/'+STATUS_FIELDS.length+'</b> 항목 선택'+(parts.length?' — '+parts.join(' · '):'')+(done<STATUS_FIELDS.length?' <span class="rs-mid">(나머지도 골라주세요)</span>':' <span class="rs-good">✓ 완료</span>');
+  } else if(assessTool==='bbs'){
     let sum=0; document.querySelectorAll('[data-bbs]').forEach(s=>sum+=parseInt(s.value,10));
     const risk = sum>=41?'낙상 위험 낮음':sum>=21?'낙상 위험 중간':'낙상 위험 높음';
     const amb = sum<45?' · 보행 시 감독 권장(45점 미만)':'';
@@ -4556,7 +4602,14 @@ function saveAssess(){
   if(!entry){ entry={date}; state.evals[id].push(entry); }
   if(!entry.detail) entry.detail={};
 
-  if(assessTool==='bbs'){
+  if(assessTool==='status'){
+    const s=statusSelected();
+    entry.detail.status=s;
+    // 치료일지 연동용 파생값: 보행→adl walk, 낙상→판정
+    const gaitMap={'독립':0,'감독하':1,'보조(워커·지팡이)':2,'부분보조(1인)':2,'불가(휠체어)':4,'침상':5};
+    if(s.gait!=null){ if(!entry.detail.adl) entry.detail.adl={sel:{}}; if(!entry.detail.adl.sel) entry.detail.adl.sel={}; entry.detail.adl.sel.walk=gaitMap[s.gait]; }
+    if(s.fallRisk){ const jm={'낮음':'낙상위험 낮음','중간':'낙상위험 높음','높음':'낙상위험 아주 높음'}; if(!entry.detail.fall) entry.detail.fall={}; entry.detail.fall.judge=jm[s.fallRisk]; entry.detail.fall.fromStatus=true; entry.fall=(s.fallRisk==='낮음'?3:s.fallRisk==='중간'?7:13); }
+  } else if(assessTool==='bbs'){
     let sum=0,d={}; document.querySelectorAll('[data-bbs]').forEach(s=>{ const i=s.dataset.bbs; d['i'+i]=parseInt(s.value,10); sum+=parseInt(s.value,10); });
     entry.bbs=sum; entry.detail.bbs=d;
   } else if(assessTool==='mmt'){
@@ -5121,20 +5174,27 @@ const FALL_HIGH_AMB = [
   '보행 기능은 양호하나 낙상 주의가 필요하여 환경 정비를 권장함.',
   '이동은 자립적이나 낙상 위험 고려하여 주변 정리·주의를 유지함.'
 ];
+const BEDRIDDEN_A = [
+  '와상 상태로 관절 구축 및 욕창 예방을 위한 수동적 관절운동이 요구됨.',
+  '침상 생활 상태로 관절가동성 유지 및 순환 촉진에 중점을 둔 접근이 필요함.',
+  '독립 이동이 어려운 상태로 구축 예방과 편안한 자세 유지가 우선됨.',
+  '와상 경향으로 수동 관절운동과 호흡·순환 관리가 요구되는 상태임.',
+  '기립·보행이 어려워 관절 구축 예방 및 피부 관리가 중요한 상태임.'
+];
 function evalAssessLines(g, saltKey){
   saltKey = saltKey||'';
   const f=[];
-  // 낙상: 실제 평가가 있을 때만, 등급(아주높음/높음)·보행 수준 반영, 표현 다양화
+  const bedridden = (g.adlWalk!=null && g.adlWalk>=4);
+  if(bedridden){ f.push(BEDRIDDEN_A[noteHash('BR'+saltKey)%BEDRIDDEN_A.length]); }
+  // 낙상: 실제 평가가 있을 때만, 등급·보행 수준 반영 (와상이면 위 문구로 대체하므로 생략)
   const hasFall = (g.fall!=null) || (g.fallJudge&&/높음|아주/.test(g.fallJudge));
-  if(hasFall){
+  if(hasFall && !bedridden){
     const severe = (g.fall!=null&&g.fall>10) || (g.fallJudge&&/아주/.test(g.fallJudge));
     const high = !severe && ((g.fall!=null&&g.fall>=5) || (g.fallJudge&&/높음/.test(g.fallJudge)));
-    // 균형·보행이 좋으면(BBS 양호/TUG 양호/독립 보행) 순화 표현 사용
     const goodBalance = (g.bbs!=null&&g.bbs>=45) || (g.tug!=null&&g.tug<=13.5) || (g.frt!=null&&g.frt>=25);
     const walksWell = (g.adlWalk!=null && g.adlWalk<=1) || goodBalance;
     if(severe) f.push(FALL_SEVERE[noteHash('FS'+saltKey)%FALL_SEVERE.length]);
     else if(high) f.push((walksWell?FALL_HIGH_AMB:FALL_HIGH)[noteHash('FH'+saltKey)%FALL_HIGH.length]);
-    // 낮음(4점 이하)은 낙상 문구 넣지 않음
   }
   let weak=false;
   if(g.power && g.power.grades){ if(Object.values(g.power.grades).some(v=>parseInt(v,10)<=3)) weak=true; }
@@ -5144,9 +5204,11 @@ function evalAssessLines(g, saltKey){
   if(g.rom!=null&&g.rom<85) romLim=true;
   if(g.motor&&g.motor.joint&&Object.values(g.motor.joint).some(v=>v&&v!=='제한 없음')) romLim=true;
   if(romLim) f.push('관절가동범위 제한 관찰되어 구축 예방을 위한 관절운동 병행이 필요함.');
-  let bal=false;
-  if(g.bbs!=null&&g.bbs<45) bal=true; if(g.tug!=null&&g.tug>13.5) bal=true; if(g.frt!=null&&g.frt<15) bal=true;
-  if(bal) f.push('균형 능력 저하 소견으로 자세조절·균형 훈련이 요구되는 상태임.');
+  if(!bedridden){
+    let bal=false;
+    if(g.bbs!=null&&g.bbs<45) bal=true; if(g.tug!=null&&g.tug>13.5) bal=true; if(g.frt!=null&&g.frt<15) bal=true;
+    if(bal) f.push('균형 능력 저하 소견으로 자세조절·균형 훈련이 요구되는 상태임.');
+  }
   if(g.adl!=null&&g.adl>=16) f.push('일상생활동작 의존도 높아 기능 유지에 중점을 둔 접근이 필요함.');
   if(g.vas!=null&&g.vas>=4) f.push('통증 호소(VAS '+g.vas+') 있어 통증 경감을 병행하며 치료를 진행함.');
   if(g.cist!=null&&g.cist<15) f.push('인지 저하를 고려하여 반복적·시범 위주의 지시로 진행함.');
@@ -5169,7 +5231,8 @@ function latestEvalData(id){
     cist: pick(en=>en.cist), vas: pick(en=>en.vas),
     motor: pick(en=>(en.detail&&en.detail.motor)?en.detail.motor:null),
     basic: pick(en=>(en.detail&&en.detail.basic)?en.detail.basic:null),
-    adlWalk: pick(en=>(en.detail&&en.detail.adl&&en.detail.adl.sel&&en.detail.adl.sel.walk!=null)?en.detail.adl.sel.walk:null)
+    adlWalk: pick(en=>(en.detail&&en.detail.adl&&en.detail.adl.sel&&en.detail.adl.sel.walk!=null)?en.detail.adl.sel.walk:null),
+    status: pick(en=>(en.detail&&en.detail.status)?en.detail.status:null)
   };
 }
 function autoGenCarePlan(){
@@ -6055,11 +6118,14 @@ function composeNote(e, treats, dateStr, salt, rec){
   const painYesToday = (tq && tq.pain==='있음') || (memo && /(통증|아픔|아파|불편|쑤)/.test(memo) && !painNoneToday);
   const noPain = painNoneToday || (!painYesToday && g && g.vas!=null && g.vas<=1);
   const PAIN_RE = /통증|동통|둔통|진통|쑤심/;
+  const bedridden = (g && g.adlWalk!=null && g.adlWalk>=4);
+  const MOBILITY_RE = /보행|기립|일어서|걷기|이동 훈련|이동훈련|기립훈련|서기 훈련|균형 훈련|보행 훈련/;
 
-  // O — 받은 치료마다 한 문장씩 (통증 없으면 통증 언급 문구 회피)
+  // O — 받은 치료마다 한 문장씩 (통증 없으면 통증, 와상이면 이동·기립 문구 회피)
   const oParts = (treats&&treats.length?treats:['_']).map(t=>{
     let pool = NOTE_POOL.O[t] || NOTE_POOL.O_default;
     if(noPain){ const filtered = pool.filter(s=>!PAIN_RE.test(s)); if(filtered.length) pool = filtered; }
+    if(bedridden){ const fm = pool.filter(s=>!MOBILITY_RE.test(s)); if(fm.length) pool = fm; }
     return pick(pool, noteHash('O'+t+idn+bucket));
   });
   const O = oParts.join(' ');
@@ -6084,6 +6150,7 @@ function composeNote(e, treats, dateStr, salt, rec){
   // P
   let pPool = NOTE_POOL.P;
   if(noPain){ const pf = pPool.filter(s=>!PAIN_RE.test(s)); if(pf.length) pPool = pf; }
+  if(bedridden){ const pm = pPool.filter(s=>!MOBILITY_RE.test(s)); if(pm.length) pPool = pm; }
   const P = pick(pPool, noteHash('P'+idn+bucket));
 
   return 'S: '+S+'\nO: '+O+'\nA: '+A+'\nP: '+P;
@@ -6660,7 +6727,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-16';
+const APP_VERSION = '2026-07-09-17';
 function checkForUpdate(){
   try{
     const base=location.pathname;
