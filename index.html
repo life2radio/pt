@@ -390,6 +390,11 @@
   .norm-chk:has(input:checked) { background: var(--teal); color: #fff; border-color: var(--teal); }
   .rom-cell { display: inline-flex; align-items: center; gap: 4px; }
   .app-version { text-align: center; font-size: 11px; color: var(--muted); padding: 16px 0 30px; opacity: 0.7; }
+  .collapse-card > .collapse-sum { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+  .collapse-card > .collapse-sum::-webkit-details-marker { display: none; }
+  .coll-arrow { font-size: 12px; color: var(--muted); transition: transform 0.15s; }
+  details[open] > .collapse-sum .coll-arrow { transform: rotate(180deg); }
+  .collapse-card > .collapse-sum:hover { color: var(--teal); }
   @media print { .app-version { display: none; } }
   .dash-todo-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 12px; }
   .todo-add { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
@@ -1447,15 +1452,15 @@
       <div id="cp-body"></div>
     </div>
 
-    <div class="card">
-      <div class="card-title">변화 추이 <span class="count" id="ev-name"></span></div>
+    <details class="card collapse-card" open>
+      <summary class="card-title collapse-sum">변화 추이 <span class="count" id="ev-name"></span> <span class="coll-arrow">▾</span></summary>
       <div id="ev-charts"><div class="empty">어르신을 고르면 평가 변화가 그래프로 보여요</div></div>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-title">평가 기록 <span class="count" id="ev-hist-count"></span></div>
+    <details class="card collapse-card" open>
+      <summary class="card-title collapse-sum">평가 기록 <span class="count" id="ev-hist-count"></span> <span class="coll-arrow">▾</span></summary>
       <div id="ev-history"><div class="empty">아직 저장된 평가가 없어요</div></div>
-    </div>
+    </details>
   </section>
 
   <!-- 촉탁의 -->
@@ -1475,10 +1480,10 @@
       <button class="btn" id="dv-cancel" onclick="cancelDoctorEdit()" style="display:none;">수정 취소</button>
       <div id="dv-msg" class="msg" style="margin-top:10px;"></div>
     </div>
-    <div class="card">
-      <div class="card-title">지난 방문 기록 <span class="count" id="dv-count"></span></div>
+    <details class="card collapse-card" open>
+      <summary class="card-title collapse-sum">지난 방문 기록 <span class="count" id="dv-count"></span> <span class="coll-arrow">▾</span></summary>
       <div id="dv-list"><div class="empty">아직 기록이 없어요.</div></div>
-    </div>
+    </details>
   </section>
 
   <!-- 기록 -->
@@ -2093,13 +2098,13 @@ function briefHasContent(bb){ return bb && (bb.morning||bb.evening||(bb.notices&
 function briefPastHtml(){
   const dates=Object.keys(state.briefings||{}).filter(d=>d!==briefDate && briefHasContent(state.briefings[d])).sort().reverse();
   if(!dates.length) return '';
-  return '<div class="card" id="brief-past-card"><div class="card-title">지난 기록</div>'+
+  return '<details class="card collapse-card" id="brief-past-card"><summary class="card-title collapse-sum">지난 기록 ('+dates.length+') <span class="coll-arrow">▾</span></summary>'+
     '<div class="brief-past">'+dates.slice(0,30).map(d=>{
       const bb=state.briefings[d]; const wd=WEEKDAYS[new Date(d+'T00:00:00').getDay()]||'';
       const nDraw=(bb.morningDraws||[]).length+(bb.eveningDraws||[]).length+(bb.drawings||[]).length;
       const preview=(((bb.morning||'')+' '+(bb.evening||'')).trim()+(nDraw?' ✍️'+nDraw:'')).slice(0,50);
       return '<div class="brief-past-row" onclick="setBriefDate(\''+d+'\')"><b>'+d+' ('+wd+')</b><span class="meta">'+esc(preview)+(preview.length>=50?'…':'')+'</span></div>';
-    }).join('')+'</div></div>';
+    }).join('')+'</div></details>';
 }
 function renderBriefPastOnly(){
   const card=document.getElementById('brief-past-card');
@@ -6745,7 +6750,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-19';
+const APP_VERSION = '2026-07-09-20';
 function checkForUpdate(){
   try{
     const base=location.pathname;
