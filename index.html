@@ -389,6 +389,8 @@
   .norm-chk input { margin: 0; }
   .norm-chk:has(input:checked) { background: var(--teal); color: #fff; border-color: var(--teal); }
   .rom-cell { display: inline-flex; align-items: center; gap: 4px; }
+  .app-version { text-align: center; font-size: 11px; color: var(--muted); padding: 16px 0 30px; opacity: 0.7; }
+  @media print { .app-version { display: none; } }
   .dash-todo-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 12px; }
   .todo-add { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
   .todo-add input[type="text"] { flex: 1; min-width: 140px; }
@@ -6743,7 +6745,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-18';
+const APP_VERSION = '2026-07-09-19';
 function checkForUpdate(){
   try{
     const base=location.pathname;
@@ -6856,6 +6858,8 @@ renderPlanForm(); renderElders(); renderDash(); initLock();
 updateSyncUI('ok');
 setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
 setTimeout(checkForUpdate, 1500);
+function showAppVersion(){ const el=document.getElementById('app-version'); if(el) el.textContent='버전 '+APP_VERSION; }
+showAppVersion(); window.addEventListener('load', showAppVersion); setTimeout(showAppVersion, 300);
 </script>
 <button id="quick-fab" class="quick-fab" onclick="openQuickMemo()" title="빠른 메모">✏️</button>
 <div id="quick-overlay" class="quick-overlay">
@@ -6864,6 +6868,8 @@ setTimeout(checkForUpdate, 1500);
     <div class="quick-body" id="quick-body"></div>
   </div>
 </div>
+
+<div id="app-version" class="app-version"></div>
 
 </body>
 </html>
