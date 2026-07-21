@@ -373,6 +373,8 @@
   .bmt.on { background: var(--teal); color: #fff; border-color: var(--teal); }
   .brief-pad-sec { aspect-ratio: 2/1; }
   .brief-pad-big { aspect-ratio: 5/6; }
+  .brief-collapse { font-size: 12px; padding: 3px 10px; border: 1px solid var(--line); background: #fff; border-radius: 14px; cursor: pointer; color: var(--muted); margin-left: auto; }
+  .brief-collapsed-hint { font-size: 12.5px; color: var(--muted); padding: 4px 2px; }
   .dash-todo-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 12px; }
   .todo-add { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
   .todo-add input[type="text"] { flex: 1; min-width: 140px; }
@@ -414,6 +416,7 @@
   .move-tag { display: inline-block; background: var(--teal); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin: 2px 4px 4px 0; }
   .pw-move th.pw-time { background: #D8ECE5 !important; color: #1d6a58 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .pw-move td { background: #F0F8F5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pw-move-cell { background: #D8ECE5 !important; color: #1d6a58 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .pw-move-legend { margin-top: 10px; font-size: 12px; color: #1d6a58; padding: 8px 12px; background: #EAF4F0; border-radius: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .slot-mgr { padding: 12px; background: var(--sand); border-radius: 10px; margin: 8px 0; }
   .slot-mgr-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
@@ -1778,6 +1781,12 @@ if(!state.slotsV3){
 }
 // 편집 가능한 시간 목록 초기화
 if(!state.slots || !state.slots.length){ state.slots = DEFAULT_SLOTS.slice(); save(); }
+// 전체 이동시간 → 요일별 이관
+if(state.moveSlots && state.moveSlots.length && !state.moveSlotsByDay){
+  state.moveSlotsByDay={};
+  ['월','화','수','목','금'].forEach(d=>{ state.moveSlotsByDay[d]=state.moveSlots.slice(); });
+  delete state.moveSlots; save();
+}
 refreshSlots();
 
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } }
@@ -1866,7 +1875,7 @@ function go(btn){
   if(tab==='history') initHistory();
   if(tab==='program') initProgram();
   if(tab==='library') renderLibrary();
-  if(tab==='briefing') renderBriefing();
+  if(tab==='briefing'){ briefDate = new Date().toISOString().slice(0,10); renderBriefing(); }
 }
 
 // ===== 조회·석회 =====
@@ -1891,13 +1900,15 @@ function renderBriefing(){
     briefTodoHtml()+
     briefSectionHtml('morning','조회 (아침)','🌅','전달받은 내용, 오늘 중점, 주의할 어르신 등을 적어요.','예) 낙상 예방 강조 / 201호 김○○ 어르신 컨디션 주의 / 오늘 촉탁의 방문 예정…',b)+
     briefSectionHtml('evening','석회 (저녁)','🌙','오늘 있었던 일, 특이사항, 내일로 넘길 내용을 적어요.','예) 오늘 치료 미실시 2명(사유 기록함) / 202호 통증 호소 → 촉탁의 보고 / 내일 낙상교육 자료 준비…',b)+
-    '<div class="card">'+
-      '<div class="card-title">✍️ 손글씨 메모 (S펜)</div>'+
-      '<p class="hint">S펜이나 손가락으로 자유롭게 그리고 쓰세요. 저장하면 이 날짜 기록에 그림으로 남고, 다른 기기에서도 볼 수 있어요.</p>'+
-      padToolbarHtml('brief-pad','drawings')+
-      '<canvas id="brief-pad" class="brief-pad brief-pad-big" width="1000" height="1200"></canvas>'+
-      drawsThumbHtml('drawings', b.drawings)+
-    '</div>'+
+    (briefCollapse.pad
+      ? '<div class="card"><div class="card-title">✍️ 손글씨 메모 (S펜) <button class="brief-collapse no-print" onclick="toggleBriefCollapse(\'pad\')">▸ 펼치기</button></div><div class="brief-collapsed-hint">'+((b.drawings&&b.drawings.length)?'✔ '+b.drawings.length+'개 저장됨 — 펼쳐서 보기':'비어 있음')+'</div></div>'
+      : '<div class="card">'+
+          '<div class="card-title">✍️ 손글씨 메모 (S펜) <button class="brief-collapse no-print" onclick="toggleBriefCollapse(\'pad\')">▾ 접기</button></div>'+
+          '<p class="hint">S펜이나 손가락으로 자유롭게 그리고 쓰세요. 저장하면 이 날짜 기록에 그림으로 남고, 다른 기기에서도 볼 수 있어요.</p>'+
+          padToolbarHtml('brief-pad','drawings')+
+          '<canvas id="brief-pad" class="brief-pad brief-pad-big" width="1000" height="1200"></canvas>'+
+          drawsThumbHtml('drawings', b.drawings)+
+        '</div>')+
     briefPastHtml();
   initPads();
 }
@@ -1939,6 +1950,12 @@ function briefAddTodo(){
   renderBriefing(); renderDash();
 }
 function briefSectionHtml(sec, label, icon, hint, ph, b){
+  const collapsed=briefCollapse[sec];
+  const collBtn='<button class="brief-collapse no-print" onclick="toggleBriefCollapse(\''+sec+'\')">'+(collapsed?'▸ 펼치기':'▾ 접기')+'</button>';
+  if(collapsed){
+    const has=(b[sec]&&b[sec].trim())||(b[sec+'Draws']&&b[sec+'Draws'].length);
+    return '<div class="card"><div class="card-title">'+icon+' '+label+' '+collBtn+'</div><div class="brief-collapsed-hint">'+(has?'✔ 작성됨 — 펼쳐서 보기':'비어 있음')+'</div></div>';
+  }
   const pen=briefPen[sec];
   const canvasId='brief-pad-'+sec;
   const draws=b[sec+'Draws'];
@@ -1951,8 +1968,9 @@ function briefSectionHtml(sec, label, icon, hint, ph, b){
   } else {
     inner='<textarea class="brief-ta" rows="12" placeholder="'+ph+'" onchange="setBrief(\''+sec+'\',this.value)">'+esc(b[sec]||'')+'</textarea>';
   }
-  return '<div class="card"><div class="card-title">'+icon+' '+label+' '+toggle+'</div><p class="hint">'+hint+'</p>'+inner+drawsThumbHtml(sec+'Draws', draws)+'</div>';
+  return '<div class="card"><div class="card-title">'+icon+' '+label+' '+toggle+' '+collBtn+'</div><p class="hint">'+hint+'</p>'+inner+drawsThumbHtml(sec+'Draws', draws)+'</div>';
 }
+function toggleBriefCollapse(key){ briefCollapse[key]=!briefCollapse[key]; renderBriefing(); }
 function setBriefDate(v){ if(!v) return; briefDate=v; renderBriefing(); }
 function moveBriefDate(delta){ const d=new Date(briefDate+'T00:00:00'); d.setDate(d.getDate()+delta); briefDate=d.toISOString().slice(0,10); renderBriefing(); }
 function briefAutoItems(){
@@ -2075,6 +2093,7 @@ function renderBriefPastOnly(){
 // 손글씨 패드
 let _padReg={};
 let briefPen={morning:false, evening:false};
+let briefCollapse={morning:false, evening:false, pad:false};
 function setupPad(id){
   const c=document.getElementById(id); if(!c) return;
   const st={mode:'pen',color:'#143A52',size:4,drawing:false,ctx:c.getContext('2d'),canvas:c,last:null,dirty:false};
@@ -3112,7 +3131,7 @@ function renderSched(){
       return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-adhoc">📌 '+esc(adhocLabels[slot]||'임시 일정')+' <span class="tt-buffer-sub">(오늘 · 치료 배정 불가)</span></div></div>';
     }
     const inSlot=elders.filter(e=>slotOf(e,schedDay)===slot);
-    const isMove=(state.moveSlots||[]).includes(slot);
+    const isMove=getMoveSlots(schedDay).includes(slot);
     return lunchRow+'<div class="tt-row'+(isMove?' tt-move':'')+'"><div class="tt-time">'+slot+
       '<button class="move-tog no-print" onclick="toggleMoveSlot(event,\''+slot+'\')" title="물리치료실 이동 표시 켜기/끄기">'+(isMove?'🚶':'＋')+'</button></div>'+
       '<div class="tt-cell" ondragover="schedDragOver(event)" ondragleave="schedDragLeave(event)" ondrop="schedDrop(event,\''+slot+'\')" onclick="schedCellTap(\''+slot+'\')">'+
@@ -3123,11 +3142,15 @@ function renderSched(){
 let pickedElderId=null;
 function toggleMoveSlot(ev, slot){
   if(ev){ ev.stopPropagation(); }
-  if(!state.moveSlots) state.moveSlots=[];
-  const i=state.moveSlots.indexOf(slot);
-  if(i>=0) state.moveSlots.splice(i,1); else state.moveSlots.push(slot);
+  if(!state.moveSlotsByDay) state.moveSlotsByDay={};
+  if(!state.moveSlotsByDay[schedDay]) state.moveSlotsByDay[schedDay]=[];
+  const arr=state.moveSlotsByDay[schedDay];
+  const i=arr.indexOf(slot);
+  if(i>=0) arr.splice(i,1); else arr.push(slot);
+  if(!arr.length) delete state.moveSlotsByDay[schedDay];
   save(); renderSched();
 }
+function getMoveSlots(day){ return (state.moveSlotsByDay&&state.moveSlotsByDay[day])||[]; }
 function schedPick(id, ev){ if(ev) ev.stopPropagation(); pickedElderId = (pickedElderId===id)?null:id; renderSched(); }
 function schedDragStart(ev, id){ pickedElderId=id; if(ev.dataTransfer){ ev.dataTransfer.setData('text/plain',String(id)); ev.dataTransfer.effectAllowed='move'; } }
 function schedDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add('drop-on'); }
@@ -3225,7 +3248,7 @@ function editSlot(oldT, newVal){
   // 어르신 배정 이동 (모든 요일)
   state.elders.forEach(e=>{ if(e.slots){ Object.keys(e.slots).forEach(d=>{ if(normTime(e.slots[d])===ov) e.slots[d]=nv; }); } if(e.slot&&normTime(e.slot)===ov) e.slot=nv; });
   // 이동표시도 이동
-  if(state.moveSlots){ state.moveSlots=state.moveSlots.map(s=> normTime(s)===ov ? nv : s); }
+  if(state.moveSlotsByDay){ Object.keys(state.moveSlotsByDay).forEach(day=>{ state.moveSlotsByDay[day]=state.moveSlotsByDay[day].map(s=> normTime(s)===ov ? nv : s); }); }
   save(); refreshSlots(); renderSlotSettings(); renderSched();
   showSMsg('시간을 '+ov+' → '+nv+'로 바꿨어요. 배정된 어르신도 함께 옮겼어요.');
 }
@@ -3236,7 +3259,7 @@ function deleteSlot(t){
   if(!confirm(msg)) return;
   state.slots = (state.slots||DEFAULT_SLOTS.slice()).filter(s=>normTime(s)!==ov);
   state.elders.forEach(e=>{ if(e.slots){ Object.keys(e.slots).forEach(d=>{ if(normTime(e.slots[d])===ov) delete e.slots[d]; }); } });
-  if(state.moveSlots){ state.moveSlots=state.moveSlots.filter(s=>normTime(s)!==ov); }
+  if(state.moveSlotsByDay){ Object.keys(state.moveSlotsByDay).forEach(day=>{ state.moveSlotsByDay[day]=state.moveSlotsByDay[day].filter(s=>normTime(s)!==ov); if(!state.moveSlotsByDay[day].length) delete state.moveSlotsByDay[day]; }); }
   save(); refreshSlots(); renderSlotSettings(); renderSched();
 }
 function resetSlots(){
@@ -3256,6 +3279,7 @@ function printWeekSchedule(){
     days.forEach(day=>{
       const {map,adhocLabels}=slotBlockInfo(day);
       const bt=map[slot];
+      const dayMove=getMoveSlots(day).includes(slot);
       if(bt==='core'){ const p=state.programs[day]; tds+='<td class="pw-blk pw-prog">'+esc(p?p.name:'프로그램')+'</td>'; }
       else if(bt==='meal'){ tds+='<td class="pw-blk pw-meal">식사</td>'; }
       else if(bt==='adhoc'){ tds+='<td class="pw-blk pw-adhoc">'+esc(adhocLabels[slot]||'일정')+'</td>'; }
@@ -3263,15 +3287,15 @@ function printWeekSchedule(){
         const names=state.elders.filter(e=>e.status==='치료중'&&slotOf(e,day)===slot)
           .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}))
           .map(e=>(e.room?e.room+' ':'')+e.name);
-        tds+='<td>'+(names.length?names.map(esc).join('<br>'):'')+'</td>';
+        tds+='<td class="'+(dayMove?'pw-move-cell':'')+'">'+(dayMove?'🚶 ':'')+(names.length?names.map(esc).join('<br>'):'')+'</td>';
       }
     });
-    const isMove=(state.moveSlots||[]).includes(slot);
-    rows+='<tr class="'+(isMove?'pw-move':'')+'"><th class="pw-time">'+(isMove?'🚶 ':'')+slot+'</th>'+tds+'</tr>';
+    rows+='<tr><th class="pw-time">'+slot+'</th>'+tds+'</tr>';
   });
   const note=(state.schedNote||'').trim();
   const noteHtml = note ? '<div class="pw-note"><b>📝 참고사항</b><br>'+esc(note).replace(/\n/g,'<br>')+'</div>' : '';
-  const moveLegend = (state.moveSlots&&state.moveSlots.length) ? '<div class="pw-move-legend">🚶 표시된 시간: 해당 시간의 어르신을 <b>물리치료실로 이동</b> 도와주세요.</div>' : '';
+  const anyMove = state.moveSlotsByDay && Object.keys(state.moveSlotsByDay).some(d=>state.moveSlotsByDay[d].length);
+  const moveLegend = anyMove ? '<div class="pw-move-legend">🚶 표시된 칸: 해당 시간의 어르신을 <b>물리치료실로 이동</b> 도와주세요.</div>' : '';
   const box=document.getElementById('print-week');
   box.innerHTML='<div class="pw-title">물리치료실 주간 시간표</div>'+
     '<div class="pw-date">포시즌 요양원 · '+today+' 기준</div>'+
@@ -6636,7 +6660,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-14';
+const APP_VERSION = '2026-07-09-16';
 function checkForUpdate(){
   try{
     const base=location.pathname;
