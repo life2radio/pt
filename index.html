@@ -384,6 +384,11 @@
   .status-note-wrap { margin-top: 12px; }
   .status-note-wrap label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
   .status-note { width: 100%; }
+  .norm-chk { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--teal); cursor: pointer; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; white-space: nowrap; }
+  .norm-chk.sm { font-size: 11px; padding: 1px 5px; }
+  .norm-chk input { margin: 0; }
+  .norm-chk:has(input:checked) { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .rom-cell { display: inline-flex; align-items: center; gap: 4px; }
   .dash-todo-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 12px; }
   .todo-add { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
   .todo-add input[type="text"] { flex: 1; min-width: 140px; }
@@ -4093,15 +4098,19 @@ function renderMMT(prev){
   MMT_GROUPS.forEach(g=>{
     if(g.region!==region){ region=g.region; h+='<div class="as-sub">'+region+'</div>'; }
     h+='<div class="as-row mmt"><div class="as-q">'+g.name+'</div>'+
-      '<label class="as-lr">좌<select class="as-sel sm" data-mmt="'+g.key+'_L" onchange="computeAssess()">'+
+      '<label class="as-lr">좌<select class="as-sel sm" data-mmt="'+g.key+'_L" onchange="mmtSelChg(this)">'+
       [0,1,2,3,4,5].map(v=>'<option'+(prev[g.key+'_L']==v?' selected':'')+'>'+v+'</option>').join('')+'</select></label>'+
-      '<label class="as-lr">우<select class="as-sel sm" data-mmt="'+g.key+'_R" onchange="computeAssess()">'+
+      '<label class="norm-chk"><input type="checkbox" data-normchk="'+g.key+'_L" onchange="mmtNorm(\''+g.key+'_L\',this.checked)"'+(prev[g.key+'_L']==5?' checked':'')+'>정상</label>'+
+      '<label class="as-lr">우<select class="as-sel sm" data-mmt="'+g.key+'_R" onchange="mmtSelChg(this)">'+
       [0,1,2,3,4,5].map(v=>'<option'+(prev[g.key+'_R']==v?' selected':'')+'>'+v+'</option>').join('')+'</select></label>'+
+      '<label class="norm-chk"><input type="checkbox" data-normchk="'+g.key+'_R" onchange="mmtNorm(\''+g.key+'_R\',this.checked)"'+(prev[g.key+'_R']==5?' checked':'')+'>정상</label>'+
       '</div>';
   });
   return h;
 }
-function mmtAllNormal(on){ document.querySelectorAll('[data-mmt]').forEach(s=>{ s.value = on?'5':'0'; }); computeAssess(); }
+function mmtNorm(key,on){ const el=document.querySelector('[data-mmt="'+key+'"]'); if(el&&on){ el.value='5'; } computeAssess(); }
+function mmtSelChg(el){ const chk=document.querySelector('[data-normchk="'+el.dataset.mmt+'"]'); if(chk) chk.checked=(el.value==='5'); computeAssess(); }
+function mmtAllNormal(on){ document.querySelectorAll('[data-mmt]').forEach(s=>{ s.value = on?'5':'0'; const chk=document.querySelector('[data-normchk="'+s.dataset.mmt+'"]'); if(chk) chk.checked=on; }); computeAssess(); }
 // ---- ROM ----
 function renderROM(prev){
   prev=prev||{};
@@ -4115,17 +4124,21 @@ function renderROM(prev){
       lastRegion=j.region;
     }
     h+='<div class="rom-line"><div class="rom-name">'+j.name+' <span class="rom-eng">'+j.eng+'</span><span class="rom-range">'+j.range+'°</span></div>'+
-      '<input class="rom-in" type="number" inputmode="numeric" data-rom="'+j.key+'_L" value="'+(prev[j.key+'_L']!=null?prev[j.key+'_L']:'')+'" oninput="computeAssess()">'+
-      '<input class="rom-in" type="number" inputmode="numeric" data-rom="'+j.key+'_R" value="'+(prev[j.key+'_R']!=null?prev[j.key+'_R']:'')+'" oninput="computeAssess()">'+
+      '<span class="rom-cell"><input class="rom-in" type="number" inputmode="numeric" data-rom="'+j.key+'_L" value="'+(prev[j.key+'_L']!=null?prev[j.key+'_L']:'')+'" oninput="romInChg(this)"><label class="norm-chk sm"><input type="checkbox" data-normchk="'+j.key+'_L" onchange="romNorm(\''+j.key+'_L\','+j.normal+',this.checked)"'+(prev[j.key+'_L']==j.normal?' checked':'')+'>정상</label></span>'+
+      '<span class="rom-cell"><input class="rom-in" type="number" inputmode="numeric" data-rom="'+j.key+'_R" value="'+(prev[j.key+'_R']!=null?prev[j.key+'_R']:'')+'" oninput="romInChg(this)"><label class="norm-chk sm"><input type="checkbox" data-normchk="'+j.key+'_R" onchange="romNorm(\''+j.key+'_R\','+j.normal+',this.checked)"'+(prev[j.key+'_R']==j.normal?' checked':'')+'>정상</label></span>'+
       '</div>';
   });
   return h;
 }
+function romNorm(key,normal,on){ const el=document.querySelector('[data-rom="'+key+'"]'); if(el){ el.value = on?normal:''; } computeAssess(); }
+function romInChg(el){ computeAssess(); }
 function romAllNormal(on){
   ROM_JOINTS.forEach(j=>{
     ['_L','_R'].forEach(s=>{
       const el=document.querySelector('[data-rom="'+j.key+s+'"]');
       if(el) el.value = on ? j.normal : '';
+      const chk=document.querySelector('[data-normchk="'+j.key+s+'"]');
+      if(chk) chk.checked=on;
     });
   });
   computeAssess();
@@ -4322,7 +4335,7 @@ function renderPower(prev){
       h+='<div class="pw-grades">'+POWER_GRADES.map(g=>{
         const on=v[r.key+'_'+side]===g;
         return '<button type="button" class="pw-g'+(on?' on':'')+'" data-pw="'+r.key+'_'+side+'" data-g="'+g+'" onclick="pickPw(this)">'+g+'</button>';
-      }).join('')+'</div>';
+      }).join('')+'<label class="norm-chk sm"><input type="checkbox" onchange="powerNorm(\''+r.key+'_'+side+'\',this.checked)"'+(v[r.key+'_'+side]==='5'?' checked':'')+'>정상</label></div>';
     });
     h+='</div>';
   });
@@ -4332,8 +4345,11 @@ function renderPower(prev){
 function pickPw(btn){
   const key=btn.dataset.pw;
   document.querySelectorAll('[data-pw="'+key+'"]').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on'); computeAssess();
+  btn.classList.add('on');
+  const chk=btn.parentElement.querySelector('.norm-chk input'); if(chk) chk.checked=(btn.dataset.g==='5');
+  computeAssess();
 }
+function powerNorm(key,on){ if(!on) return; const b=document.querySelector('[data-pw="'+key+'"][data-g="5"]'); if(b){ document.querySelectorAll('[data-pw="'+key+'"]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); } computeAssess(); }
 function powerSelected(){
   const grades={}; document.querySelectorAll('.pw-g.on').forEach(b=>{ grades[b.dataset.pw]=b.dataset.g; });
   return {grades};
@@ -6727,7 +6743,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-17';
+const APP_VERSION = '2026-07-09-18';
 function checkForUpdate(){
   try{
     const base=location.pathname;
