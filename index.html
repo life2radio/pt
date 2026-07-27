@@ -386,6 +386,21 @@
   .brief-ref { background: #F0F8F5; border: 1px solid #B8DDD4; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
   .brief-ref-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #1d6a58; line-height: 1.5; }
   .brief-ref-ic { flex-shrink: 0; font-size: 14px; }
+  .hl-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
+  .hl-btn { background: #FFF8E1; border: 1.5px solid #F5C518; color: #7a5b1c; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .hl-btn:hover { background: #F5C518; color: #fff; }
+  .hl-today-tag { font-size: 12.5px; color: #7a5b1c; background: #FFF8E1; padding: 4px 10px; border-radius: 8px; border: 1px solid #F5C518; }
+  .hl-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .hl-item { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 5px 8px; background: #FFFBF0; border-radius: 8px; border: 1px solid #F5C518; }
+  .hl-date { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .hl-star { flex-shrink: 0; }
+  .hl-txt { flex: 1; font-weight: 600; color: #5c4000; }
+  .hl-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; }
+  .hl-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .hl-preset { background: var(--sand); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .hl-preset:hover { background: #FFF8E1; border-color: #F5C518; }
+  .hl-input-row { display: flex; gap: 8px; }
+  .hl-input-row input { flex: 1; }
   .status-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
   .status-q { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
   .status-opts { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -2068,6 +2083,8 @@ function setElderNote(sec, id, val){
   if(b.elderNotes && !Object.keys(b.elderNotes).length) delete b.elderNotes;
   if(!briefHasContent(b)) delete state.briefings[briefDate];
   save();
+  // 오늘 날짜 메모면 치료기록도 갱신
+  if(briefDate===today && document.getElementById('record').classList.contains('active')) renderRecord();
 }
 function elderNoteCount(b, sec){ const n=(b.elderNotes&&b.elderNotes[sec])||{}; return Object.keys(n).length; }
 function setBriefDate(v){ if(!v) return; briefDate=v; renderBriefing(); }
@@ -3611,6 +3628,62 @@ function resetTreatments(){
 }
 
 // 치료기록에서 조회·석회 메모 참고 표시
+// ===== 하이라이트 (특별한 성과 기록) =====
+const HL_PRESETS = [
+  '처음으로 보행 훈련 성공','독립 보행 첫 성공','워커 없이 보행 첫 시도','기립 훈련 첫 성공',
+  '처음으로 혼자 일어섬','침대에서 첫 기립 성공','기립 30초 첫 달성','기립 1분 첫 달성',
+  '통증 없이 치료 첫 완료','치료 거부 후 첫 참여','오랜만에 웃음 표현',
+  '목표 ROM 첫 달성','근력 등급 상승 확인','균형 훈련 첫 독립 수행'
+];
+function hlBtnHtml(id, date){
+  const hls=((state.highlights||{})[id])||[];
+  const todayHl=hls.find(h=>h.date===date);
+  let html='<div class="hl-bar no-print">'+
+    '<button class="hl-btn" onclick="openHlModal('+id+',\''+date+'\')">⭐ 오늘의 하이라이트 기록</button>';
+  if(todayHl) html+='<span class="hl-today-tag">⭐ '+esc(todayHl.text)+'</span>';
+  html+='</div>';
+  if(hls.length){
+    html+='<div class="hl-list">';
+    hls.slice().reverse().forEach(h=>{ html+='<div class="hl-item"><span class="hl-date">'+esc(h.date)+'</span><span class="hl-star">⭐</span><span class="hl-txt">'+esc(h.text)+'</span><button class="hl-del no-print" onclick="deleteHl('+id+',\''+h.id+'\')">✕</button></div>'; });
+    html+='</div>';
+  }
+  return html;
+}
+function openHlModal(elderId, date){
+  let mo=document.getElementById('hl-modal');
+  if(!mo){ mo=document.createElement('div'); mo.id='hl-modal'; mo.className='modal-overlay'; document.body.appendChild(mo); }
+  const e=state.elders.find(x=>x.id===elderId)||{};
+  const nm=(e.room?e.room+'호 ':'')+e.name+' 어르신';
+  mo.innerHTML='<div class="modal-box"><div class="modal-head"><b>⭐ '+esc(nm)+' 하이라이트</b><button onclick="closeHlModal()">✕</button></div>'+
+    '<div class="modal-body">'+
+    '<p class="hint">오늘 특별히 의미 있는 성과나 사건을 기록해요. 이 어르신 기록에 날짜와 함께 영구적으로 남아요.</p>'+
+    '<div class="hl-presets">'+HL_PRESETS.map(p=>'<button class="hl-preset" onclick="setHlInput(\''+esc(p)+'\')" >'+p+'</button>').join('')+'</div>'+
+    '<div class="hl-input-row"><input type="text" id="hl-input" placeholder="직접 입력 (예: 처음으로 보행 훈련 성공)" value="">'+
+    '<button class="btn teal" onclick="saveHl('+elderId+',\''+date+'\')">저장</button></div>'+
+    '</div></div>';
+  mo.style.display='flex';
+  setTimeout(()=>{ const el=document.getElementById('hl-input'); if(el) el.focus(); },100);
+}
+function setHlInput(v){ const el=document.getElementById('hl-input'); if(el) el.value=v; }
+function closeHlModal(){ const mo=document.getElementById('hl-modal'); if(mo) mo.style.display='none'; }
+function saveHl(elderId, date){
+  const el=document.getElementById('hl-input'); if(!el||!el.value.trim()){ alert('내용을 입력해 주세요.'); return; }
+  if(!state.highlights) state.highlights={};
+  if(!state.highlights[elderId]) state.highlights[elderId]=[];
+  // 같은 날짜 있으면 교체
+  state.highlights[elderId]=state.highlights[elderId].filter(h=>h.date!==date);
+  state.highlights[elderId].push({id:Date.now()+'', date, text:el.value.trim()});
+  state.highlights[elderId].sort((a,b)=>a.date.localeCompare(b.date));
+  save(); closeHlModal(); renderRecord();
+}
+function deleteHl(elderId, hlId){
+  if(!state.highlights||!state.highlights[elderId]) return;
+  if(!confirm('이 하이라이트를 삭제할까요?')) return;
+  state.highlights[elderId]=state.highlights[elderId].filter(h=>h.id!==hlId);
+  if(!state.highlights[elderId].length) delete state.highlights[elderId];
+  if(!Object.keys(state.highlights).length) delete state.highlights;
+  save(); renderRecord();
+}
 function briefRecRef(id){
   const b=(state.briefings&&state.briefings[today])||{};
   const en=b.elderNotes||{};
@@ -3679,7 +3752,8 @@ function renderRecord(){
           '<button class="note-gen alt" onclick="genNote('+e.id+',true)">🔄 다른 표현</button>'+
           '<button class="note-gen copy" onclick="copyNote('+e.id+',this)">📋 복사</button></span></div>'+
         '<textarea class="note-ta" rows="4" placeholder="‘자동작성’을 누르면 전문 용어로 일지가 생성돼요. 직접 수정도 가능해요." onchange="setNote('+e.id+',this.value)">'+esc(rec.note||'')+'</textarea>'+
-      '</div></div>';
+      '</div>'+
+      hlBtnHtml(e.id, today)+'</div>';
   }).join('');
   updateProgress();
 }
@@ -4725,7 +4799,7 @@ function saveAssess(){
     // 치료일지 연동용 파생값: 보행→adl walk, 낙상→판정
     const gaitMap={'독립':0,'감독하':1,'보조(워커·지팡이)':2,'부분보조(1인)':2,'불가(휠체어)':4,'침상':5};
     if(s.gait!=null){ if(!entry.detail.adl) entry.detail.adl={sel:{}}; if(!entry.detail.adl.sel) entry.detail.adl.sel={}; entry.detail.adl.sel.walk=gaitMap[s.gait]; }
-    if(s.fallRisk){ const jm={'낮음':'낙상위험 낮음','중간':'낙상위험 높음','높음':'낙상위험 아주 높음'}; if(!entry.detail.fall) entry.detail.fall={}; entry.detail.fall.judge=jm[s.fallRisk]; entry.detail.fall.fromStatus=true; entry.fall=(s.fallRisk==='낮음'?3:s.fallRisk==='중간'?7:13); }
+    if(s.fallRisk){ const jm={'낮음':'낙상위험 낮음','중간':'낙상위험 높음','높음':'낙상위험 높음'}; if(!entry.detail.fall) entry.detail.fall={}; entry.detail.fall.judge=jm[s.fallRisk]; entry.detail.fall.fromStatus=true; entry.fall=(s.fallRisk==='낮음'?3:s.fallRisk==='중간'?7:10); }
   } else if(assessTool==='bbs'){
     let sum=0,d={}; document.querySelectorAll('[data-bbs]').forEach(s=>{ const i=s.dataset.bbs; d['i'+i]=parseInt(s.value,10); sum+=parseInt(s.value,10); });
     entry.bbs=sum; entry.detail.bbs=d;
@@ -5301,15 +5375,17 @@ const BEDRIDDEN_A = [
 function evalAssessLines(g, saltKey){
   saltKey = saltKey||'';
   const f=[];
-  const bedridden = (g.adlWalk!=null && g.adlWalk>=4);
+  const st=g.status||null;
+  // 와상: adlWalk>=4 OR 핵심상태 침상/기립불가
+  const bedridden = (g.adlWalk!=null && g.adlWalk>=4) || (st && (st.gait==='침상'||st.transfer==='불가'));
   if(bedridden){ f.push(BEDRIDDEN_A[noteHash('BR'+saltKey)%BEDRIDDEN_A.length]); }
   // 낙상: 실제 평가가 있을 때만, 등급·보행 수준 반영 (와상이면 위 문구로 대체하므로 생략)
-  const hasFall = (g.fall!=null) || (g.fallJudge&&/높음|아주/.test(g.fallJudge));
+  const hasFall = (g.fall!=null) || (g.fallJudge&&/높음|아주/.test(g.fallJudge)) || (st&&st.fallRisk&&st.fallRisk!=='낮음');
   if(hasFall && !bedridden){
     const severe = (g.fall!=null&&g.fall>10) || (g.fallJudge&&/아주/.test(g.fallJudge));
-    const high = !severe && ((g.fall!=null&&g.fall>=5) || (g.fallJudge&&/높음/.test(g.fallJudge)));
-    const goodBalance = (g.bbs!=null&&g.bbs>=45) || (g.tug!=null&&g.tug<=13.5) || (g.frt!=null&&g.frt>=25);
-    const walksWell = (g.adlWalk!=null && g.adlWalk<=1) || goodBalance;
+    const high = !severe && ((g.fall!=null&&g.fall>=5) || (g.fallJudge&&/높음/.test(g.fallJudge)) || (st&&st.fallRisk==='높음') || (st&&st.fallRisk==='중간'));
+    const goodBalance = (g.bbs!=null&&g.bbs>=45) || (g.tug!=null&&g.tug<=13.5) || (g.frt!=null&&g.frt>=25) || (st&&st.gait==='독립');
+    const walksWell = (g.adlWalk!=null && g.adlWalk<=1) || goodBalance || (st&&(st.gait==='독립'||st.gait==='감독하'));
     if(severe) f.push(FALL_SEVERE[noteHash('FS'+saltKey)%FALL_SEVERE.length]);
     else if(high) f.push((walksWell?FALL_HIGH_AMB:FALL_HIGH)[noteHash('FH'+saltKey)%FALL_HIGH.length]);
   }
@@ -5329,6 +5405,8 @@ function evalAssessLines(g, saltKey){
   if(g.adl!=null&&g.adl>=16) f.push('일상생활동작 의존도 높아 기능 유지에 중점을 둔 접근이 필요함.');
   if(g.vas!=null&&g.vas>=4) f.push('통증 호소(VAS '+g.vas+') 있어 통증 경감을 병행하며 치료를 진행함.');
   if(g.cist!=null&&g.cist<15) f.push('인지 저하를 고려하여 반복적·시범 위주의 지시로 진행함.');
+  const statusCogPoor = st && st.cog==='저하';
+  if(statusCogPoor && !(g.cist!=null&&g.cist<15)) f.push('인지 저하를 고려하여 반복적·시범 위주의 지시로 진행함.');
   if(g.motor&&g.motor.move&&Object.values(g.motor.move).some(v=>v&&v!=='운동장애 없음')) f.push('운동장애 소견 있어 잔존 기능을 활용하고 마비측을 보호하며 진행함.');
   return f;
 }
@@ -6258,17 +6336,23 @@ function composeNote(e, treats, dateStr, salt, rec){
     const balPoor=(g&&g.bbs!=null&&g.bbs<45)||(g&&g.tug!=null&&g.tug>13.5);
     if(balPoor) sPool=sPool.concat(NOTE_POOL.S_unstable);
     if(risks.includes('치매')) sPool=sPool.concat(NOTE_POOL.S_dementia);
+    if(!risks.includes('치매') && ((g&&g.status&&g.status.cog==='저하')||(g&&g.cist!=null&&g.cist<15))) sPool=sPool.concat(NOTE_POOL.S_dementia);
     sParts.push(pick(sPool, noteHash('S'+idn+bucket)));
   }
   S = sParts.join(' ');
   if(!/[.!?…]$/.test(S)) S+='.';
 
-  // 통증 없음 판정 (오늘 체크 > 메모 > 평가) — S·O·A·P 전체 일관 적용
-  const painNoneToday = (tq && tq.pain==='없음') || (memo && /(통증|아프|아픔|불편)\s*(없|않|호전|완화|나아|좋)/.test(memo));
-  const painYesToday = (tq && tq.pain==='있음') || (memo && /(통증|아픔|아파|불편|쑤)/.test(memo) && !painNoneToday);
+  // 통증 없음 판정 (오늘 체크 > 메모 > 핵심상태 > 평가) — S·O·A·P 전체 일관 적용
+  const statusCheck = (g && g.status) ? g.status : null;
+  // 인지 저하 판정: 핵심상태 또는 CIST
+  const cogPoor = (statusCheck && statusCheck.cog=='저하') || (g && g.cist!=null && g.cist<15);
+  const painNoneToday = (tq && tq.pain==='없음') || (memo && /(통증|아프|아핀|불편)\s*(없|않|호전|완화|나아|좋)/.test(memo)) || (statusCheck && statusCheck.pain==='없음');
+  const painYesToday = (tq && tq.pain==='있음') || (memo && /(통증|아픔|아파|불편|쑤)/.test(memo) && !painNoneToday) || (statusCheck && statusCheck.pain==='있음' && !painNoneToday);
   const noPain = painNoneToday || (!painYesToday && g && g.vas!=null && g.vas<=1);
   const PAIN_RE = /통증|동통|둔통|진통|쑤심/;
-  const bedridden = (g && g.adlWalk!=null && g.adlWalk>=4);
+  // 와상 판정: adlWalk>=4 또는 핵심상태 침상/기립불가
+  const bedridden = (g && g.adlWalk!=null && g.adlWalk>=4) ||
+    (statusCheck && (statusCheck.gait==='침상' || statusCheck.transfer==='불가'));
   const MOBILITY_RE = /보행|기립|일어서|걷기|이동 훈련|이동훈련|기립훈련|서기 훈련|균형 훈련|보행 훈련/;
 
   // O — 메모의 O분류 + 치료별 객관적 수행
@@ -6880,7 +6964,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-25';
+const APP_VERSION = '2026-07-09-28';
 function checkForUpdate(){
   try{
     const base=location.pathname;
