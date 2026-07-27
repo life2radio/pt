@@ -383,6 +383,9 @@
   .ben-ta { width: 100%; box-sizing: border-box; font-size: 14px; line-height: 1.6; padding: 8px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; font-family: inherit; }
   .ben-add { display: flex; gap: 6px; margin-top: 10px; }
   .ben-add select { flex: 1; }
+  .brief-ref { background: #F0F8F5; border: 1px solid #B8DDD4; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .brief-ref-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #1d6a58; line-height: 1.5; }
+  .brief-ref-ic { flex-shrink: 0; font-size: 14px; }
   .status-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
   .status-q { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
   .status-opts { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -3607,6 +3610,19 @@ function resetTreatments(){
   state.treatments=DEFAULT_TREATMENTS.slice(); save(); renderTreatments(); renderPlanForm(); renderRecord();
 }
 
+// 치료기록에서 조회·석회 메모 참고 표시
+function briefRecRef(id){
+  const b=(state.briefings&&state.briefings[today])||{};
+  const en=b.elderNotes||{};
+  const mor=(en.morning&&en.morning[id])||'';
+  const eve=(en.evening&&en.evening[id])||'';
+  if(!mor&&!eve) return '';
+  let html='<div class="brief-ref">';
+  if(mor) html+='<div class="brief-ref-row"><span class="brief-ref-ic">🌅</span><span class="brief-ref-txt">'+esc(mor)+'</span></div>';
+  if(eve) html+='<div class="brief-ref-row"><span class="brief-ref-ic">🌙</span><span class="brief-ref-txt">'+esc(eve)+'</span></div>';
+  html+='</div>';
+  return html;
+}
 function renderRecord(){
   renderTreatments();
   document.getElementById('r-date').textContent=today+' ('+todayWeekday()+')';
@@ -3649,13 +3665,14 @@ function renderRecord(){
       ((e.careplan&&e.careplan.exAreas&&e.careplan.exAreas.length)?
         '<div class="rec-ex"><button class="rec-ex-btn no-print" onclick="toggleRecEx('+e.id+',this)">🏃 오늘의 운동 보기 ('+e.careplan.exAreas.length+'개 영역)</button><div class="rec-ex-body" id="recex-'+e.id+'" hidden>'+recExHtml(e)+'</div></div>':'')+
       '<div class="today-quick no-print">'+
+        briefRecRef(e.id)+
         '<div class="tq-row"><span class="tq-label">오늘 컨디션</span>'+
           ['양호','보통','저하'].map(v=>'<button type="button" class="tq-btn'+((rec.today&&rec.today.cond===v)?' on':'')+'" onclick="setToday('+e.id+',\'cond\',\''+v+'\')">'+v+'</button>').join('')+'</div>'+
         '<div class="tq-row"><span class="tq-label">통증</span>'+
           ['없음','있음'].map(v=>'<button type="button" class="tq-btn'+((rec.today&&rec.today.pain===v)?' on':'')+'" onclick="setToday('+e.id+',\'pain\',\''+v+'\')">'+v+'</button>').join('')+
           ((rec.today&&rec.today.pain==='있음')?'<input class="tq-site" placeholder="부위·정도 (예: 우측 어깨 중등도)" value="'+esc(rec.today.painSite||'')+'" onchange="setToday('+e.id+',\'painSite\',this.value)">':'')+'</div>'+
       '</div>'+
-      '<input placeholder="반응·메모 (선택 — 적으면 이 내용이 일지에 그대로 반영돼요)" value="'+esc(rec.memo)+'" onchange="setMemo('+e.id+',this.value)">'+
+      '<input placeholder="반응·메모 (S: 어르신 호소·표현 / O: 기립30초유지·보행10m완료 / A: 통증 호전 / P: 다음 회기 강도 올릴 예정)" value="'+esc(rec.memo)+'" onchange="setMemo('+e.id+',this.value)">'+
       '<div class="note-box">'+
         '<div class="note-bar"><span class="note-label">📋 물리치료 일지 (SOAP)</span>'+
           '<span class="note-btns no-print"><button class="note-gen" onclick="genNote('+e.id+',false)">✍ 자동작성</button>'+
@@ -6173,6 +6190,45 @@ function periodBucket(dateStr){
   return Math.floor(t/86400000/2);
 }
 
+// ===== 메모 → SOAP 자동 분류 =====
+const SOAP_RULES = {
+  S: [
+    /아프|아파|아픔|통증 호소|아프다고|불편|힘들|어지러|어지럽|두통|쑤시|쑤셔|쑤심|저려|저림|저리|당기|당겨|무겁|무거|붓|부었|부종|열감|두려|무서|걱정|싫|거부|거절|울|웃|편하|불안|힘들다|하셨|말씀|하소연/,
+    /호소하|호소함|표현하|표현함|하신다|하셨어요|하셨습니다|어르신이|환자분|본인이|스스로|본인|좋아진 것 같|나아진 것 같|나은 것 같/
+  ],
+  A: [
+    /호전|향상|개선|증가|증대|감소|저하|악화|유지됨|안정됨|불안정|비교해|대비|지난 회기|전 회기|이전 대비|전주 대비|지난주 대비|소폭|점진|기능적|임상적|소견|판단|평가상|필요 판단|지속 필요|강화 필요|권장/
+  ],
+  P: [
+    /다음 회기|다음에|내일|이후부터|예정|추가 예정|변경 예정|전환 예정|중단|점진적|단계적|올릴|낮출|늘릴|줄일|목표로|강도.*조절|올릴 예정|감소 예정|증가 예정|주 \d회|모니터링|재평가 예정|지속 예정|계획|처방 추가/
+  ],
+  O: [
+    /초\b|분\b|\d+회|\d+세트|set|rep|kg|lb|cm|mm|°|도\b|\d+m\b|미터|%|퍼센트/,
+    /기립|보행|보조|독립|워커|지팡이|휠체어|침대|매트|평행봉|시행|적용|실시|수행|완료|달성|유지\b|관찰|확인|측정|검사함|평가함|rom|mmt|bbs|tug|vas|mmhg|맥박|혈압|체온/,
+    /좌측|우측|양측|상지|하지|어깨|팔꿈치|손목|고관절|무릎|발목|경추|흉추|요추|몸통|체간/
+  ]
+};
+function classifyMemoLine(line){
+  const t=line.trim(); if(!t) return null;
+  for(const cat of ['S','A','P','O']){
+    if(SOAP_RULES[cat].some(p=>p.test(t))) return cat;
+  }
+  return 'O'; // 기본값: 객관적 관찰
+}
+function splitMemo(memo){
+  // 마침표·느낌표·물음표·줄바꿈·쉼표(뒤에 공백+대문자나 한글)로 나누기
+  const sents = memo
+    .split(/(?<=[.!?…。])\s+|[\n\r]+|(?<=,)\s+(?=[가-힣A-Z])/)
+    .map(s=>s.trim()).filter(Boolean);
+  return sents.length ? sents : [memo.trim()];
+}
+function classifyMemo(memo){
+  const result={S:[],O:[],A:[],P:[]};
+  if(!memo||!memo.trim()) return result;
+  const sents=splitMemo(memo);
+  sents.forEach(s=>{ const cat=classifyMemoLine(s); if(cat) result[cat].push(s); });
+  return result;
+}
 function composeNote(e, treats, dateStr, salt, rec){
   salt = salt||0;
   const bucket = periodBucket(dateStr) + salt;
@@ -6181,37 +6237,31 @@ function composeNote(e, treats, dateStr, salt, rec){
   const diag = (e.diag||'');
   const memo = (rec && rec.memo) ? String(rec.memo).trim() : '';
   const g = (typeof latestEvalData==='function') ? latestEvalData(idn) : {has:false};
+  const memoSOAP = classifyMemo(memo);
 
-  // S — ① 반응 메모 ② 오늘의 핵심(컨디션·통증) ③ 평가 상태 순으로 정확 반영
+  // S — ① 메모의 S분류 ② 오늘 컨디션·통증 ③ 풀에서 선택
   const tq = (rec && rec.today) ? rec.today : null;
   let S;
-  if(memo){
-    S = memo.replace(/\s+/g,' ');
-    if(!/[.!?…]$/.test(S)) S += '.';
-  } else if(tq && (tq.cond || tq.pain)){
-    const parts=[];
-    if(tq.cond==='양호') parts.push(pick(NOTE_POOL.S_cond_good, noteHash('SCg'+idn+bucket)));
-    else if(tq.cond==='보통') parts.push(pick(NOTE_POOL.S_cond_mid, noteHash('SCm'+idn+bucket)));
-    else if(tq.cond==='저하') parts.push(pick(NOTE_POOL.S_cond_low, noteHash('SCl'+idn+bucket)));
-    if(tq.pain==='없음') parts.push(pick(NOTE_POOL.S_pain_none, noteHash('SPn'+idn+bucket)));
-    else if(tq.pain==='있음'){ const site=(tq.painSite||'').trim(); parts.push(site?(site+' 통증 호소함.'):'환부 통증 호소함.'); }
-    S = parts.join(' ');
-    if(!S){ S = pick(NOTE_POOL.S_neutral, noteHash('S'+idn+bucket)); }
-  } else {
+  const sParts=[];
+  if(memoSOAP.S.length) sParts.push(memoSOAP.S.join(' '));
+  if(tq && tq.cond==='양호') sParts.push(pick(NOTE_POOL.S_cond_good, noteHash('SCg'+idn+bucket)));
+  else if(tq && tq.cond==='보통') sParts.push(pick(NOTE_POOL.S_cond_mid, noteHash('SCm'+idn+bucket)));
+  else if(tq && tq.cond==='저하') sParts.push(pick(NOTE_POOL.S_cond_low, noteHash('SCl'+idn+bucket)));
+  if(tq && tq.pain==='없음') sParts.push(pick(NOTE_POOL.S_pain_none, noteHash('SPn'+idn+bucket)));
+  else if(tq && tq.pain==='있음'){ const site=(tq.painSite||'').trim(); sParts.push(site?(site+' 통증 호소함.'):'환부 통증 호소함.'); }
+  if(!sParts.length){
     let sPool = NOTE_POOL.S_neutral.slice();
-    if(g && g.vas!=null){
-      if(g.vas>=4) sPool = sPool.concat(NOTE_POOL.S_pain);
-      else sPool = sPool.concat(NOTE_POOL.S_noPain);
-    } else {
-      sPool = sPool.concat(NOTE_POOL.S_noPain);
-    }
-    const romLim = (g && g.rom!=null && g.rom<85) || (g && g.motor && g.motor.joint && Object.values(g.motor.joint).some(v=>v&&v!=='제한 없음'));
-    if(romLim) sPool = sPool.concat(NOTE_POOL.S_stiff);
-    const balPoor = (g && g.bbs!=null && g.bbs<45) || (g && g.tug!=null && g.tug>13.5);
-    if(balPoor) sPool = sPool.concat(NOTE_POOL.S_unstable);
-    if(risks.includes('치매')) sPool = sPool.concat(NOTE_POOL.S_dementia);
-    S = pick(sPool, noteHash('S'+idn+bucket));
+    if(g && g.vas!=null){ if(g.vas>=4) sPool=sPool.concat(NOTE_POOL.S_pain); else sPool=sPool.concat(NOTE_POOL.S_noPain); }
+    else sPool=sPool.concat(NOTE_POOL.S_noPain);
+    const romLim=(g&&g.rom!=null&&g.rom<85)||(g&&g.motor&&g.motor.joint&&Object.values(g.motor.joint).some(v=>v&&v!=='제한 없음'));
+    if(romLim) sPool=sPool.concat(NOTE_POOL.S_stiff);
+    const balPoor=(g&&g.bbs!=null&&g.bbs<45)||(g&&g.tug!=null&&g.tug>13.5);
+    if(balPoor) sPool=sPool.concat(NOTE_POOL.S_unstable);
+    if(risks.includes('치매')) sPool=sPool.concat(NOTE_POOL.S_dementia);
+    sParts.push(pick(sPool, noteHash('S'+idn+bucket)));
   }
+  S = sParts.join(' ');
+  if(!/[.!?…]$/.test(S)) S+='.';
 
   // 통증 없음 판정 (오늘 체크 > 메모 > 평가) — S·O·A·P 전체 일관 적용
   const painNoneToday = (tq && tq.pain==='없음') || (memo && /(통증|아프|아픔|불편)\s*(없|않|호전|완화|나아|좋)/.test(memo));
@@ -6221,16 +6271,17 @@ function composeNote(e, treats, dateStr, salt, rec){
   const bedridden = (g && g.adlWalk!=null && g.adlWalk>=4);
   const MOBILITY_RE = /보행|기립|일어서|걷기|이동 훈련|이동훈련|기립훈련|서기 훈련|균형 훈련|보행 훈련/;
 
-  // O — 받은 치료마다 한 문장씩 (통증 없으면 통증, 와상이면 이동·기립 문구 회피)
+  // O — 메모의 O분류 + 치료별 객관적 수행
   const oParts = (treats&&treats.length?treats:['_']).map(t=>{
     let pool = NOTE_POOL.O[t] || NOTE_POOL.O_default;
     if(noPain){ const filtered = pool.filter(s=>!PAIN_RE.test(s)); if(filtered.length) pool = filtered; }
     if(bedridden){ const fm = pool.filter(s=>!MOBILITY_RE.test(s)); if(fm.length) pool = fm; }
     return pick(pool, noteHash('O'+t+idn+bucket));
   });
-  const O = oParts.join(' ');
+  let O = oParts.join(' ');
+  if(memoSOAP.O.length) O = memoSOAP.O.join(' ') + ' ' + O;
 
-  // A — 평가 결과 기반 + 진단 키워드 반영
+  // A — 메모의 A분류 + 평가 기반 + 진단 키워드
   let aPool = NOTE_POOL.A.slice();
   if(/편마비|반신|hemi|뇌졸중|뇌경색|뇌출혈/i.test(diag)) aPool = aPool.concat(NOTE_POOL.A_hemiplegia);
   if(risks.includes('골다공증')) aPool = aPool.concat(NOTE_POOL.A_osteoporosis);
@@ -6246,12 +6297,14 @@ function composeNote(e, treats, dateStr, salt, rec){
       A = chosen.join(' ') + ' ' + baseA;
     }
   }
+  if(memoSOAP.A.length) A = memoSOAP.A.join(' ') + ' ' + A;
 
-  // P
+  // P — 메모의 P분류 + 풀에서 선택
   let pPool = NOTE_POOL.P;
   if(noPain){ const pf = pPool.filter(s=>!PAIN_RE.test(s)); if(pf.length) pPool = pf; }
   if(bedridden){ const pm = pPool.filter(s=>!MOBILITY_RE.test(s)); if(pm.length) pPool = pm; }
-  const P = pick(pPool, noteHash('P'+idn+bucket));
+  let P = pick(pPool, noteHash('P'+idn+bucket));
+  if(memoSOAP.P.length) P = memoSOAP.P.join(' ') + ' ' + P;
 
   return 'S: '+S+'\nO: '+O+'\nA: '+A+'\nP: '+P;
 }
@@ -6827,7 +6880,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-22';
+const APP_VERSION = '2026-07-09-25';
 function checkForUpdate(){
   try{
     const base=location.pathname;
