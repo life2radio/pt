@@ -385,6 +385,8 @@
   .ben-add select { flex: 1; }
   .brief-ref { background: #F0F8F5; border: 1px solid #B8DDD4; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
   .brief-ref-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #1d6a58; line-height: 1.5; }
+  .rec-datebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .rec-past-badge { font-size: 12px; color: var(--amber); background: #FFF8E1; border: 1px solid #F5C518; border-radius: 8px; padding: 3px 10px; }
   .brief-ref-ic { flex-shrink: 0; font-size: 14px; }
   .hl-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
   .hl-btn { background: #FFF8E1; border: 1.5px solid #F5C518; color: #7a5b1c; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
@@ -1388,11 +1390,18 @@
   <section id="record" class="panel">
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center;">
-        <div class="card-title" style="margin:0;">오늘의 치료 기록</div>
+        <div class="card-title" style="margin:0;">치료 기록</div>
         <div style="text-align:right;">
           <div class="progress-pill" id="r-progress"><span class="pp pp-wait">대기 0</span><span class="pp pp-ongoing">치료중 0</span><span class="pp pp-done">완료 0</span></div>
           <div class="meta" id="r-date" style="font-size:12px;"></div>
         </div>
+      </div>
+      <div class="rec-datebar no-print">
+        <button class="brief-nav" onclick="moveRecordDate(-1)">‹ 전날</button>
+        <input type="date" id="rec-date-pick" onchange="setRecordDate(this.value)">
+        <button class="brief-nav" onclick="moveRecordDate(1)">다음날 ›</button>
+        <button class="brief-today" onclick="setRecordDate(today)">오늘</button>
+        <span id="rec-past-badge" class="rec-past-badge" style="display:none;">📅 과거 날짜</span>
       </div>
       <div class="hint">어르신마다 받은 치료 항목을 탭하면 바로 저장돼요. 한 명에 10초면 충분해요.</div>
       <div class="row no-print" style="margin-bottom:10px;">
@@ -1916,7 +1925,7 @@ function go(btn){
   document.getElementById(tab).classList.add('active');
   if(tab==='dash') renderDash();
   if(tab==='sched') renderSched();
-  if(tab==='record') renderRecord();
+  if(tab==='record'){ recordDate=today; renderRecord(); }
   if(tab==='eval') initEval();
   if(tab==='doctor') renderDoctor();
   if(tab==='report') initReport();
@@ -3205,7 +3214,7 @@ function renderSched(){
   const isToday = schedDay===tw;
   const noteEl=document.getElementById('sched-note');
   if(noteEl && noteEl.value!==(state.schedNote||'') && document.activeElement!==noteEl) noteEl.value=state.schedNote||'';
-  const rec = state.records[today]||{};
+  const rec = state.records[recordDate]||{};
   // 시간표에는 그 요일에 시간 배정된 어르신, 미배정에는 모든 치료중 어르신(요일 무관)
   const allActive = state.elders.filter(e=>e.status==='치료중').sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
   const elders = allActive;
@@ -3696,17 +3705,35 @@ function briefRecRef(id){
   html+='</div>';
   return html;
 }
+var recordDate = today;
+function setRecordDate(v){
+  if(!v) return;
+  recordDate=v;
+  const pick=document.getElementById('rec-date-pick'); if(pick) pick.value=v;
+  const badge=document.getElementById('rec-past-badge'); if(badge) badge.style.display=(v<today)?'inline-block':'none';
+  renderRecord();
+}
+function moveRecordDate(delta){
+  const d=new Date(recordDate+'T00:00:00'); d.setDate(d.getDate()+delta);
+  const nv=d.toISOString().slice(0,10);
+  if(nv>today) return; // 미래는 이동 안 함
+  setRecordDate(nv);
+}
 function renderRecord(){
   renderTreatments();
-  document.getElementById('r-date').textContent=today+' ('+todayWeekday()+')';
+  const wd=WEEKDAYS[new Date(recordDate+'T00:00:00').getDay()]||'';
+  document.getElementById('r-date').textContent=recordDate+' ('+wd+')';
+  const pick=document.getElementById('rec-date-pick'); if(pick) pick.value=recordDate;
+  const badge=document.getElementById('rec-past-badge'); if(badge) badge.style.display=(recordDate<today)?'inline-block':'none';
   const list=document.getElementById('r-list');
-  const active=todaysElders();
+  const rdWd=WEEKDAYS[new Date(recordDate+'T00:00:00').getDay()]||'';
+  const active=state.elders.filter(e=>e.status==='치료중'&&slotOf(e,rdWd));
   if(!state.elders.length){ list.innerHTML='<div class="empty">먼저 ‘어르신’ 탭에서 어르신을 등록해 주세요</div>'; return; }
-  if(!active.length){ list.innerHTML='<div class="empty">오늘('+todayWeekday()+'요일) 시간표에 배정된 어르신이 없어요.<br><span class="hint">스케줄 탭에서 오늘 시간표에 어르신을 배정하면 여기 치료일지에 떠요.</span></div>'; return; }
-  if(!state.records[today]) state.records[today]={};
+  if(!active.length){ list.innerHTML='<div class="empty">'+(recordDate===today?'오늘('+todayWeekday()+'요일)':recordDate+'의')+'시간표에 배정된 어르신이 없어요.<br><span class="hint">스케줄 탭에서 오늘 시간표에 어르신을 배정하면 여기 치료일지에 떠요.</span></div>'; return; }
+  if(!state.records[recordDate]) state.records[recordDate]={};
   const sorted=active.slice().sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
   list.innerHTML=sorted.map(e=>{
-    const rec=state.records[today][e.id]||{treats:[],memo:'',phase:'wait'};
+    const rec=state.records[recordDate][e.id]||{treats:[],memo:'',phase:'wait'};
     const phase=rec.phase||'wait';
     const hasPlan = e.plan && e.plan.length;
     const showTreats = hasPlan ? e.plan : [];
@@ -3783,9 +3810,9 @@ function addExToNote(id){
   evMsg&&evMsg('일지에 운동 요약을 넣었어요','ok');
 }
 function ensureRec(id){
-  if(!state.records[today]) state.records[today]={};
-  if(!state.records[today][id]) state.records[today][id]={treats:[],memo:'',phase:'wait'};
-  return state.records[today][id];
+  if(!state.records[recordDate]) state.records[recordDate]={};
+  if(!state.records[recordDate][id]) state.records[recordDate][id]={treats:[],memo:'',phase:'wait'};
+  return state.records[recordDate][id];
 }
 function togglePlanEdit(id,btn){
   const ed=document.getElementById('pe-'+id);
@@ -3822,7 +3849,7 @@ function toggleTreat(id,t,el){
 }
 function updateProgress(){
   const active=todaysElders();
-  const rec=state.records[today]||{};
+  const rec=state.records[recordDate]||{};
   let w=0,o=0,d=0;
   active.forEach(e=>{ const r=rec[e.id]; const p=r&&r.phase?r.phase:'wait'; if(p==='done')d++; else if(p==='ongoing')o++; else w++; });
   const p=document.getElementById('r-progress');
@@ -3864,7 +3891,7 @@ function toggleRecordSettings(){
 }
 
 function copyNote(id, btn){
-  const rec=state.records[today] && state.records[today][id];
+  const rec=state.records[recordDate] && state.records[recordDate][id];
   const text=(rec&&rec.note)?rec.note:'';
   if(!text.trim()){ alert('복사할 일지가 없어요. 먼저 일지를 작성해 주세요.'); return; }
   const done=()=>{ const o=btn.textContent; btn.textContent='✓ 복사됨'; setTimeout(()=>{btn.textContent=o;},1500); };
@@ -3886,7 +3913,7 @@ function genNote(id, regen){
   const treats=rec.treats||[];
   if(!treats.length){ alert('먼저 받은 치료 항목을 체크해 주세요. 그래야 그 치료에 맞는 일지가 작성돼요.'); return; }
   const salt = regen ? Math.floor(Math.random()*9999)+1 : 0;
-  rec.note = composeNote(e, treats, today, salt, rec);
+  rec.note = composeNote(e, treats, recordDate, salt, rec);
   save();
   renderRecord();
   // 재료 부족 안내: 평가·메모·오늘입력 모두 없으면 일반적 일지가 나옴을 알림
@@ -3907,13 +3934,13 @@ function evMsgRecord(html){
 
 function genAllNotes(){
   const active=todaysElders();
-  if(!state.records[today]) state.records[today]={};
+  if(!state.records[recordDate]) state.records[recordDate]={};
   let made=0, skipped=0, noTreat=0;
   active.forEach(e=>{
-    const rec=state.records[today][e.id];
+    const rec=state.records[recordDate][e.id];
     if(!rec || !rec.treats || !rec.treats.length){ noTreat++; return; }
     if(rec.note && rec.note.trim()){ skipped++; return; } // 기존 일지는 덮어쓰지 않음
-    rec.note = composeNote(e, rec.treats, today, 0, rec);
+    rec.note = composeNote(e, rec.treats, recordDate, 0, rec);
     made++;
   });
   save();
@@ -7042,7 +7069,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-31';
+const APP_VERSION = '2026-07-09-32';
 function checkForUpdate(){
   try{
     const base=location.pathname;
