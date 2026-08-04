@@ -387,6 +387,7 @@
   .brief-ref-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #1d6a58; line-height: 1.5; }
   .rec-datebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .rec-past-badge { font-size: 12px; color: var(--amber); background: #FFF8E1; border: 1px solid #F5C518; border-radius: 8px; padding: 3px 10px; }
+  .note-gen.simple { background: #EAF4F0; border-color: var(--teal); color: var(--teal); font-weight: 600; }
   .brief-ref-ic { flex-shrink: 0; font-size: 14px; }
   .hl-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
   .hl-btn { background: #FFF8E1; border: 1.5px solid #F5C518; color: #7a5b1c; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
@@ -3774,11 +3775,12 @@ function renderRecord(){
       '</div>'+
       '<input placeholder="반응·메모 (S: 어르신 호소·표현 / O: 기립30초유지·보행10m완료 / A: 통증 호전 / P: 다음 회기 강도 올릴 예정)" value="'+esc(rec.memo)+'" onchange="setMemo('+e.id+',this.value)">'+
       '<div class="note-box">'+
-        '<div class="note-bar"><span class="note-label">📋 물리치료 일지 (SOAP)</span>'+
-          '<span class="note-btns no-print"><button class="note-gen" onclick="genNote('+e.id+',false)">✍ 자동작성</button>'+
+        '<div class="note-bar"><span class="note-label">📋 물리치료 일지</span>'+
+          '<span class="note-btns no-print"><button class="note-gen" onclick="genNote('+e.id+',false)">✍ SOAP 일지</button>'+
+          '<button class="note-gen simple" onclick="genSimpleNote('+e.id+',false)">📝 간단 일지</button>'+
           '<button class="note-gen alt" onclick="genNote('+e.id+',true)">🔄 다른 표현</button>'+
           '<button class="note-gen copy" onclick="copyNote('+e.id+',this)">📋 복사</button></span></div>'+
-        '<textarea class="note-ta" rows="4" placeholder="‘자동작성’을 누르면 전문 용어로 일지가 생성돼요. 직접 수정도 가능해요." onchange="setNote('+e.id+',this.value)">'+esc(rec.note||'')+'</textarea>'+
+        '<textarea class="note-ta" rows="4" placeholder="‘SOAP 일지’는 전문 형식, ‘간단 일지’는 치료·반응·경과를 간단히 적어줘요. 직접 수정도 가능해요." onchange="setNote('+e.id+',this.value)">'+esc(rec.note||'')+'</textarea>'+
       '</div>'+
       hlBtnHtml(e.id, today)+'</div>';
   }).join('');
@@ -3907,6 +3909,74 @@ function fallbackCopy(text, done){
   document.body.removeChild(ta);
 }
 
+// ===== 간단 경과 일지 =====
+const SIMPLE_POOL = {
+  // 반응·참여
+  react_good: ['잘 참여하셨음.','적극적으로 참여하셨음.','협조 잘 되셨음.','편안하게 잘 받으셨음.','무리 없이 잘 따라오셨음.'],
+  react_mid: ['무난히 참여하셨음.','평소처럼 참여하셨음.','큰 무리 없이 받으셨음.','차분히 참여하셨음.'],
+  react_low: ['다소 힘들어하셨음.','평소보다 피로해하셨음.','컨디션 저하로 강도 낮춰 진행함.','중간중간 쉬어가며 진행함.'],
+  react_pain: ['치료 중 통증 호소 있으셨음.','통증으로 강도 조절하며 진행함.','불편감 호소하셔서 조심히 진행함.'],
+  react_refuse: ['참여를 꺼려하셔서 짧게 진행함.','거부감 보이셔서 설득 후 일부만 진행함.'],
+  // 경과
+  prog_keep: ['이전과 비슷하게 유지되고 있음.','현 상태 잘 유지되고 있음.','특별한 변화 없이 안정적임.','기능 수준 유지 중임.'],
+  prog_better: ['지난번보다 나아진 모습 보이심.','조금씩 좋아지고 계심.','전보다 수월해하시는 모습임.','움직임이 한결 편해지셨음.'],
+  prog_watch: ['조금 더 지켜봐야 할 것 같음.','다음 치료 때 상태 다시 확인 예정임.','컨디션 살피며 진행할 예정임.'],
+  prog_pain_better: ['통증은 지난번보다 덜하다고 하심.','통증이 조금 줄어든 모습임.'],
+};
+function composeSimpleNote(e, treats, dateStr, salt, rec){
+  salt=salt||0;
+  const bucket=periodBucket(dateStr)+salt;
+  const idn=e.id;
+  const tq=(rec&&rec.today)?rec.today:null;
+  const memo=(rec&&rec.memo)?String(rec.memo).trim():'';
+  const g=(typeof latestEvalData==='function')?latestEvalData(idn):{has:false};
+  const st=(g&&g.status)?g.status:null;
+
+  // ① 치료 항목
+  const tList=(treats&&treats.length)?treats:[];
+  let line1 = tList.length ? (tList.join('·')+' 시행함.') : '치료 시행함.';
+
+  // ② 반응·참여
+  const painYes = (tq&&tq.pain==='있음') || (st&&st.pain==='있음'&&!(tq&&tq.pain==='없음'));
+  const condLow = tq&&tq.cond==='저하';
+  const condGood = tq&&tq.cond==='양호';
+  const refused = rec&&rec.notDone;
+  let pool2;
+  if(refused) pool2=SIMPLE_POOL.react_refuse;
+  else if(painYes) pool2=SIMPLE_POOL.react_pain;
+  else if(condLow) pool2=SIMPLE_POOL.react_low;
+  else if(condGood) pool2=SIMPLE_POOL.react_good;
+  else pool2=SIMPLE_POOL.react_mid;
+  let line2=pick(pool2, noteHash('SR'+idn+bucket));
+  // 통증 부위가 있으면 부위 표현으로 대체(중복 방지)
+  if(painYes && tq && tq.painSite && tq.painSite.trim()){
+    const site=tq.painSite.trim();
+    const siteLines=[site+' 통증 호소하셔서 강도 조절하며 진행함.', site+' 통증 있으셔서 조심히 진행함.', site+' 불편감 호소하셨음.'];
+    line2=pick(siteLines, noteHash('SRS'+idn+bucket));
+  }
+
+  // ③ 경과
+  let pool3;
+  if(painYes) pool3=SIMPLE_POOL.prog_watch;
+  else if(condLow) pool3=SIMPLE_POOL.prog_watch;
+  else if(condGood) pool3=SIMPLE_POOL.prog_keep.concat(SIMPLE_POOL.prog_better);
+  else pool3=SIMPLE_POOL.prog_keep;
+  let line3=pick(pool3, noteHash('SP'+idn+bucket));
+
+  // 메모가 있으면 그대로 자연스럽게 삽입 (분류 없이)
+  let out=[line1, line2, line3];
+  if(memo){ out.splice(2, 0, memo.replace(/\s+/g,' ')+(/[.!?…]$/.test(memo)?'':'.')); }
+  return out.join(' ');
+}
+function genSimpleNote(id, regen){
+  const e=state.elders.find(x=>x.id==id); if(!e) return;
+  const rec=ensureRec(id);
+  const treats=rec.treats||[];
+  if(!treats.length){ alert('먼저 받은 치료 항목을 체크해 주세요.'); return; }
+  const salt = regen ? Math.floor(Math.random()*9999)+1 : 0;
+  rec.note = composeSimpleNote(e, treats, recordDate, salt, rec);
+  save(); renderRecord();
+}
 function genNote(id, regen){
   const e=state.elders.find(x=>x.id==id); if(!e) return;
   const rec=ensureRec(id);
@@ -7069,7 +7139,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-32';
+const APP_VERSION = '2026-07-09-33';
 function checkForUpdate(){
   try{
     const base=location.pathname;
