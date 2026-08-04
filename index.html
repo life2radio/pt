@@ -4072,12 +4072,12 @@ const ADL_ITEMS = [
     {pt:0, label:'다른 사람의 도움 없이도 항상 단정하게 옷 입고 몸치장을 할 수 있다'},
     {pt:1, label:'적절한 몸치장을 스스로 할 수 있으나 면도 같은 것들은 도움을 필요로 한다'},
     {pt:2, label:'몸치장에 다른 사람들의 도움과 규칙적인 감독을 필요로 한다'},
-    {pt:4, label:'다른 사람들이 전적으로 몸치장을 도와주어야 하는데 일단 한 다음에는 깨끗하게 유지할 수 있다'},
+    {pt:4, label:'다른 사람들이 전적으로 몸치장을 도와주어야 하는데 일단 몸치장을 한 다음에는 깨끗하게 유지할 수 있다'},
     {pt:5, label:'몸치장을 하고 유지하는 데 다른 사람들이 적극적으로 도와주어야 한다'} ]},
   { key:'walk', name:'보행', hint:'계단·이동', opts:[
     {pt:0, label:'외출하여 스스로 걸어 다닐 수 있다'},
     {pt:1, label:'실내와 실외에서 걸어 다닐 수 있다'},
-    {pt:2, label:'다른 사람의 도움을 받거나 walker·wheelchair 등을 이용하여 움직일 수 있다'},
+    {pt:2, label:'다른 사람의 도움을 받거나 walker, wheelchair 등을 이용하여 움직일 수 있다'},
     {pt:4, label:'의자나 휠체어에 앉아 있을 수는 있는데 다른 사람의 도움 없이 움직일 수 없다'},
     {pt:5, label:'하루의 반 이상을 침대에 누운 상태로 지낸다'} ]},
   { key:'bath', name:'목욕하기', opts:[
@@ -5372,13 +5372,28 @@ const BEDRIDDEN_A = [
   '와상 경향으로 수동 관절운동과 호흡·순환 관리가 요구되는 상태임.',
   '기립·보행이 어려워 관절 구축 예방 및 피부 관리가 중요한 상태임.'
 ];
+const WHEELCHAIR_A = [
+  '휠체어 이동 기능 유지 및 기립 훈련을 통한 잔존 기능 향상이 목표임.',
+  '기립 보조 및 이동 훈련 병행하여 체중부하 능력과 자세 조절 증진 도모.',
+  '기립 훈련을 통한 하지 근력 및 체중지지 능력 향상이 요구됨.',
+  '휠체어 이동 및 이동 동작 훈련을 통해 일상 기능 유지에 중점을 둠.',
+  '기립 동작 훈련 및 체중 부하 활동으로 골밀도 유지와 순환 개선 도모.'
+];
 function evalAssessLines(g, saltKey){
   saltKey = saltKey||'';
   const f=[];
   const st=g.status||null;
-  // 와상: adlWalk>=4 OR 핵심상태 침상/기립불가
-  const bedridden = (g.adlWalk!=null && g.adlWalk>=4) || (st && (st.gait==='침상'||st.transfer==='불가'));
-  if(bedridden){ f.push(BEDRIDDEN_A[noteHash('BR'+saltKey)%BEDRIDDEN_A.length]); }
+  // 진짜 와상: gait=침상 AND transfer=불가 (둘 다), 또는 adlWalk=5(침상)
+  const trueBedridden = (g.adlWalk!=null && g.adlWalk>=5) ||
+    (st && st.gait==='침상' && st.transfer==='불가');
+  // 휠체어·기립불가(이동훈련은 가능한 상태)
+  const wheelchairDependent = !trueBedridden && (
+    (g.adlWalk!=null && g.adlWalk===4) ||
+    (st && (st.gait==='불가(휠체어)'||st.transfer==='불가'))
+  );
+  const bedridden = trueBedridden; // 와상 문구는 진짜 와상에만
+  if(trueBedridden) f.push(BEDRIDDEN_A[noteHash('BR'+saltKey)%BEDRIDDEN_A.length]);
+  else if(wheelchairDependent) f.push(WHEELCHAIR_A[noteHash('WC'+saltKey)%WHEELCHAIR_A.length]);
   // 낙상: 실제 평가가 있을 때만, 등급·보행 수준 반영 (와상이면 위 문구로 대체하므로 생략)
   const hasFall = (g.fall!=null) || (g.fallJudge&&/높음|아주/.test(g.fallJudge)) || (st&&st.fallRisk&&st.fallRisk!=='낮음');
   if(hasFall && !bedridden){
@@ -5397,7 +5412,7 @@ function evalAssessLines(g, saltKey){
   if(g.rom!=null&&g.rom<85) romLim=true;
   if(g.motor&&g.motor.joint&&Object.values(g.motor.joint).some(v=>v&&v!=='제한 없음')) romLim=true;
   if(romLim) f.push('관절가동범위 제한 관찰되어 구축 예방을 위한 관절운동 병행이 필요함.');
-  if(!bedridden){
+  if(!trueBedridden){
     let bal=false;
     if(g.bbs!=null&&g.bbs<45) bal=true; if(g.tug!=null&&g.tug>13.5) bal=true; if(g.frt!=null&&g.frt<15) bal=true;
     if(bal) f.push('균형 능력 저하 소견으로 자세조절·균형 훈련이 요구되는 상태임.');
@@ -6234,28 +6249,53 @@ const NOTE_POOL = {
     '골밀도 저하 감안하여 비체중부하 위주로 안전하게 시행함.',
     '골절 위험 고려하여 과도한 부하 없이 안전 범위 내 치료 진행함.'
   ],
-  // P - 계획
+  // P - 상태별 맞춤 계획 풀
   P: [
     '현 치료 프로그램 유지하며 경과 관찰 예정.',
     '기능 유지를 위한 규칙적 물리치료 지속 계획.',
-    '관절구축 예방 위한 ROM 운동 지속 시행 예정.',
-    '낙상 예방 위한 균형훈련 단계적 병행 계획.',
-    '현 상태 유지 목표로 치료 지속하며 간호 인력과 상태 공유 예정.',
-    '부동 합병증 예방 위한 자세변환 및 운동 지속 권고.',
     '치료 반응 관찰하며 강도·빈도 점진적으로 조정 예정.',
-    '근력강화운동 지속하며 다음 평가 시 재측정 계획.',
-    '통증 경감 위한 온열·전기치료 병행하며 경과 재평가 예정.',
-    '현 기능 유지 및 악화 방지를 목표로 개별 프로그램 지속.',
-    '보행·이동 안정성 향상 위한 훈련 단계적 진행 계획.',
-    '요양 인력과 협조하여 일상 내 활동 유지 독려 예정.',
     '치료 목표 달성도 점검 후 필요 시 계획 수정 예정.',
     '재평가를 통해 목표 재설정하며 맞춤 치료 지속 계획.',
     '어르신 반응·컨디션에 맞춰 유연하게 강도 조절하며 진행.',
-    '관절 유연성·근력 유지 위한 능동운동 지속 권장.',
     '기능 저하 조기 발견 위해 주기적 상태 점검 병행 예정.',
-    '안전한 이동·기립 위해 보조 하 훈련 지속하며 관찰 예정.',
     '보호자·간호 인력과 상태 공유하며 통합 케어 지속 계획.',
-    '현 프로그램의 치료 효과 유지되어 동일 계획으로 지속 예정.'
+    '현 프로그램의 치료 효과 유지되어 동일 계획으로 지속 예정.',
+    '현 기능 유지 및 악화 방지를 목표로 개별 프로그램 지속.'
+  ],
+  P_bedridden: [
+    '관절 구축 예방을 위한 수동 ROM 운동 정기적 시행 계획.',
+    '욕창 예방 위한 체위변환 및 피부 상태 관찰 지속 예정.',
+    '부동 합병증 예방 위한 자세변환 및 능동 보조운동 지속 권고.',
+    '침상에서의 관절가동범위 유지 훈련 규칙적으로 시행 예정.',
+    '호흡·순환 기능 유지 위한 심호흡 운동 및 체위 관리 계속.'
+  ],
+  P_wheelchair: [
+    '기립 훈련 강도를 단계적으로 높여 체중부하 능력 증진 계획.',
+    '기립 시간 점진적 연장 목표로 훈련 지속 예정.',
+    '이동 동작 훈련 반복하여 이동 안정성 향상 계획.',
+    '휠체어 자세 및 압박 관리 병행하며 기립 훈련 지속 예정.',
+    '기립 보조 강도 점차 줄여 독립성 향상 도모 예정.'
+  ],
+  P_walking: [
+    '보행 거리·속도 점진적 향상 목표로 훈련 지속 예정.',
+    '균형 훈련 강도 단계적 증가하여 낙상 위험 감소 계획.',
+    '근력강화운동 지속하며 다음 평가 시 재측정 계획.',
+    '보행 시 자세 교정 병행하여 효율적 이동 패턴 형성 계획.',
+    '일상 내 보행 활동 독려하여 기능적 이동 능력 유지 예정.'
+  ],
+  P_pain: [
+    '통증 관리 위한 온열·전기치료 병행하며 경과 재평가 예정.',
+    '통증 유발 동작 회피하며 안전 범위 내 치료 강도 유지 예정.',
+    '통증 변화 기록하며 치료 접근 방식 점진적 조정 계획.',
+    '통증 경감 후 운동 치료 강도 단계적 상향 조정 예정.',
+    '통증 조절과 병행하여 관절가동범위 회복 훈련 지속 계획.'
+  ],
+  P_cog: [
+    '단순 반복 훈련으로 동작 학습 강화 계획.',
+    '간호 인력과 협조하여 일상 내 훈련 동작 연계 예정.',
+    '시범 위주 지도 방식 유지하며 참여도 향상 유도 예정.',
+    '짧고 명확한 지시로 훈련 진행하며 성취 경험 축적 계획.',
+    '반복 훈련 통해 동작 습관화 도모하며 기능 유지 예정.'
   ]
 };
 
@@ -6350,12 +6390,34 @@ function composeNote(e, treats, dateStr, salt, rec){
   const painYesToday = (tq && tq.pain==='있음') || (memo && /(통증|아픔|아파|불편|쑤)/.test(memo) && !painNoneToday) || (statusCheck && statusCheck.pain==='있음' && !painNoneToday);
   const noPain = painNoneToday || (!painYesToday && g && g.vas!=null && g.vas<=1);
   const PAIN_RE = /통증|동통|둔통|진통|쑤심/;
-  // 와상 판정: adlWalk>=4 또는 핵심상태 침상/기립불가
-  const bedridden = (g && g.adlWalk!=null && g.adlWalk>=4) ||
-    (statusCheck && (statusCheck.gait==='침상' || statusCheck.transfer==='불가'));
+  // 와상 판정: 진짜 와상(침상+기립불가 둘 다, 또는 adlWalk=5)만 — 휠체어는 와상 아님
+  const trueBedridden2 = (g && g.adlWalk!=null && g.adlWalk>=5) ||
+    (statusCheck && statusCheck.gait==='침상' && statusCheck.transfer==='불가');
+  // 메모나 치료 내용에 기립/이동/보행 훈련이 언급되면 절대 와상 문구 불가
+  const hasActiveTraining = /기립|이동 훈련|이동훈련|보행 훈련|보행훈련|휠체어 이동|서기 훈련/.test(memo);
+  const bedridden = trueBedridden2 && !hasActiveTraining;
   const MOBILITY_RE = /보행|기립|일어서|걷기|이동 훈련|이동훈련|기립훈련|서기 훈련|균형 훈련|보행 훈련/;
 
-  // O — 메모의 O분류 + 치료별 객관적 수행
+  // 직전 일지에서 P 추출
+  const prevNote = (function(){
+    const recs = (state.records||{}); let latest = null;
+    // 오늘 이전 날짜의 그 어르신 일지에서 P 찾기
+    Object.keys(recs).sort().reverse().forEach(d=>{
+      if(d>=dateStr) return;
+      const r=recs[d]&&recs[d][idn];
+      if(r&&r.note&&r.note.includes('P:')&&!latest){
+        const pm=r.note.match(/P:\s*(.+)/); if(pm) latest=pm[1].trim();
+      }
+    });
+    return latest;
+  })();
+  // 직전 P가 있으면 O에 "직전 계획 이행" 한 줄 추가
+  let prevPlanLine='';
+  if(prevNote && !memoSOAP.O.length){
+    const kw = prevNote.match(/(?:기립|보행|균형|근력|ROM|관절|통증|이동|체위|수동|능동|훈련|운동)[^\.\,]{0,10}/);
+    if(kw) prevPlanLine = '직전 계획에 따라 '+kw[0].trim()+' 훈련 연속 시행.';
+  }
+    // O — 메모의 O분류 + 치료별 객관적 수행
   const oParts = (treats&&treats.length?treats:['_']).map(t=>{
     let pool = NOTE_POOL.O[t] || NOTE_POOL.O_default;
     if(noPain){ const filtered = pool.filter(s=>!PAIN_RE.test(s)); if(filtered.length) pool = filtered; }
@@ -6363,6 +6425,7 @@ function composeNote(e, treats, dateStr, salt, rec){
     return pick(pool, noteHash('O'+t+idn+bucket));
   });
   let O = oParts.join(' ');
+  if(prevPlanLine) O = prevPlanLine + ' ' + O;
   if(memoSOAP.O.length) O = memoSOAP.O.join(' ') + ' ' + O;
 
   // A — 메모의 A분류 + 평가 기반 + 진단 키워드
@@ -6383,10 +6446,25 @@ function composeNote(e, treats, dateStr, salt, rec){
   }
   if(memoSOAP.A.length) A = memoSOAP.A.join(' ') + ' ' + A;
 
-  // P — 메모의 P분류 + 풀에서 선택
-  let pPool = NOTE_POOL.P;
-  if(noPain){ const pf = pPool.filter(s=>!PAIN_RE.test(s)); if(pf.length) pPool = pf; }
-  if(bedridden){ const pm = pPool.filter(s=>!MOBILITY_RE.test(s)); if(pm.length) pPool = pm; }
+  // P — ① 메모의 P분류 최우선 ② 직전 일지 P 키워드 → O에 반영 ③ 상태별 맞춤 풀
+
+  // 상태별 P 풀 선택
+  let pPool;
+  if(bedridden) pPool = NOTE_POOL.P_bedridden;
+  else if(statusCheck&&(statusCheck.gait==='불가(휠체어)'||statusCheck.transfer==='불가')||
+          (g&&g.adlWalk!=null&&g.adlWalk===4)) pPool = NOTE_POOL.P_wheelchair;
+  else if(statusCheck&&(statusCheck.gait==='독립'||statusCheck.gait==='감독하')||
+          (g&&g.adlWalk!=null&&g.adlWalk<=1)) pPool = NOTE_POOL.P_walking;
+  else pPool = NOTE_POOL.P;
+  // 통증 있으면 통증 P 추가
+  if(painYesToday||(!noPain&&g&&g.vas!=null&&g.vas>=4)){
+    pPool = NOTE_POOL.P_pain;
+  }
+  // 인지 저하
+  if(cogPoor) pPool = NOTE_POOL.P_cog;
+  // noPain이면 통증 문구 회피
+  if(noPain){ const pf=pPool.filter(s=>!PAIN_RE.test(s)); if(pf.length) pPool=pf; }
+  if(bedridden){ const pm=pPool.filter(s=>!MOBILITY_RE.test(s)); if(pm.length) pPool=pm; }
   let P = pick(pPool, noteHash('P'+idn+bucket));
   if(memoSOAP.P.length) P = memoSOAP.P.join(' ') + ' ' + P;
 
@@ -6964,7 +7042,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-28';
+const APP_VERSION = '2026-07-09-31';
 function checkForUpdate(){
   try{
     const base=location.pathname;
