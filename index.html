@@ -3910,6 +3910,69 @@ function fallbackCopy(text, done){
 }
 
 // ===== 간단 경과 일지 =====
+// 치료 항목별 구체적 내용 (어르신 상태에 따라 자동 선택)
+const TREAT_DETAIL = {
+  '기본동작훈련': {
+    bed: ['침상에서 돌아눕기 연습','침상에서 일어나 앉기 연습','침상 내 이동 연습','자세 바꾸기 연습'],
+    wheel: ['침상에서 휠체어로 옮겨 앉기 연습','휠체어에서 침상으로 이동 연습','휠체어 운전 연습','앉은 자세에서 일어서기 연습'],
+    walk: ['앉았다 일어서기 반복 연습','의자에서 일어서기 연습','침상 가장자리 앉기·일어서기 연습']
+  },
+  '운동치료': {
+    bed: ['침상에서 다리 들어올리기(중력 저항) 운동','손으로 저항 주며 팔다리 근력운동','악력기로 손 쥐는 힘 운동'],
+    wheel: ['앉은 자세에서 세라밴드로 팔다리 근력운동','아령으로 상지 근력운동','손 저항 주며 하지 근력운동','악력기 운동'],
+    walk: ['세라밴드로 하지 근력운동','짐볼 위에서 균형·체간 운동','아령으로 상지 근력운동','서서 다리 들어올리기 운동']
+  },
+  '근력운동': {
+    bed: ['다리 들어올려 버티기(중력 이기기) 운동','도수 저항 주며 상하지 근력운동','악력기 반복 운동'],
+    wheel: ['세라밴드로 앉아서 하지 근력운동','아령으로 팔 근력운동','손 저항 이기는 다리 운동','악력기로 손 힘 운동'],
+    walk: ['세라밴드 하지 근력운동','짐볼 이용한 체간 근력운동','아령 상지 근력운동','서서 버티기 근력운동',
+           '앉아서 세라밴드 다리 운동','손 저항 이기는 상지 운동','악력기로 손 힘 기르기']
+  },
+  '보행훈련': {
+    bed: ['침상 가장자리 앉기 및 기립 준비 훈련'],
+    wheel: ['일어서서 체중 지지하기 훈련','서서 버티기 및 제자리 걸음 연습'],
+    walker: ['워커 잡고 실내 보행 훈련','워커 이용해 복도 왕복 보행','워커 보행 및 방향 전환 연습'],
+    assist: ['약간의 보조하에 보행 훈련','손 잡아드리고 실내 보행','최소 보조로 복도 보행 연습'],
+    indep: ['독립적으로 실내 보행 훈련','스스로 복도 왕복 보행','독립 보행 및 방향 전환 연습']
+  },
+  '균형훈련': {
+    bed: ['앉은 자세 유지 훈련'],
+    wheel: ['앉은 자세 균형 잡기 훈련','일어서서 균형 유지 훈련'],
+    walk: ['한 발 서기 균형 훈련','짐볼 이용한 균형 훈련','서서 중심 이동 훈련']
+  }
+};
+function treatDetailFor(treatName, level){
+  const d=TREAT_DETAIL[treatName];
+  if(!d) return null;
+  if(treatName==='보행훈련'){
+    if(level==='bed') return d.bed;
+    if(level==='wheel') return d.wheel;
+    if(level==='walker') return d.walker;
+    if(level==='assist') return d.assist;
+    return d.indep;
+  }
+  if(level==='bed') return d.bed;
+  if(level==='wheel') return d.wheel;           // 휠체어만 휠체어 관련 동작
+  return d.walk;                                 // walker·assist·indep는 보행 가능군
+}
+function elderMobLevel(g, st){
+  // bed / wheel / walker / assist / indep
+  if(st){
+    if(st.gait==='침상') return 'bed';
+    if(st.gait==='불가(휠체어)') return 'wheel';
+    if(st.gait==='보조(워커·지팡이)'||st.gait==='부분보조(1인)') return 'walker';
+    if(st.gait==='감독하') return 'assist';
+    if(st.gait==='독립') return 'indep';
+  }
+  if(g&&g.adlWalk!=null){
+    if(g.adlWalk>=5) return 'bed';
+    if(g.adlWalk===4) return 'wheel';
+    if(g.adlWalk===2) return 'walker';
+    if(g.adlWalk===1) return 'assist';
+    return 'indep';
+  }
+  return 'assist';
+}
 const SIMPLE_POOL = {
   // 치료 시행 표현
   did: ['{T} 시행함.','{T} 진행함.','{T} 실시함.','오늘은 {T} 진행함.','{T} 위주로 진행함.','{T} 받으셨음.'],
@@ -3923,7 +3986,9 @@ const SIMPLE_POOL = {
   react_mid: [
     '무난히 참여하셨음.','평소처럼 참여하셨음.','큰 무리 없이 받으셨음.','차분히 참여하셨음.',
     '별다른 문제 없이 진행함.','조용히 잘 받으셨음.','평소와 비슷하게 하셨음.',
-    '특별한 반응 없이 진행함.','무리 없이 마치셨음.'
+    '특별한 반응 없이 진행함.','무리 없이 마치셨음.',
+    '중간에 한 번 쉬었지만 끝까지 하셨음.','천천히 하시되 끝까지 마치셨음.',
+    '조금 힘들어하셨지만 무리 없이 마치셨음.'
   ],
   react_low: [
     '다소 힘들어하셨음.','평소보다 피로해하셨음.','컨디션 저하로 강도 낮춰 진행함.',
@@ -3942,12 +4007,16 @@ const SIMPLE_POOL = {
   prog_keep: [
     '이전과 비슷하게 유지되고 있음.','현 상태 잘 유지되고 있음.','특별한 변화 없이 안정적임.',
     '기능 수준 유지 중임.','지난번과 비슷한 상태임.','큰 변화 없이 잘 지내고 계심.',
-    '전반적으로 안정적인 상태임.','현재 컨디션 유지되고 있음.','악화 없이 잘 유지되고 있음.'
+    '전반적으로 안정적인 상태임.','현재 컨디션 유지되고 있음.','악화 없이 잘 유지되고 있음.',
+    '다리 힘은 지난주와 비슷하게 유지되고 있음.','움직임 범위는 이전 수준 유지 중임.',
+    '앉고 서는 동작은 지난번과 비슷하게 하심.','근력·균형 모두 큰 변화 없이 유지됨.'
   ],
   prog_better: [
     '지난번보다 나아진 모습 보이심.','조금씩 좋아지고 계심.','전보다 수월해하시는 모습임.',
     '움직임이 한결 편해지셨음.','지난주보다 확실히 좋아지셨음.','점점 나아지고 계심.',
-    '이전보다 여유 있게 하시는 모습임.','조금씩 진전이 보임.'
+    '이전보다 여유 있게 하시는 모습임.','조금씩 진전이 보임.',
+    '일어서는 동작이 전보다 부드러워지셨음.','보행 시 발 떼는 것이 수월해지셨음.',
+    '버티는 시간이 지난번보다 길어지셨음.','반복 횟수를 늘려도 잘 따라오심.'
   ],
   prog_watch: [
     '조금 더 지켜봐야 할 것 같음.','다음 치료 때 상태 다시 확인 예정임.','컨디션 살피며 진행할 예정임.',
@@ -3990,10 +4059,25 @@ function composeSimpleNote(e, treats, dateStr, salt, rec){
     });
   })();
 
-  // ① 치료 항목
+  // ① 치료 항목 — 상태에 맞는 구체 내용으로
   const tList=(treats&&treats.length)?treats:[];
-  const tStr=tList.length?tList.join('·'):'치료';
-  let line1=pick(SIMPLE_POOL.did, noteHash('SD'+idn+bucket)).replace('{T}', tStr);
+  const level=elderMobLevel(g, st);
+  const detailParts=[];
+  const plainParts=[];
+  tList.forEach((t,i)=>{
+    const pool=treatDetailFor(t, level);
+    if(pool&&pool.length){ detailParts.push(pick(pool, noteHash('TD'+t+idn+bucket+i))); }
+    else plainParts.push(t);
+  });
+  let line1;
+  if(detailParts.length){
+    const all=detailParts.concat(plainParts.length?[plainParts.join('·')]:[]);
+    const verbs=['진행함.','시행함.','실시함.','받으셨음.'];
+    line1=all.join(', ')+' '+pick(verbs, noteHash('SD'+idn+bucket));
+  } else {
+    const tStr=tList.length?tList.join('·'):'치료';
+    line1=pick(SIMPLE_POOL.did, noteHash('SD'+idn+bucket)).replace('{T}', tStr);
+  }
 
   // ② 반응·참여
   const painYes=(tq&&tq.pain==='있음')||(st&&st.pain==='있음'&&!(tq&&tq.pain==='없음'));
@@ -7217,7 +7301,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-34';
+const APP_VERSION = '2026-07-09-35';
 function checkForUpdate(){
   try{
     const base=location.pathname;
