@@ -4108,7 +4108,9 @@ const SIMPLE_POOL = {
     '잘 참여하셨음.','적극적으로 참여하셨음.','협조 잘 되셨음.','편안하게 잘 받으셨음.',
     '무리 없이 잘 따라오셨음.','기분 좋게 참여하셨음.','표정 밝게 잘 받으셨음.',
     '거부감 없이 잘 하셨음.','끝까지 잘 마치셨음.','오늘은 특히 잘 하셨음.',
-    '먼저 하시겠다고 하실 정도로 적극적이셨음.','웃으시며 잘 참여하셨음.'
+    '먼저 하시겠다고 하실 정도로 적극적이셨음.','웃으시며 잘 참여하셨음.',
+    '치료 후 시원하다고 하심.','개운하다며 만족해하셨음.','치료받고 나서 편안해하셨음.',
+    '몸이 가벼워졌다고 하시며 좋아하셨음.','시원하다고 하시며 흡족해하셨음.','움직이기 수월해졌다고 하심.'
   ],
   react_mid: [
     '무난히 참여하셨음.','평소처럼 참여하셨음.','큰 무리 없이 받으셨음.','차분히 참여하셨음.',
@@ -4125,6 +4127,18 @@ const SIMPLE_POOL = {
   react_pain: [
     '치료 중 통증 호소 있으셨음.','통증으로 강도 조절하며 진행함.','불편감 호소하셔서 조심히 진행함.',
     '아프다고 하셔서 살살 진행함.','통증 있으셔서 범위 줄여 진행함.','통증 살피며 천천히 진행함.'
+  ],
+  // 통증 있어도 치료 후 좋아진 반응
+  react_pain_relief: [
+    '치료 후 시원하다고 하심.','온열 후 한결 편해지셨다고 하심.','치료 마치고 나서 훨씬 낫다고 하심.',
+    '치료 후 통증이 줄었다고 하심.','시원하다며 만족해하셨음.','치료받고 나서 편안해하셨음.',
+    '치료 후 뻣뻣함이 풀렸다고 하심.','아픈 게 덜하다고 하시며 만족해하심.','치료 후 움직이기 수월해졌다고 하심.',
+    '통증 있으셨지만 치료 후 한결 나아지셨음.','치료받고 개운하다고 하셨음.','치료 후 다리가 가벼워졌다고 하심.'
+  ],
+  // 통증 있을 때 경과 — 호전
+  prog_pain_better: [
+    '통증은 지난번보다 덜하다고 하심.','통증이 조금씩 줄어들고 있음.','치료 후 통증 완화 효과 보이고 있음.',
+    '통증 강도가 점차 낮아지는 추세임.','지난주보다 아프다는 말씀이 줄었음.','통증 빈도가 줄어든 모습임.'
   ],
   react_refuse: [
     '참여를 꺼려하셔서 짧게 진행함.','거부감 보이셔서 설득 후 일부만 진행함.',
@@ -4217,15 +4231,20 @@ function composeSimpleNote(e, treats, dateStr, salt, rec){
   const refused=rec&&rec.notDone;
   let pool2;
   if(refused) pool2=SIMPLE_POOL.react_refuse;
-  else if(painYes) pool2=SIMPLE_POOL.react_pain;
+  else if(painYes) pool2=SIMPLE_POOL.react_pain.concat(SIMPLE_POOL.react_pain_relief);
   else if(condLow) pool2=SIMPLE_POOL.react_low;
   else if(condGood) pool2=SIMPLE_POOL.react_good;
   else pool2=SIMPLE_POOL.react_mid;
   let line2=pick(pool2, noteHash('SR'+idn+bucket));
   if(painYes && tq && tq.painSite && tq.painSite.trim()){
     const site=tq.painSite.trim();
-    const siteLines=[site+' 통증 호소하셔서 강도 조절하며 진행함.', site+' 통증 있으셔서 조심히 진행함.',
-      site+' 불편감 호소하셨음.', site+' 아프다고 하셔서 살살 진행함.'];
+    const siteLines=[
+      site+' 통증 호소하셔서 강도 조절하며 진행함.', site+' 통증 있으셔서 조심히 진행함.',
+      site+' 불편감 호소하셨음.', site+' 아프다고 하셔서 살살 진행함.',
+      site+' 치료 후 시원하다고 하심.', site+' 온열 후 한결 편해졌다고 하심.',
+      site+' 통증 있었으나 치료 후 나아졌다고 하심.', site+' 치료 마치고 훨씬 낫다고 하심.',
+      site+' 통증 줄었다며 만족해하셨음.', site+' 뻣뻣함 풀렸다고 하심.'
+    ];
     line2=pick(siteLines, noteHash('SRS'+idn+bucket));
   }
 
@@ -4243,7 +4262,8 @@ function composeSimpleNote(e, treats, dateStr, salt, rec){
 
   // ④ 경과
   let pool3;
-  if(painYes||condLow) pool3=SIMPLE_POOL.prog_watch;
+  if(painYes) pool3=SIMPLE_POOL.prog_watch.concat(SIMPLE_POOL.prog_pain_better);
+  else if(condLow) pool3=SIMPLE_POOL.prog_watch;
   else if(condGood) pool3=SIMPLE_POOL.prog_keep.concat(SIMPLE_POOL.prog_better);
   else pool3=SIMPLE_POOL.prog_keep;
   let line3=pick(pool3, noteHash('SP'+idn+bucket));
@@ -7432,7 +7452,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-36';
+const APP_VERSION = '2026-07-09-37';
 function checkForUpdate(){
   try{
     const base=location.pathname;
