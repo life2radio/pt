@@ -387,6 +387,13 @@
   .brief-ref-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #1d6a58; line-height: 1.5; }
   .rec-datebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .rec-past-badge { font-size: 12px; color: var(--amber); background: #FFF8E1; border: 1px solid #F5C518; border-radius: 8px; padding: 3px 10px; }
+  .rec-add-card { margin-top: 12px; padding: 12px 14px; background: var(--sand); border: 1px dashed var(--line); border-radius: var(--radius-sm); }
+  .rec-add-title { font-size: 13.5px; font-weight: 700; color: var(--navy); }
+  .rec-add-row { display: flex; gap: 8px; }
+  .rec-add-row select { flex: 1; }
+  .rec-block.added { border-left: 3px solid var(--amber); }
+  .rec-added-tag { font-size: 10.5px; background: var(--amber); color: #fff; padding: 1px 7px; border-radius: 8px; margin-left: 6px; font-weight: 600; vertical-align: middle; }
+  .rec-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; margin-left: 4px; }
   .note-gen.simple { background: #EAF4F0; border-color: var(--teal); color: var(--teal); font-weight: 600; }
   .brief-ref-ic { flex-shrink: 0; font-size: 14px; }
   .hl-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
@@ -3720,6 +3727,31 @@ function moveRecordDate(delta){
   if(nv>today) return; // 미래는 이동 안 함
   setRecordDate(nv);
 }
+// 치료기록에 어르신 직접 추가
+function recAddElderHtml(rdWd, dayRec){
+  const rest=state.elders.filter(e=>e.status==='치료중' && !slotOf(e,rdWd) && !dayRec[e.id])
+    .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
+  if(!rest.length) return '';
+  return '<div class="rec-add-card no-print"><div class="rec-add-title">➕ 오늘 스케줄에 없는 어르신 추가</div>'+
+    '<p class="hint" style="margin:4px 0 8px;">갑자기 치료하게 된 어르신을 여기서 추가하면 바로 일지를 작성할 수 있어요.</p>'+
+    '<div class="rec-add-row"><select id="rec-add-sel"><option value="">어르신 선택…</option>'+
+    rest.map(e=>'<option value="'+e.id+'">'+(e.room?e.room+'호 ':'')+esc(e.name)+'</option>').join('')+
+    '</select><button class="btn teal" onclick="recAddElder()">＋ 추가</button></div></div>';
+}
+function recAddElder(){
+  const sel=document.getElementById('rec-add-sel'); if(!sel||!sel.value) return;
+  const id=parseInt(sel.value,10);
+  if(!state.records[recordDate]) state.records[recordDate]={};
+  if(!state.records[recordDate][id]) state.records[recordDate][id]={treats:[],memo:'',phase:'wait',addedManually:true};
+  save(); renderRecord();
+}
+function recRemoveElder(id){
+  const rec=state.records[recordDate]&&state.records[recordDate][id];
+  if(!rec) return;
+  if(!confirm('이 어르신을 오늘 기록에서 빼시겠어요?\n작성한 내용도 함께 지워져요.')) return;
+  delete state.records[recordDate][id];
+  save(); renderRecord();
+}
 function renderRecord(){
   renderTreatments();
   const wd=WEEKDAYS[new Date(recordDate+'T00:00:00').getDay()]||'';
@@ -3728,10 +3760,17 @@ function renderRecord(){
   const badge=document.getElementById('rec-past-badge'); if(badge) badge.style.display=(recordDate<today)?'inline-block':'none';
   const list=document.getElementById('r-list');
   const rdWd=WEEKDAYS[new Date(recordDate+'T00:00:00').getDay()]||'';
-  const active=state.elders.filter(e=>e.status==='치료중'&&slotOf(e,rdWd));
-  if(!state.elders.length){ list.innerHTML='<div class="empty">먼저 ‘어르신’ 탭에서 어르신을 등록해 주세요</div>'; return; }
-  if(!active.length){ list.innerHTML='<div class="empty">'+(recordDate===today?'오늘('+todayWeekday()+'요일)':recordDate+'의')+'시간표에 배정된 어르신이 없어요.<br><span class="hint">스케줄 탭에서 오늘 시간표에 어르신을 배정하면 여기 치료일지에 떠요.</span></div>'; return; }
   if(!state.records[recordDate]) state.records[recordDate]={};
+  const dayRec=state.records[recordDate];
+  // 그날 스케줄 배정 + 기록이 이미 있는 어르신(임시 추가 포함)
+  const active=state.elders.filter(e=>{
+    if(e.status!=='치료중') return false;
+    if(slotOf(e,rdWd)) return true;
+    return !!dayRec[e.id];   // 기록이 있으면 스케줄 없어도 표시
+  });
+  if(!state.elders.length){ list.innerHTML='<div class="empty">먼저 ‘어르신’ 탭에서 어르신을 등록해 주세요</div>'; return; }
+  const addBox=recAddElderHtml(rdWd, dayRec);
+  if(!active.length){ list.innerHTML='<div class="empty">'+(recordDate===today?'오늘('+todayWeekday()+'요일)':recordDate+'의')+' 시간표에 배정된 어르신이 없어요.<br><span class="hint">스케줄 탭에서 배정하거나, 아래에서 어르신을 직접 추가해 기록할 수 있어요.</span></div>'+addBox; return; }
   const sorted=active.slice().sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
   list.innerHTML=sorted.map(e=>{
     const rec=state.records[recordDate][e.id]||{treats:[],memo:'',phase:'wait'};
@@ -3748,7 +3787,9 @@ function renderRecord(){
       const on=hasPlan && e.plan.includes(t);
       return '<span class="chip mini'+(on?' on':'')+'" onclick="togglePlan('+e.id+',\''+esc(t).replace(/'/g,"\\'")+'\',this)">'+esc(t)+'</span>';
     }).join('');
-    return '<div class="rec-block phase-'+phase+(rec.notDone?' notdone':'')+'"><div class="rec-top"><div class="rec-name">'+rm+esc(e.name)+(e.risks||[]).map(riskTag).join('')+planBadge+'</div>'+
+    const isAdded = !slotOf(e, rdWd);
+    const addedTag = isAdded ? '<span class="rec-added-tag">추가</span><button class="rec-remove no-print" onclick="recRemoveElder('+e.id+')" title="오늘 기록에서 빼기">✕</button>' : '';
+    return '<div class="rec-block phase-'+phase+(rec.notDone?' notdone':'')+(isAdded?' added':'')+'"><div class="rec-top"><div class="rec-name">'+rm+esc(e.name)+(e.risks||[]).map(riskTag).join('')+planBadge+addedTag+'</div>'+
       '<div class="phase-seg" data-id="'+e.id+'">'+
       '<button class="ph ph-wait'+(phase==='wait'?' on':'')+'" onclick="setPhase('+e.id+',\'wait\')">대기</button>'+
       '<button class="ph ph-ongoing'+(phase==='ongoing'?' on':'')+'" onclick="setPhase('+e.id+',\'ongoing\')">치료중</button>'+
@@ -3783,7 +3824,7 @@ function renderRecord(){
         '<textarea class="note-ta" rows="4" placeholder="‘SOAP 일지’는 전문 형식, ‘간단 일지’는 치료·반응·경과를 간단히 적어줘요. 직접 수정도 가능해요." onchange="setNote('+e.id+',this.value)">'+esc(rec.note||'')+'</textarea>'+
       '</div>'+
       hlBtnHtml(e.id, today)+'</div>';
-  }).join('');
+  }).join('') + addBox;
   updateProgress();
 }
 function recExHtml(e){
@@ -7452,7 +7493,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-37';
+const APP_VERSION = '2026-07-09-38';
 function checkForUpdate(){
   try{
     const base=location.pathname;
