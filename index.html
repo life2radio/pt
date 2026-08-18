@@ -162,7 +162,13 @@
   .fr-item { margin-bottom: 14px; }
   .fr-q { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 7px; }
   .fr-opts { display: flex; flex-direction: column; gap: 6px; }
-  .fr-opt { text-align: left; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13.5px; font-family: inherit; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 9px; line-height: 1.4; }
+  .fr-opt { text-align: left; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13.5px; font-family: inherit; cursor: pointer; color: var(--ink); display: flex; align-items: flex-start; gap: 9px; line-height: 1.4; }
+  .fr-label { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .fr-desc { font-size: 12px; color: var(--muted); font-weight: 400; line-height: 1.5; }
+  .fr-opt.on .fr-desc { color: #8a5a48; }
+  .fr-note { font-size: 12px; color: var(--teal); background: var(--teal-bg, #EAF4F0); border-radius: 6px; padding: 5px 9px; margin-bottom: 6px; line-height: 1.5; }
+  .fr-opt.warn { background: #FFF8E1; border-color: #F5C518; }
+  .fr-opt.warn .fr-pt { color: #7a5b1c; border-color: #F5C518; }
   .fr-opt:hover { border-color: var(--danger); }
   .fr-opt.on { background: #FCF1ED; border-color: var(--danger); font-weight: 600; }
   .fr-pt { flex-shrink: 0; min-width: 34px; text-align: center; font-size: 12px; font-weight: 700; color: var(--danger); background: #fff; border: 1px solid var(--danger); border-radius: 6px; padding: 2px 0; }
@@ -4827,18 +4833,29 @@ const CIST_DOMAINS = [
 // ===== 낙상위험도 평가 (Huhn 척도) =====
 // 각 항목마다 해당하는 점수 칸이 다름 → 옵션으로 정확히 반영
 const FALL_ITEMS = [
-  { key:'age', name:'연령', opts:[
+  { key:'age', name:'연령', note:'어르신의 해당 연령에 점수를 부여. 60세 미만일 경우에만 "해당없음(0점)"', opts:[
     {pt:3, label:'80세 이상'}, {pt:2, label:'70–79세'}, {pt:1, label:'60–69세'}, {pt:0, label:'해당없음(60세 미만)'} ] },
   { key:'mental', name:'정신상태', opts:[
-    {pt:4, label:'혼란스러움 / 방향감각 장애'}, {pt:2, label:'때때로 혼란스러움 / 방향감각 장애'}, {pt:0, label:'해당없음(정상)'} ] },
-  { key:'bowel', name:'배변', opts:[
-    {pt:4, label:'소변·대변 실금'}, {pt:3, label:'조절능력 있지만 도움 필요'}, {pt:1, label:'유치도뇨관 / 인공항문'}, {pt:0, label:'해당없음(정상)'} ] },
-  { key:'history', name:'낙상경험', opts:[
+    {pt:4, label:'혼란스러움 / 방향감각 장애', desc:'사람·시간·장소에 대한 지남력이 없는 경우. 예) 현재 장소를 계속 잘못 알고 있음, 현재 상황에 대해 전혀 알지 못함'},
+    {pt:2, label:'때때로 혼란스러움 / 방향감각 장애', desc:'평소에 괜찮다가 간헐적으로 자신이 어디에 있는지 또는 현재 상황을 혼동하는 경우'},
+    {pt:0, label:'해당없음(정상)', desc:'기억을 잘 못할 수는 있지만 지금 자신이 누구고 어디에 있는지 어떤 상황인지 대체로 알 수 있음. 평가하는 사람이 누구인지 정확히 알고, 현재 어디에 계시는지·오늘 날짜나 오전/오후를 구분할 수 있는 경우'} ] },
+  { key:'bowel', name:'배변', note:'대·소변을 조절할 수 있는지에 대해 평가하는 항목', opts:[
+    {pt:4, label:'소변·대변 실금', desc:'조절이 어려워 기저귀를 착용하고 있는 경우 / 기저귀는 안 하지만 조절이 어려워 자주 옷을 갈아입어야 하는 경우 / 본인 스스로 요의·변의를 못 느끼는 경우'},
+    {pt:3, label:'조절능력 있지만 도움 필요', desc:'화장실을 이용하시지만 변비약·관장·좌약·이뇨제 등을 복용하시는 경우 / 시간에 맞춰 대·소변을 해결하는 데 도움을 받는 경우 / 기저귀 착용하시지만 스스로 교환 도움을 요청하거나 표현할 수 있는 경우'},
+    {pt:1, label:'유치도뇨관 / 인공항문', desc:'유치도뇨관, 인공항루를 사용하고 계시는 경우'},
+    {pt:0, label:'해당없음(정상)', desc:'스스로 대소변 조절이 잘되어 어떠한 도움도 받지 않는 경우'} ] },
+  { key:'history', name:'낙상경험', note:'어르신의 최근 낙상 경험 횟수를 기반으로 채점', opts:[
     {pt:4, label:'이미 세 번 이상 넘어짐'}, {pt:2, label:'이미 한 번 또는 두 번 넘어짐'}, {pt:0, label:'해당없음(없음)'} ] },
   { key:'activity', name:'활동', opts:[
-    {pt:4, label:'전적으로 도움을 받음'}, {pt:3, label:'자리에서 일어나 앉기 도움'}, {pt:1, label:'자립 / 세면대·화장실 이용'}, {pt:0, label:'해당없음'} ] },
+    {pt:4, label:'전적으로 도움을 받음', desc:'일어나기부터 이동까지 대부분 타인의 도움이 필요'},
+    {pt:3, label:'자리에서 일어나 앉기 도움', desc:'침대에서 혼자 앉을 수는 있으나 일어날 때 도움이 필요한 경우. 팔을 잡아줘야 함, 몸을 부축해야 일어날 수 있음'},
+    {pt:1, label:'자립 / 세면대·화장실 이용', desc:'혼자 일어나고 혼자 화장실 이용. 지팡이/워커 사용하나 혼자 일어나고 이동, 옆에서 지켜보기만 함'},
+    {pt:0, label:'해당없음 ⚠️ 체크 금지', desc:'질병관리청에서 0점 기준은 제시하지 않음 — 체크하면 안 됨'} ] },
   { key:'gait', name:'걸음걸이 및 균형', opts:[
-    {pt:4, label:'불규칙·불안정, 서고 걸을 때 균형 거의 못 유지'}, {pt:3, label:'일어서기·걸을 때 기립성 빈혈 / 혈액순환 문제'}, {pt:2, label:'보행장애 / 보조도구·도움으로 걷기'}, {pt:0, label:'해당없음(정상)'} ] },
+    {pt:4, label:'불규칙·불안정, 서고 걸을 때 균형 거의 못 유지', desc:'전혀 걷지 못하는 경우, 와상 어르신 해당'},
+    {pt:3, label:'일어서기·걸을 때 기립성 빈혈 / 혈액순환 문제', desc:'걸을 때 어지러워하시거나, 기립성 저혈압이 있는 경우'},
+    {pt:2, label:'보행장애 / 보조도구·도움으로 걷기', desc:'워커, 지팡이 등을 이용하여 걷는 경우'},
+    {pt:0, label:'해당없음(정상)', desc:'정상 보행이 가능한 경우'} ] },
   { key:'meds', name:'지난 7일간 약 복용 (계획된 약물)', opts:[
     {pt:4, label:'3개 또는 그 이상의 약 복용'}, {pt:3, label:'두 가지 약 복용'}, {pt:2, label:'한 가지 약 복용'}, {pt:0, label:'해당없음(없음)'} ] },
 ];
@@ -4856,11 +4873,15 @@ function renderFallRisk(prev){
   h += '</div>';
 
   FALL_ITEMS.forEach(it=>{
-    h += '<div class="fr-item"><div class="fr-q">'+it.name+'</div><div class="fr-opts">';
+    h += '<div class="fr-item"><div class="fr-q">'+it.name+'</div>';
+    if(it.note) h += '<div class="fr-note">'+esc(it.note)+'</div>';
+    h += '<div class="fr-opts">';
     it.opts.forEach(o=>{
       const on = sel[it.key]===o.pt;
-      h += '<button type="button" class="fr-opt'+(on?' on':'')+'" data-fr="'+it.key+'" data-pt="'+o.pt+'" onclick="pickFall(this)">'+
-        '<span class="fr-pt">'+o.pt+'점</span>'+o.label+'</button>';
+      const warn = /체크 금지|체크하면 안/.test(o.label+' '+(o.desc||''));
+      h += '<button type="button" class="fr-opt'+(on?' on':'')+(warn?' warn':'')+'" data-fr="'+it.key+'" data-pt="'+o.pt+'" onclick="pickFall(this)">'+
+        '<span class="fr-pt">'+o.pt+'점</span><span class="fr-label">'+o.label+
+        (o.desc?'<span class="fr-desc">'+esc(o.desc)+'</span>':'')+'</span></button>';
     });
     h += '</div></div>';
   });
@@ -7493,7 +7514,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-38';
+const APP_VERSION = '2026-07-09-39';
 function checkForUpdate(){
   try{
     const base=location.pathname;
