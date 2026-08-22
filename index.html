@@ -400,6 +400,20 @@
   .rec-block.added { border-left: 3px solid var(--amber); }
   .rec-added-tag { font-size: 10.5px; background: var(--amber); color: #fff; padding: 1px 7px; border-radius: 8px; margin-left: 6px; font-weight: 600; vertical-align: middle; }
   .rec-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; margin-left: 4px; }
+  .bed-card { border-left: 3px solid var(--navy); }
+  .bed-done { font-size: 11.5px; color: var(--teal); background: var(--teal-bg,#EAF4F0); padding: 2px 9px; border-radius: 10px; font-weight: 600; margin-left: auto; }
+  .bed-area { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: #fff; }
+  .bed-area.on { border-color: var(--teal); background: #F5FAF8; }
+  .bed-area-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .bed-area-name { font-size: 14px; font-weight: 600; color: var(--navy); }
+  .bed-tag-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+  .bed-tag-label { font-size: 11.5px; color: var(--muted); min-width: 34px; }
+  .bed-tag { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); background: #fff; border-radius: 12px; cursor: pointer; }
+  .bed-tag.on { background: var(--teal); color: #fff; border-color: var(--teal); font-weight: 600; }
+  .bed-memo-row { margin: 8px 0; }
+  .bed-memo-row input { width: 100%; }
+  .bed-target-list { display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
+  .bed-target-row { display: flex; align-items: center; gap: 8px; padding: 7px 6px; border-bottom: 1px solid var(--line); font-size: 13.5px; cursor: pointer; }
   .note-gen.simple { background: #EAF4F0; border-color: var(--teal); color: var(--teal); font-weight: 600; }
   .brief-ref-ic { flex-shrink: 0; font-size: 14px; }
   .hl-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
@@ -1235,6 +1249,7 @@
       <button data-tab="doctor" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></svg>촉탁의</button>
       <button data-tab="history" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>기록</button>
       <button data-tab="library" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>치료도서관</button>
+      <button data-tab="bedcare" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20"/><circle cx="7" cy="12" r="2"/></svg>와상케어</button>
       <button data-tab="program" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z"/></svg>프로그램</button>
       <button data-tab="report" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>리포트</button>
       <button data-tab="data" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>백업</button>
@@ -1599,6 +1614,11 @@
     <div id="lib-article" class="lib-article" hidden></div>
   </section>
 
+  <!-- 와상 케어 -->
+  <section id="bedcare" class="panel">
+    <div id="bedcare-body"></div>
+  </section>
+
   <section id="program" class="panel">
     <div class="card">
       <div class="card-title">주간 집단 프로그램</div>
@@ -1945,6 +1965,7 @@ function go(btn){
   if(tab==='report') initReport();
   if(tab==='history') initHistory();
   if(tab==='program') initProgram();
+  if(tab==='bedcare'){ bedDate=new Date().toISOString().slice(0,10); renderBedcare(); }
   if(tab==='library') renderLibrary();
   if(tab==='briefing'){ briefDate = new Date().toISOString().slice(0,10); renderBriefing(); }
 }
@@ -2352,6 +2373,173 @@ function drawsThumbHtml(targetKey, arr){
     arr.map((img,i)=>'<div class="pad-thumb"><img src="'+img+'" alt=""><button class="pad-thumb-x" onclick="padDelDraw(\''+targetKey+'\','+i+')">✕</button></div>').join('')+'</div></div>';
 }
 
+// ===== 와상 케어 프로그램 =====
+var bedDate = today;
+const BED_AREAS = [
+  { key:'heat', icon:'🔥', name:'온열 준비 (관절운동 전)',
+    tags:{ '방식':['핫팩 적용','적외선(IR) 조사','온습포 적용'], '부위':['어깨','허리','고관절','무릎','양측 하지','양측 상지','전신'], '시간':['10분','15분','20분'], '반응':['조직 이완됨','뻣뻣함 완화','변화 적음'] } },
+  { key:'rom', icon:'🦴', name:'관절가동운동',
+    tags:{ '방식':['수동 ROM','능동보조 ROM','능동 ROM'], '부위':['양측 상하지','상지','하지','우측','좌측'], '반응':['저항 없이 가동','약간 뻣뻣함','구축 진행 소견'] } },
+  { key:'power', icon:'💪', name:'근력 유지',
+    tags:{ '방식':['등척성 운동','도수 저항 운동','중력 이기기 운동'], '부위':['상지','하지','양측'], '반응':['수축 잘 됨','근수축 약함','반응 미미'] } },
+  { key:'edema', icon:'🫧', name:'부종 관리',
+    tags:{ '방식':['공기압(IPC) 적용','하지 거상','도수 마사지'], '부위':['양측 하지','우측 하지','좌측 하지','상지'], '반응':['부종 감소','변화 없음','부종 지속'] } },
+  { key:'topical', icon:'🧴', name:'도포·국소관리',
+    tags:{ '제품':['보습 로션','맨소래담','소염 연고'], '부위':['어깨','허리','무릎','하지 전반','상지 전반'], '반응':['시원해하심','편안해하심','반응 없음'] } },
+  { key:'breath', icon:'🫁', name:'호흡·순환',
+    tags:{ '방식':['심호흡 유도','기침 유도','발목 펌프 운동'], '반응':['잘 따라하심','부분적 수행','수행 어려움'] } }
+];
+function isBedridden(e){
+  const g=(typeof latestEvalData==='function')?latestEvalData(e.id):null;
+  const st=(g&&g.status)?g.status:null;
+  if(state.bedManual && state.bedManual[e.id]==='exclude') return false;
+  if(state.bedManual && state.bedManual[e.id]==='include') return true;
+  if(st && (st.gait==='침상' || (st.gait==='불가(휠체어)'&&st.transfer==='불가'))) return true;
+  if(g && g.adlWalk!=null && g.adlWalk>=5) return true;
+  return false;
+}
+function bedElders(){ return state.elders.filter(e=>e.status==='치료중' && isBedridden(e))
+  .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true})); }
+function renderBedcare(){
+  const box=document.getElementById('bedcare-body'); if(!box) return;
+  if(!state.bedLogs) state.bedLogs={};
+  const list=bedElders();
+  const wd=WEEKDAYS[new Date(bedDate+'T00:00:00').getDay()]||'';
+  let h='<div class="card"><div class="brief-datebar">'+
+    '<button class="brief-nav" onclick="moveBedDate(-1)">‹ 전날</button>'+
+    '<input type="date" value="'+bedDate+'" onchange="setBedDate(this.value)">'+
+    '<button class="brief-nav" onclick="moveBedDate(1)">다음날 ›</button>'+
+    '<button class="brief-today" onclick="setBedDate(today)">오늘</button>'+
+    '<span class="meta">('+wd+')</span></div></div>';
+  h+='<div class="card"><div class="card-title">🛏 와상 대상자 <span class="count">'+list.length+'명</span> '+
+    '<button class="brief-collapse no-print" onclick="toggleBedTarget()">대상자 관리</button></div>'+
+    '<p class="hint">평가에서 <b>보행=침상</b> 또는 <b>ADL 보행 5점</b>인 어르신이 자동으로 포함돼요. 아래에서 직접 넣고 뺄 수도 있어요.</p>'+
+    '<div id="bed-target" style="display:none;">'+bedTargetHtml()+'</div></div>';
+  if(!list.length){ h+='<div class="card"><div class="empty">와상 대상 어르신이 없어요. 위 <b>대상자 관리</b>에서 직접 추가할 수 있어요.</div></div>'; box.innerHTML=h; return; }
+  list.forEach(e=>{ h+=bedElderCard(e); });
+  box.innerHTML=h;
+}
+function setBedDate(v){ if(!v) return; bedDate=v; renderBedcare(); }
+function moveBedDate(d){ const x=new Date(bedDate+'T00:00:00'); x.setDate(x.getDate()+d); const nv=x.toISOString().slice(0,10); if(nv>today) return; setBedDate(nv); }
+function toggleBedTarget(){ const b=document.getElementById('bed-target'); if(b) b.style.display=b.style.display==='none'?'block':'none'; }
+function bedTargetHtml(){
+  const all=state.elders.filter(e=>e.status==='치료중').sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
+  return '<div class="bed-target-list">'+all.map(e=>{
+    const on=isBedridden(e);
+    return '<label class="bed-target-row"><input type="checkbox"'+(on?' checked':'')+' onchange="setBedTarget('+e.id+',this.checked)">'+
+      (e.room?'<b>'+esc(e.room)+'호</b> ':'')+esc(e.name)+'</label>';
+  }).join('')+'</div>';
+}
+function setBedTarget(id, on){
+  if(!state.bedManual) state.bedManual={};
+  const e=state.elders.find(x=>x.id===id);
+  const g=(typeof latestEvalData==='function')?latestEvalData(id):null;
+  const st=(g&&g.status)?g.status:null;
+  const autoBed=(st&&(st.gait==='침상'||(st.gait==='불가(휠체어)'&&st.transfer==='불가')))||(g&&g.adlWalk!=null&&g.adlWalk>=5);
+  if(on===autoBed) delete state.bedManual[id];
+  else state.bedManual[id]= on?'include':'exclude';
+  if(!Object.keys(state.bedManual).length) delete state.bedManual;
+  save(); renderBedcare();
+  const b=document.getElementById('bed-target'); if(b) b.style.display='block';
+}
+function bedLog(id){
+  if(!state.bedLogs) state.bedLogs={};
+  if(!state.bedLogs[bedDate]) state.bedLogs[bedDate]={};
+  if(!state.bedLogs[bedDate][id]) state.bedLogs[bedDate][id]={areas:{},memo:'',note:''};
+  return state.bedLogs[bedDate][id];
+}
+function bedElderCard(e){
+  const log=(state.bedLogs[bedDate]&&state.bedLogs[bedDate][e.id])||{areas:{},memo:'',note:''};
+  const doneCnt=Object.keys(log.areas||{}).filter(k=>log.areas[k]&&log.areas[k].on).length;
+  let h='<div class="card bed-card"><div class="card-title">'+(e.room?'<span class="room-badge">'+esc(e.room)+'호</span>':'')+esc(e.name)+
+    ' <span class="bed-done">'+doneCnt+'/'+BED_AREAS.length+' 영역</span></div>';
+  BED_AREAS.forEach(a=>{
+    const st=(log.areas&&log.areas[a.key])||{on:false,tags:{}};
+    h+='<div class="bed-area'+(st.on?' on':'')+'">'+
+      '<label class="bed-area-head"><input type="checkbox"'+(st.on?' checked':'')+' onchange="toggleBedArea('+e.id+',\''+a.key+'\',this.checked)">'+
+      '<span class="bed-area-name">'+a.icon+' '+a.name+'</span></label>';
+    if(st.on){
+      Object.keys(a.tags).forEach(grp=>{
+        h+='<div class="bed-tag-row"><span class="bed-tag-label">'+grp+'</span>';
+        a.tags[grp].forEach(t=>{
+          const sel=(st.tags&&st.tags[grp])===t;
+          h+='<button class="bed-tag'+(sel?' on':'')+'" onclick="setBedTag('+e.id+',\''+a.key+'\',\''+grp+'\',\''+esc(t)+'\')">'+t+'</button>';
+        });
+        h+='</div>';
+      });
+    }
+    h+='</div>';
+  });
+  h+='<div class="bed-memo-row"><input type="text" placeholder="특이사항 메모 (선택)" value="'+esc(log.memo||'')+'" onchange="setBedMemo('+e.id+',this.value)"></div>';
+  h+='<div class="note-bar"><span class="note-label">📋 와상 케어 일지</span>'+
+    '<span class="note-btns no-print"><button class="note-gen simple" onclick="genBedNote('+e.id+',false)">📝 일지 생성</button>'+
+    '<button class="note-gen alt" onclick="genBedNote('+e.id+',true)">🔄 다른 표현</button>'+
+    '<button class="note-gen copy" onclick="copyBedNote('+e.id+',this)">📋 복사</button></span></div>'+
+    '<textarea class="note-ta" rows="4" placeholder="영역을 체크한 뒤 \'일지 생성\'을 누르면 그 내용대로 일지가 만들어져요." onchange="setBedNote('+e.id+',this.value)">'+esc(log.note||'')+'</textarea>';
+  h+='</div>';
+  return h;
+}
+function toggleBedArea(id,key,on){
+  const log=bedLog(id);
+  if(!log.areas) log.areas={};
+  if(!log.areas[key]) log.areas[key]={on:false,tags:{}};
+  log.areas[key].on=on;
+  if(!on) delete log.areas[key];
+  save(); renderBedcare();
+}
+function setBedTag(id,key,grp,val){
+  const log=bedLog(id);
+  if(!log.areas[key]) log.areas[key]={on:true,tags:{}};
+  if(!log.areas[key].tags) log.areas[key].tags={};
+  if(log.areas[key].tags[grp]===val) delete log.areas[key].tags[grp];
+  else log.areas[key].tags[grp]=val;
+  save(); renderBedcare();
+}
+function setBedMemo(id,v){ bedLog(id).memo=v; save(); }
+function setBedNote(id,v){ bedLog(id).note=v; save(); }
+function copyBedNote(id,btn){
+  const log=bedLog(id); const t=log.note||'';
+  if(!t){ alert('먼저 일지를 생성해 주세요.'); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(()=>{ btn.textContent='✓ 복사됨'; setTimeout(()=>btn.textContent='📋 복사',1500); }); }
+  else alert(t);
+}
+// 와상 일지 생성
+const BED_SENT = {
+  heat: [
+    '관절운동 전 {부위}에 {방식}({시간})하여 연부조직 이완 및 신장성 확보, {반응}.',
+    '{부위} {방식} {시간} 선행하여 관절 주변 조직 부드럽게 함, {반응}.',
+    '가동운동에 앞서 {부위}에 {방식} {시간} 적용, 근긴장 완화 유도되어 {반응}.',
+    '{방식}으로 {부위} {시간} 온열 적용 후 관절운동 진행, {반응}.'
+  ],
+  rom: ['{부위} {방식} 시행하여 관절가동범위 유지 도모, {반응}.','{방식}으로 {부위} 관절 전 범위 가동, {반응}.','{부위}에 {방식} 적용하여 구축 예방 진행, {반응}.'],
+  power: ['{부위} {방식} 시행하여 잔존 근력 유지 유도, {반응}.','{방식}으로 {부위} 근수축 유도, {반응}.','{부위}에 {방식} 적용하여 근위축 예방 도모, {반응}.'],
+  edema: ['{부위}에 {방식} 시행하여 부종 경감 도모, {반응}.','{방식} 적용으로 {부위} 순환 개선 유도, {반응}.','{부위} {방식} 병행하여 부종 관리 진행, {반응}.'],
+  topical: ['{부위}에 {제품} 도포하여 국소 관리 시행, {반응}.','{제품} 적용하여 {부위} 상태 관리, {반응}.','{부위} {제품} 도포 및 가볍게 문질러 마무리, {반응}.'],
+  breath: ['{방식} 병행하여 호흡·순환 기능 유지 도모, {반응}.','{방식} 시행하여 폐 확장 및 순환 촉진, {반응}.','{방식} 유도하며 부동 합병증 예방 진행, {반응}.']
+};
+function genBedNote(id, regen){
+  const log=bedLog(id);
+  const on=BED_AREAS.filter(a=>log.areas&&log.areas[a.key]&&log.areas[a.key].on);
+  if(!on.length){ alert('먼저 시행한 영역을 체크해 주세요.'); return; }
+  const salt=regen?Math.floor(Math.random()*9999)+1:0;
+  const bucket=periodBucket(bedDate)+salt;
+  const parts=[];
+  on.forEach((a,i)=>{
+    const st=log.areas[a.key]; const tags=st.tags||{};
+    let tpl=pick(BED_SENT[a.key], noteHash('BN'+a.key+id+bucket+i));
+    Object.keys(a.tags).forEach(grp=>{
+      const v=tags[grp]||a.tags[grp][0];
+      tpl=tpl.replace('{'+grp+'}', v);
+    });
+    tpl=tpl.replace(/\{[^}]+\}/g,'').replace(/\s+/g,' ').replace(/\s,/g,',').trim();
+    parts.push(tpl);
+  });
+  let out=parts.join(' ');
+  if(log.memo&&log.memo.trim()) out+=' '+log.memo.trim()+(/[.!?…]$/.test(log.memo.trim())?'':'.');
+  const closers=['전반적으로 안정적인 상태 유지 중임.','부동 합병증 소견 없이 잘 유지되고 있음.','현 기능 수준 유지되고 있음.','특이 이상 소견 없이 마무리함.'];
+  out+=' '+pick(closers, noteHash('BC'+id+bucket));
+  log.note=out; save(); renderBedcare();
+}
 let editingElderId = null;
 
 function calcAge(birth){
@@ -7514,7 +7702,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-39';
+const APP_VERSION = '2026-07-09-41';
 function checkForUpdate(){
   try{
     const base=location.pathname;
