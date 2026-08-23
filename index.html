@@ -406,6 +406,7 @@
   .bed-area.on { border-color: var(--teal); background: #F5FAF8; }
   .bed-area-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .bed-area-name { font-size: 14px; font-weight: 600; color: var(--navy); }
+  .bed-multi-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
   .bed-tag-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
   .bed-tag-label { font-size: 11.5px; color: var(--muted); min-width: 34px; }
   .bed-tag { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); background: #fff; border-radius: 12px; cursor: pointer; }
@@ -2377,17 +2378,28 @@ function drawsThumbHtml(targetKey, arr){
 var bedDate = today;
 const BED_AREAS = [
   { key:'heat', icon:'🔥', name:'온열 준비 (관절운동 전)',
-    tags:{ '방식':['핫팩 적용','적외선(IR) 조사','온습포 적용'], '부위':['어깨','허리','고관절','무릎','양측 하지','양측 상지','전신'], '시간':['10분','15분','20분'], '반응':['조직 이완됨','뻣뻣함 완화','변화 적음'] } },
+    tags:{ '방식':['핫팩 적용','적외선(IR) 조사','온습포 적용'],
+           '부위':['우측 상지','좌측 상지','우측 하지','좌측 하지','양측 상지','양측 하지','어깨','허리','고관절','무릎','전신'],
+           '시간':['10분','15분','20분'], '반응':['조직 이완됨','뻣뻣함 완화','변화 적음'] } },
   { key:'rom', icon:'🦴', name:'관절가동운동',
-    tags:{ '방식':['수동 ROM','능동보조 ROM','능동 ROM'], '부위':['양측 상하지','상지','하지','우측','좌측'], '반응':['저항 없이 가동','약간 뻣뻣함','구축 진행 소견'] } },
+    tags:{ '방식':['수동 ROM','능동보조 ROM','능동 ROM'],
+           '부위':['우측 상지','좌측 상지','우측 하지','좌측 하지','양측 상지','양측 하지','양측 상하지','어깨','고관절','무릎','발목'],
+           '반응':['저항 없이 가동','약간 뻣뻣함','구축 진행 소견','환측 제한 뚜렷'] } },
   { key:'power', icon:'💪', name:'근력 유지',
-    tags:{ '방식':['등척성 운동','도수 저항 운동','중력 이기기 운동'], '부위':['상지','하지','양측'], '반응':['수축 잘 됨','근수축 약함','반응 미미'] } },
+    tags:{ '방식':['등척성 운동','도수 저항 운동','중력 이기기 운동'],
+           '부위':['우측 상지','좌측 상지','우측 하지','좌측 하지','양측 상지','양측 하지','건측 위주','환측 위주'],
+           '반응':['수축 잘 됨','근수축 약함','반응 미미','건측 대비 환측 약함'] } },
   { key:'edema', icon:'🫧', name:'부종 관리',
-    tags:{ '방식':['공기압(IPC) 적용','하지 거상','도수 마사지'], '부위':['양측 하지','우측 하지','좌측 하지','상지'], '반응':['부종 감소','변화 없음','부종 지속'] } },
+    tags:{ '방식':['공기압(IPC) 적용','하지 거상','도수 마사지'],
+           '부위':['우측 하지','좌측 하지','양측 하지','우측 상지','좌측 상지','양측 상지'],
+           '반응':['부종 감소','변화 없음','부종 지속'] } },
   { key:'topical', icon:'🧴', name:'도포·국소관리',
-    tags:{ '제품':['보습 로션','맨소래담','소염 연고'], '부위':['어깨','허리','무릎','하지 전반','상지 전반'], '반응':['시원해하심','편안해하심','반응 없음'] } },
+    tags:{ '제품':['보습 로션','맨소래담','소염 연고'],
+           '부위':['우측 어깨','좌측 어깨','허리','우측 무릎','좌측 무릎','양측 하지','양측 상지','전신'],
+           '반응':['시원해하심','편안해하심','반응 없음'] } },
   { key:'breath', icon:'🫁', name:'호흡·순환',
-    tags:{ '방식':['심호흡 유도','기침 유도','발목 펌프 운동'], '반응':['잘 따라하심','부분적 수행','수행 어려움'] } }
+    tags:{ '방식':['심호흡 유도','기침 유도','발목 펌프 운동'],
+           '반응':['잘 따라하심','부분적 수행','수행 어려움'] } }
 ];
 function isBedridden(e){
   const g=(typeof latestEvalData==='function')?latestEvalData(e.id):null;
@@ -2459,10 +2471,13 @@ function bedElderCard(e){
       '<label class="bed-area-head"><input type="checkbox"'+(st.on?' checked':'')+' onchange="toggleBedArea('+e.id+',\''+a.key+'\',this.checked)">'+
       '<span class="bed-area-name">'+a.icon+' '+a.name+'</span></label>';
     if(st.on){
+      h+='<div class="bed-multi-hint">여러 개 선택할 수 있어요 (다시 누르면 해제)</div>';
       Object.keys(a.tags).forEach(grp=>{
         h+='<div class="bed-tag-row"><span class="bed-tag-label">'+grp+'</span>';
         a.tags[grp].forEach(t=>{
-          const sel=(st.tags&&st.tags[grp])===t;
+          let cur=(st.tags&&st.tags[grp]);
+          if(!Array.isArray(cur)) cur = cur ? [cur] : [];
+          const sel=cur.indexOf(t)>=0;
           h+='<button class="bed-tag'+(sel?' on':'')+'" onclick="setBedTag('+e.id+',\''+a.key+'\',\''+grp+'\',\''+esc(t)+'\')">'+t+'</button>';
         });
         h+='</div>';
@@ -2491,8 +2506,11 @@ function setBedTag(id,key,grp,val){
   const log=bedLog(id);
   if(!log.areas[key]) log.areas[key]={on:true,tags:{}};
   if(!log.areas[key].tags) log.areas[key].tags={};
-  if(log.areas[key].tags[grp]===val) delete log.areas[key].tags[grp];
-  else log.areas[key].tags[grp]=val;
+  let arr=log.areas[key].tags[grp];
+  if(!Array.isArray(arr)) arr = arr ? [arr] : [];   // 기존 단일값 호환
+  const i=arr.indexOf(val);
+  if(i>=0) arr.splice(i,1); else arr.push(val);
+  if(arr.length) log.areas[key].tags[grp]=arr; else delete log.areas[key].tags[grp];
   save(); renderBedcare();
 }
 function setBedMemo(id,v){ bedLog(id).memo=v; save(); }
@@ -2528,8 +2546,10 @@ function genBedNote(id, regen){
     const st=log.areas[a.key]; const tags=st.tags||{};
     let tpl=pick(BED_SENT[a.key], noteHash('BN'+a.key+id+bucket+i));
     Object.keys(a.tags).forEach(grp=>{
-      const v=tags[grp]||a.tags[grp][0];
-      tpl=tpl.replace('{'+grp+'}', v);
+      let v=tags[grp];
+      if(!Array.isArray(v)) v = v ? [v] : [];
+      const txt = v.length ? v.join('·') : a.tags[grp][0];
+      tpl=tpl.replace('{'+grp+'}', txt);
     });
     tpl=tpl.replace(/\{[^}]+\}/g,'').replace(/\s+/g,' ').replace(/\s,/g,',').trim();
     parts.push(tpl);
@@ -7702,7 +7722,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-41';
+const APP_VERSION = '2026-07-09-42';
 function checkForUpdate(){
   try{
     const base=location.pathname;
