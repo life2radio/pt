@@ -407,6 +407,23 @@
   .bed-area-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .bed-area-name { font-size: 14px; font-weight: 600; color: var(--navy); }
   .bed-multi-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .bed-set-area { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+  .bed-set-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .bed-set-icon { width: 46px; text-align: center; font-size: 15px; }
+  .bed-set-name { flex: 1; font-weight: 600; }
+  .bed-set-mv { background: #fff; border: 1px solid var(--line); border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 10px; }
+  .bed-set-grp { margin: 8px 0; padding-left: 8px; border-left: 2px solid var(--line); }
+  .bed-set-grp-head { display: flex; gap: 6px; align-items: center; margin-bottom: 5px; }
+  .bed-set-grpname { width: 120px; font-size: 12.5px; font-weight: 600; color: var(--teal); }
+  .bed-set-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .bed-set-tag { display: inline-flex; align-items: center; background: var(--sand); border: 1px solid var(--line); border-radius: 12px; padding: 2px 4px 2px 8px; }
+  .bed-set-tag input { border: none; background: transparent; font-size: 12px; width: 108px; padding: 2px; }
+  .bed-set-tag button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 0 4px; }
+  .bed-set-add input { font-size: 12px; width: 130px; padding: 4px 8px; border: 1px dashed var(--line); border-radius: 12px; }
+  .bed-set-addgrp input { font-size: 12px; width: 100%; padding: 5px 8px; border: 1px dashed var(--line); border-radius: 8px; margin-top: 6px; }
+  .bed-set-addarea { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .bed-set-addarea input { flex: 1; min-width: 160px; }
+  .del.sm { font-size: 11px; padding: 2px 6px; }
   .bed-tag-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
   .bed-tag-label { font-size: 11.5px; color: var(--muted); min-width: 34px; }
   .bed-tag { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); background: #fff; border-radius: 12px; cursor: pointer; }
@@ -2376,7 +2393,7 @@ function drawsThumbHtml(targetKey, arr){
 
 // ===== 와상 케어 프로그램 =====
 var bedDate = today;
-const BED_AREAS = [
+const DEFAULT_BED_AREAS = [
   { key:'heat', icon:'🔥', name:'온열 준비 (관절운동 전)',
     tags:{ '방식':['핫팩 적용','적외선(IR) 조사','온습포 적용'],
            '부위':['우측 상지','좌측 상지','우측 하지','좌측 하지','양측 상지','양측 하지','어깨','허리','고관절','무릎','전신'],
@@ -2390,9 +2407,10 @@ const BED_AREAS = [
            '부위':['우측 상지','좌측 상지','우측 하지','좌측 하지','양측 상지','양측 하지','건측 위주','환측 위주'],
            '반응':['수축 잘 됨','근수축 약함','반응 미미','건측 대비 환측 약함'] } },
   { key:'edema', icon:'🫧', name:'부종 관리',
-    tags:{ '방식':['공기압(IPC) 적용','하지 거상','도수 마사지'],
-           '부위':['우측 하지','좌측 하지','양측 하지','우측 상지','좌측 상지','양측 상지'],
-           '반응':['부종 감소','변화 없음','부종 지속'] } },
+    tags:{ '방식':['공기압(IPC) 적용','하지 거상','도수 마사지','발목 펌프'],
+           '부위':['우측 발등','좌측 발등','양측 발등','우측 발목','좌측 발목','양측 발목','우측 종아리','좌측 종아리','양측 종아리','우측 발 전체','좌측 발 전체','양측 발 전체','우측 하지 전체','좌측 하지 전체','양측 하지 전체','우측 손등','좌측 손등','양측 손등','우측 상지','좌측 상지'],
+           '정도':['경도','중등도','심함','함요부종(+1)','함요부종(+2)','함요부종(+3)'],
+           '반응':['부종 감소','약간 감소','변화 없음','부종 지속'] } },
   { key:'topical', icon:'🧴', name:'도포·국소관리',
     tags:{ '제품':['보습 로션','맨소래담','소염 연고'],
            '부위':['우측 어깨','좌측 어깨','허리','우측 무릎','좌측 무릎','양측 하지','양측 상지','전신'],
@@ -2401,6 +2419,115 @@ const BED_AREAS = [
     tags:{ '방식':['심호흡 유도','기침 유도','발목 펌프 운동'],
            '반응':['잘 따라하심','부분적 수행','수행 어려움'] } }
 ];
+var BED_AREAS = DEFAULT_BED_AREAS;
+function refreshBedAreas(){
+  BED_AREAS = (state.bedAreas && state.bedAreas.length) ? state.bedAreas : DEFAULT_BED_AREAS;
+}
+function ensureBedAreas(){
+  if(!state.bedAreas || !state.bedAreas.length){
+    state.bedAreas = JSON.parse(JSON.stringify(DEFAULT_BED_AREAS));
+    save();
+  }
+  refreshBedAreas();
+  return state.bedAreas;
+}
+function toggleBedSettings(){
+  const b=document.getElementById('bed-settings'); if(!b) return;
+  const open=b.style.display==='none';
+  b.style.display=open?'block':'none';
+  if(open) renderBedSettings();
+}
+function openBedSettings(){ const b=document.getElementById('bed-settings'); if(b){ b.style.display='block'; renderBedSettings(); } }
+function renderBedSettings(){
+  const box=document.getElementById('bed-settings'); if(!box) return;
+  const areas=ensureBedAreas();
+  let h='<div class="bed-set"><p class="hint">치료 영역과 선택지를 직접 추가·수정·삭제할 수 있어요. 실제 하시는 대로 맞춰서 쓰세요.</p>';
+  areas.forEach((a,ai)=>{
+    h+='<div class="bed-set-area"><div class="bed-set-head">'+
+      '<input class="bed-set-icon" value="'+esc(a.icon||'')+'" onchange="editBedArea('+ai+',\'icon\',this.value)" maxlength="2">'+
+      '<input class="bed-set-name" value="'+esc(a.name||'')+'" onchange="editBedArea('+ai+',\'name\',this.value)">'+
+      '<button class="bed-set-mv" onclick="moveBedArea('+ai+',-1)">▲</button>'+
+      '<button class="bed-set-mv" onclick="moveBedArea('+ai+',1)">▼</button>'+
+      '<button class="del" onclick="deleteBedArea('+ai+')">✕</button></div>';
+    Object.keys(a.tags||{}).forEach(grp=>{
+      h+='<div class="bed-set-grp"><div class="bed-set-grp-head">'+
+        '<input class="bed-set-grpname" value="'+esc(grp)+'" onchange="renameBedGroup('+ai+',\''+esc(grp)+'\',this.value)">'+
+        '<button class="del sm" onclick="deleteBedGroup('+ai+',\''+esc(grp)+'\')">✕</button></div><div class="bed-set-tags">';
+      a.tags[grp].forEach((t,ti)=>{
+        h+='<span class="bed-set-tag"><input value="'+esc(t)+'" onchange="editBedTagText('+ai+',\''+esc(grp)+'\','+ti+',this.value)">'+
+          '<button onclick="deleteBedTag('+ai+',\''+esc(grp)+'\','+ti+')">✕</button></span>';
+      });
+      h+='<span class="bed-set-add"><input placeholder="＋ 선택지 추가" onkeydown="if(event.key===\'Enter\')addBedTag('+ai+',\''+esc(grp)+'\',this)"></span>';
+      h+='</div></div>';
+    });
+    h+='<div class="bed-set-addgrp"><input placeholder="＋ 새 분류 추가 (예: 정도, 시간)" onkeydown="if(event.key===\'Enter\')addBedGroup('+ai+',this)"></div>';
+    h+='</div>';
+  });
+  h+='<div class="bed-set-addarea"><input id="new-bed-area" placeholder="＋ 새 치료 영역 이름"><button class="btn teal" onclick="addBedArea()">영역 추가</button>'+
+     '<button class="btn" onclick="resetBedAreas()">기본값으로</button></div></div>';
+  box.innerHTML=h;
+}
+function editBedArea(ai, field, val){
+  const areas=ensureBedAreas();
+  if(field==='name'&&!val.trim()) return;
+  areas[ai][field]=val; save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function moveBedArea(ai, dir){
+  const areas=ensureBedAreas(); const ni=ai+dir; if(ni<0||ni>=areas.length) return;
+  const t=areas[ai]; areas[ai]=areas[ni]; areas[ni]=t;
+  save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function deleteBedArea(ai){
+  const areas=ensureBedAreas();
+  if(!confirm('"'+areas[ai].name+'" 영역을 삭제할까요?')) return;
+  areas.splice(ai,1); save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function addBedArea(){
+  const el=document.getElementById('new-bed-area'); if(!el||!el.value.trim()) return;
+  const areas=ensureBedAreas();
+  areas.push({key:'c'+Date.now().toString(36), icon:'🔹', name:el.value.trim(), tags:{'방식':['시행'],'부위':['해당 부위'],'반응':['양호']}});
+  save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function renameBedGroup(ai, oldG, newG){
+  newG=(newG||'').trim(); if(!newG||newG===oldG) return;
+  const areas=ensureBedAreas(); const tags=areas[ai].tags;
+  const out={}; Object.keys(tags).forEach(g=>{ out[g===oldG?newG:g]=tags[g]; });
+  areas[ai].tags=out; save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function deleteBedGroup(ai, grp){
+  const areas=ensureBedAreas();
+  if(!confirm('"'+grp+'" 분류를 삭제할까요?')) return;
+  delete areas[ai].tags[grp]; save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function addBedGroup(ai, el){
+  const v=(el.value||'').trim(); if(!v) return;
+  const areas=ensureBedAreas();
+  if(areas[ai].tags[v]){ alert('같은 이름의 분류가 있어요.'); return; }
+  areas[ai].tags[v]=['항목1'];
+  save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function editBedTagText(ai, grp, ti, val){
+  val=(val||'').trim(); if(!val) return;
+  const areas=ensureBedAreas(); areas[ai].tags[grp][ti]=val;
+  save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function deleteBedTag(ai, grp, ti){
+  const areas=ensureBedAreas(); areas[ai].tags[grp].splice(ti,1);
+  if(!areas[ai].tags[grp].length) delete areas[ai].tags[grp];
+  save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function addBedTag(ai, grp, el){
+  const v=(el.value||'').trim(); if(!v) return;
+  const areas=ensureBedAreas();
+  if(areas[ai].tags[grp].indexOf(v)>=0){ alert('이미 있는 선택지예요.'); return; }
+  areas[ai].tags[grp].push(v);
+  save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
+function resetBedAreas(){
+  if(!confirm('치료 영역을 기본값으로 되돌릴까요?')) return;
+  state.bedAreas=JSON.parse(JSON.stringify(DEFAULT_BED_AREAS));
+  save(); refreshBedAreas(); renderBedcare(); openBedSettings();
+}
 function isBedridden(e){
   const g=(typeof latestEvalData==='function')?latestEvalData(e.id):null;
   const st=(g&&g.status)?g.status:null;
@@ -2415,6 +2542,7 @@ function bedElders(){ return state.elders.filter(e=>e.status==='치료중' && is
 function renderBedcare(){
   const box=document.getElementById('bedcare-body'); if(!box) return;
   if(!state.bedLogs) state.bedLogs={};
+  refreshBedAreas();
   const list=bedElders();
   const wd=WEEKDAYS[new Date(bedDate+'T00:00:00').getDay()]||'';
   let h='<div class="card"><div class="brief-datebar">'+
@@ -2427,6 +2555,8 @@ function renderBedcare(){
     '<button class="brief-collapse no-print" onclick="toggleBedTarget()">대상자 관리</button></div>'+
     '<p class="hint">평가에서 <b>보행=침상</b> 또는 <b>ADL 보행 5점</b>인 어르신이 자동으로 포함돼요. 아래에서 직접 넣고 뺄 수도 있어요.</p>'+
     '<div id="bed-target" style="display:none;">'+bedTargetHtml()+'</div></div>';
+  h+='<div class="card"><div class="card-title">⚙ 치료 항목 관리 <button class="brief-collapse no-print" onclick="toggleBedSettings()">항목 편집</button></div>'+
+    '<div id="bed-settings" style="display:none;"></div></div>';
   if(!list.length){ h+='<div class="card"><div class="empty">와상 대상 어르신이 없어요. 위 <b>대상자 관리</b>에서 직접 추가할 수 있어요.</div></div>'; box.innerHTML=h; return; }
   list.forEach(e=>{ h+=bedElderCard(e); });
   box.innerHTML=h;
@@ -2531,7 +2661,7 @@ const BED_SENT = {
   ],
   rom: ['{부위} {방식} 시행하여 관절가동범위 유지 도모, {반응}.','{방식}으로 {부위} 관절 전 범위 가동, {반응}.','{부위}에 {방식} 적용하여 구축 예방 진행, {반응}.'],
   power: ['{부위} {방식} 시행하여 잔존 근력 유지 유도, {반응}.','{방식}으로 {부위} 근수축 유도, {반응}.','{부위}에 {방식} 적용하여 근위축 예방 도모, {반응}.'],
-  edema: ['{부위}에 {방식} 시행하여 부종 경감 도모, {반응}.','{방식} 적용으로 {부위} 순환 개선 유도, {반응}.','{부위} {방식} 병행하여 부종 관리 진행, {반응}.'],
+  edema: ['{부위}에 {방식} 시행하여 부종 경감 도모({정도}), {반응}.','{방식} 적용으로 {부위} 순환 개선 유도, {정도} 부종 상태에서 {반응}.','{부위} {정도} 부종 확인되어 {방식} 병행, {반응}.'],
   topical: ['{부위}에 {제품} 도포하여 국소 관리 시행, {반응}.','{제품} 적용하여 {부위} 상태 관리, {반응}.','{부위} {제품} 도포 및 가볍게 문질러 마무리, {반응}.'],
   breath: ['{방식} 병행하여 호흡·순환 기능 유지 도모, {반응}.','{방식} 시행하여 폐 확장 및 순환 촉진, {반응}.','{방식} 유도하며 부동 합병증 예방 진행, {반응}.']
 };
@@ -7722,7 +7852,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-42';
+const APP_VERSION = '2026-07-09-43';
 function checkForUpdate(){
   try{
     const base=location.pathname;
