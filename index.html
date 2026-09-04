@@ -3715,14 +3715,13 @@ function schedChipExtra(e,isToday,rec,slot){
 }
 function openSlotAdd(ev, slot){
   if(ev) ev.stopPropagation();
-  let mo=document.getElementById('slot-add-modal');
-  if(!mo){ mo=document.createElement('div'); mo.id='slot-add-modal'; mo.className='modal-overlay'; document.body.appendChild(mo); }
+  const mo=ensureModal('slot-add-modal');
   const already=getExtraAssign(schedDay, slot);
   const inSlotIds=state.elders.filter(e=>slotOf(e,schedDay)===slot).map(e=>e.id);
   const list=state.elders.filter(e=>e.status==='치료중' && already.indexOf(e.id)<0 && inSlotIds.indexOf(e.id)<0)
     .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
-  mo.innerHTML='<div class="modal-box"><div class="modal-head"><b>'+schedDay+'요일 '+slot+' 어르신 추가</b><button onclick="closeSlotAdd()">✕</button></div>'+
-    '<div class="modal-body"><p class="hint">이미 다른 시간에 배정된 어르신도 이 시간에 <b>추가로</b> 넣을 수 있어요. (여러 치료를 나눠서 할 때)</p>'+
+  mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>'+schedDay+'요일 '+slot+' 어르신 추가</b><button onclick="closeSlotAdd()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;">✕</button></div>'+
+    '<div class="modal-body" style="'+modalBodyStyle()+'"><p class="hint">이미 다른 시간에 배정된 어르신도 이 시간에 <b>추가로</b> 넣을 수 있어요. (여러 치료를 나눠서 할 때)</p>'+
     '<div class="slot-add-list">'+(list.length?list.map(e=>{
       const cur=slotOf(e,schedDay);
       return '<button class="slot-add-row" onclick="addExtraAssign(\''+schedDay+'\',\''+slot+'\','+e.id+');closeSlotAdd();">'+
@@ -3730,9 +3729,8 @@ function openSlotAdd(ev, slot){
         (cur?'<span class="slot-add-cur">현재 '+cur+'</span>':'<span class="slot-add-cur none">미배정</span>')+
         ((e.plan&&e.plan.length)?'<span class="slot-add-plan">'+esc(e.plan.join('·'))+'</span>':'')+'</button>';
     }).join(''):'<div class="empty">추가할 어르신이 없어요.</div>')+'</div></div></div>';
-  mo.style.display='flex';
 }
-function closeSlotAdd(){ const mo=document.getElementById('slot-add-modal'); if(mo) mo.style.display='none'; }
+function closeSlotAdd(){ const mo=document.getElementById('slot-add-modal'); if(mo) mo.remove(); }
 function schedChip(e,isToday,rec,slotKey){
   let stCls='';
   if(isToday){ const r=rec[e.id]; const ph=r&&r.phase?r.phase:'wait'; stCls=' st-'+ph; }
@@ -3775,25 +3773,31 @@ function slotPlanBadge(e, slotKey, isExtra){
   return '<span class="'+cls+'" onclick="openSlotPlan(event,'+e.id+',\''+slotKey+'\')" title="이 시간에 할 치료 고르기">'+esc(txt)+'</span>';
 }
 var slotPlanCtx=null;
+function ensureModal(id){
+  let mo=document.getElementById(id);
+  if(!mo){ mo=document.createElement('div'); mo.id=id; mo.className='modal-overlay'; document.body.appendChild(mo); }
+  mo.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:10050;background:rgba(15,36,52,0.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  return mo;
+}
+function modalBoxStyle(){ return 'background:#fff;width:100%;max-width:520px;max-height:85vh;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.28);'; }
+function modalHeadStyle(){ return 'display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#143A52;color:#fff;font-size:15px;flex-shrink:0;'; }
+function modalBodyStyle(){ return 'padding:16px 18px;overflow-y:auto;'; }
 function openSlotPlan(ev, id, slot){
   if(ev) ev.stopPropagation();
   slotPlanCtx={id, slot, day:schedDay};
-  let mo=document.getElementById('slot-plan-modal');
-  if(!mo){ mo=document.createElement('div'); mo.id='slot-plan-modal'; mo.className='modal-overlay'; document.body.appendChild(mo); }
-  mo.style.display='flex';
+  ensureModal('slot-plan-modal');
   renderSlotPlanModal();
 }
 function renderSlotPlanModal(){
   const mo=document.getElementById('slot-plan-modal'); if(!mo||!slotPlanCtx) return;
-  if(mo.style.display==='none') return;
   const {id, slot, day}=slotPlanCtx;
   const e=state.elders.find(x=>x.id===id); if(!e) return;
   const sel=getSlotPlan(day, slot, id)||[];
   const prescribed=(e.plan&&e.plan.length)?e.plan:[];
   const others=(state.treatments||[]).filter(t=>prescribed.indexOf(t)<0);
   const btn=(t,isPre)=>'<button class="sp-tag'+(sel.indexOf(t)>=0?' on':'')+(isPre?' pre':'')+'" onclick="setSlotPlan(\''+day+'\',\''+slot+'\','+id+',\''+esc(t)+'\')">'+esc(t)+'</button>';
-  mo.innerHTML='<div class="modal-box"><div class="modal-head"><b>'+esc((e.room?e.room+'호 ':'')+e.name)+' — '+day+'요일 '+slot+'</b><button onclick="closeSlotPlan()">✕</button></div>'+
-    '<div class="modal-body"><p class="hint">이 시간에 할 치료만 골라주세요. 여러 개 선택 가능하고, 다시 누르면 해제돼요.</p>'+
+  mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>'+esc((e.room?e.room+'호 ':'')+e.name)+' — '+day+'요일 '+slot+'</b><button onclick="closeSlotPlan()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;">✕</button></div>'+
+    '<div class="modal-body" style="'+modalBodyStyle()+'"><p class="hint">이 시간에 할 치료만 골라주세요. 여러 개 선택 가능하고, 다시 누르면 해제돼요.</p>'+
     (prescribed.length?'<div class="sp-group"><div class="sp-label">처방된 치료</div><div class="sp-tags">'+prescribed.map(t=>btn(t,true)).join('')+'</div></div>':'')+
     (others.length?'<div class="sp-group"><div class="sp-label">그 외 치료</div><div class="sp-tags">'+others.map(t=>btn(t,false)).join('')+'</div></div>':'')+
     '<div class="sp-foot"><button class="btn" onclick="clearSlotPlan()">전체 해제</button><button class="btn teal" onclick="closeSlotPlan()">완료</button></div>'+
@@ -3811,7 +3815,7 @@ function clearSlotPlan(){
   }
   renderSched(); renderSlotPlanModal();
 }
-function closeSlotPlan(){ const mo=document.getElementById('slot-plan-modal'); if(mo) mo.style.display='none'; slotPlanCtx=null; }
+function closeSlotPlan(){ const mo=document.getElementById('slot-plan-modal'); if(mo) mo.remove(); slotPlanCtx=null; }
 function removeFromSlot(id,ev){
   if(ev) ev.stopPropagation();
   const e=state.elders.find(x=>x.id===id);
@@ -4161,22 +4165,20 @@ function hlBtnHtml(id, date){
   return html;
 }
 function openHlModal(elderId, date){
-  let mo=document.getElementById('hl-modal');
-  if(!mo){ mo=document.createElement('div'); mo.id='hl-modal'; mo.className='modal-overlay'; document.body.appendChild(mo); }
+  const mo=ensureModal('hl-modal');
   const e=state.elders.find(x=>x.id===elderId)||{};
   const nm=(e.room?e.room+'호 ':'')+e.name+' 어르신';
-  mo.innerHTML='<div class="modal-box"><div class="modal-head"><b>⭐ '+esc(nm)+' 하이라이트</b><button onclick="closeHlModal()">✕</button></div>'+
-    '<div class="modal-body">'+
+  mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>⭐ '+esc(nm)+' 하이라이트</b><button onclick="closeHlModal()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;">✕</button></div>'+
+    '<div class="modal-body" style="'+modalBodyStyle()+'">'+
     '<p class="hint">오늘 특별히 의미 있는 성과나 사건을 기록해요. 이 어르신 기록에 날짜와 함께 영구적으로 남아요.</p>'+
     '<div class="hl-presets">'+HL_PRESETS.map(p=>'<button class="hl-preset" onclick="setHlInput(\''+esc(p)+'\')" >'+p+'</button>').join('')+'</div>'+
     '<div class="hl-input-row"><input type="text" id="hl-input" placeholder="직접 입력 (예: 처음으로 보행 훈련 성공)" value="">'+
     '<button class="btn teal" onclick="saveHl('+elderId+',\''+date+'\')">저장</button></div>'+
     '</div></div>';
-  mo.style.display='flex';
   setTimeout(()=>{ const el=document.getElementById('hl-input'); if(el) el.focus(); },100);
 }
 function setHlInput(v){ const el=document.getElementById('hl-input'); if(el) el.value=v; }
-function closeHlModal(){ const mo=document.getElementById('hl-modal'); if(mo) mo.style.display='none'; }
+function closeHlModal(){ const mo=document.getElementById('hl-modal'); if(mo) mo.remove(); }
 function saveHl(elderId, date){
   const el=document.getElementById('hl-input'); if(!el||!el.value.trim()){ alert('내용을 입력해 주세요.'); return; }
   if(!state.highlights) state.highlights={};
@@ -8005,7 +8007,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-46';
+const APP_VERSION = '2026-07-09-47';
 function checkForUpdate(){
   try{
     const base=location.pathname;
