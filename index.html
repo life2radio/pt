@@ -407,6 +407,17 @@
   .bed-area-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .bed-area-name { font-size: 14px; font-weight: 600; color: var(--navy); }
   .bed-multi-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .sw-plan { font-size: 10.5px; color: var(--teal); background: var(--teal-bg,#EAF4F0); padding: 1px 7px; border-radius: 8px; margin-left: 5px; white-space: nowrap; }
+  .sw-extra-tag { font-size: 10px; background: var(--amber); color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 4px; font-weight: 600; }
+  .sw-elder.extra { border-left: 3px solid var(--amber); }
+  .slot-add { background: #fff; border: 1px dashed var(--line); color: var(--muted); border-radius: 8px; width: 28px; height: 26px; cursor: pointer; font-size: 14px; margin-left: 4px; vertical-align: middle; }
+  .slot-add:hover { border-color: var(--teal); color: var(--teal); }
+  .slot-add-list { display: flex; flex-direction: column; gap: 4px; max-height: 60vh; overflow-y: auto; }
+  .slot-add-row { display: flex; align-items: center; gap: 8px; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13.5px; cursor: pointer; font-family: inherit; }
+  .slot-add-row:hover { border-color: var(--teal); background: var(--teal-bg,#EAF4F0); }
+  .slot-add-cur { font-size: 11px; color: var(--amber); background: #FFF8E1; padding: 1px 7px; border-radius: 8px; }
+  .slot-add-cur.none { color: var(--muted); background: var(--sand); }
+  .slot-add-plan { font-size: 11px; color: var(--teal); margin-left: auto; }
   .bed-set-area { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
   .bed-set-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
   .bed-set-icon { width: 46px; text-align: center; font-size: 15px; }
@@ -3611,12 +3622,18 @@ function renderSched(){
       return lunchRow+'<div class="tt-row"><div class="tt-time">'+slot+'</div><div class="tt-cell tt-adhoc">📌 '+esc(adhocLabels[slot]||'임시 일정')+' <span class="tt-buffer-sub">(오늘 · 치료 배정 불가)</span></div></div>';
     }
     const inSlot=elders.filter(e=>slotOf(e,schedDay)===slot);
+    const extraIds=getExtraAssign(schedDay, slot);
+    const extras=extraIds.map(id=>state.elders.find(x=>x.id===id)).filter(e=>e&&e.status==='치료중');
     const isMove=getMoveSlots(schedDay).includes(slot);
     return lunchRow+'<div class="tt-row'+(isMove?' tt-move':'')+'"><div class="tt-time">'+slot+
       '<button class="move-tog no-print" onclick="toggleMoveSlot(event,\''+slot+'\')" title="물리치료실 이동 표시 켜기/끄기">'+(isMove?'🚶':'＋')+'</button></div>'+
       '<div class="tt-cell" ondragover="schedDragOver(event)" ondragleave="schedDragLeave(event)" ondrop="schedDrop(event,\''+slot+'\')" onclick="schedCellTap(\''+slot+'\')">'+
       (isMove?'<span class="move-tag">🚶 물리치료실로 이동</span>':'')+
-      (inSlot.length?inSlot.map(e=>schedChip(e,isToday,rec)).join(''):'<span class="tt-empty">—</span>')+'</div></div>';
+      (inSlot.length?inSlot.map(e=>schedChip(e,isToday,rec,slot)).join(''):'')+
+      (extras.length?extras.map(e=>schedChipExtra(e,isToday,rec,slot)).join(''):'')+
+      (!inSlot.length&&!extras.length?'<span class="tt-empty">—</span>':'')+
+      '<button class="slot-add no-print" onclick="openSlotAdd(event,\''+slot+'\')" title="이 시간에 어르신 추가">＋</button>'+
+      '</div></div>';
   }).join('');
 }
 let pickedElderId=null;
@@ -3650,9 +3667,66 @@ function moveToSlot(id, slot){
   pickedElderId=null;
   renderSched();
 }
-function schedChip(e,isToday,rec){
-  let badge='', stCls='';
-  if(isToday){ const r=rec[e.id]; const ph=r&&r.phase?r.phase:'wait'; const lbl=ph==='done'?'완료':ph==='ongoing'?'치료중':'대기'; badge='<span class="sw-status '+ph+'">'+lbl+'</span>'; stCls=' st-'+ph; }
+// ===== 추가 배정 (한 어르신 여러 시간대) =====
+function getExtraAssign(day, slot){
+  return (state.extraAssign && state.extraAssign[day] && state.extraAssign[day][slot]) || [];
+}
+function addExtraAssign(day, slot, id){
+  if(!state.extraAssign) state.extraAssign={};
+  if(!state.extraAssign[day]) state.extraAssign[day]={};
+  if(!state.extraAssign[day][slot]) state.extraAssign[day][slot]=[];
+  const arr=state.extraAssign[day][slot];
+  if(arr.indexOf(id)<0) arr.push(id);
+  save(); renderSched();
+}
+function removeExtraAssign(day, slot, id, ev){
+  if(ev) ev.stopPropagation();
+  if(!state.extraAssign||!state.extraAssign[day]||!state.extraAssign[day][slot]) return;
+  state.extraAssign[day][slot]=state.extraAssign[day][slot].filter(x=>x!==id);
+  if(!state.extraAssign[day][slot].length) delete state.extraAssign[day][slot];
+  if(!Object.keys(state.extraAssign[day]).length) delete state.extraAssign[day];
+  if(state.extraAssign&&!Object.keys(state.extraAssign).length) delete state.extraAssign;
+  save(); renderSched();
+}
+function schedChipExtra(e,isToday,rec,slot){
+  let stCls='';
+  if(isToday){ const r=rec[e.id]; const ph=r&&r.phase?r.phase:'wait'; stCls=' st-'+ph; }
+  const plans=(e.plan&&e.plan.length)?e.plan.join('·'):'';
+  const planBadge = plans ? '<span class="sw-plan">'+esc(plans)+'</span>' : '';
+  return '<div class="sw-elder extra'+stCls+' v-'+(e.visit==='호실'?'room':e.visit==='혼합'?'mix':'clinic')+'">'+
+    '<span class="visit-ic">'+visitIcon(e.visit)+'</span>'+
+    (e.room?'<span class="sw-room">'+esc(e.room)+'</span>':'')+
+    '<span class="sw-name">'+esc(e.name)+'</span>'+planBadge+
+    '<span class="sw-extra-tag">추가</span>'+
+    '<span class="sw-rm" onclick="removeExtraAssign(\''+schedDay+'\',\''+slot+'\','+e.id+',event)" title="빼기">✕</span></div>';
+}
+function openSlotAdd(ev, slot){
+  if(ev) ev.stopPropagation();
+  let mo=document.getElementById('slot-add-modal');
+  if(!mo){ mo=document.createElement('div'); mo.id='slot-add-modal'; mo.className='modal-overlay'; document.body.appendChild(mo); }
+  const already=getExtraAssign(schedDay, slot);
+  const inSlotIds=state.elders.filter(e=>slotOf(e,schedDay)===slot).map(e=>e.id);
+  const list=state.elders.filter(e=>e.status==='치료중' && already.indexOf(e.id)<0 && inSlotIds.indexOf(e.id)<0)
+    .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
+  mo.innerHTML='<div class="modal-box"><div class="modal-head"><b>'+schedDay+'요일 '+slot+' 어르신 추가</b><button onclick="closeSlotAdd()">✕</button></div>'+
+    '<div class="modal-body"><p class="hint">이미 다른 시간에 배정된 어르신도 이 시간에 <b>추가로</b> 넣을 수 있어요. (여러 치료를 나눠서 할 때)</p>'+
+    '<div class="slot-add-list">'+(list.length?list.map(e=>{
+      const cur=slotOf(e,schedDay);
+      return '<button class="slot-add-row" onclick="addExtraAssign(\''+schedDay+'\',\''+slot+'\','+e.id+');closeSlotAdd();">'+
+        (e.room?'<b>'+esc(e.room)+'호</b> ':'')+esc(e.name)+
+        (cur?'<span class="slot-add-cur">현재 '+cur+'</span>':'<span class="slot-add-cur none">미배정</span>')+
+        ((e.plan&&e.plan.length)?'<span class="slot-add-plan">'+esc(e.plan.join('·'))+'</span>':'')+'</button>';
+    }).join(''):'<div class="empty">추가할 어르신이 없어요.</div>')+'</div></div></div>';
+  mo.style.display='flex';
+}
+function closeSlotAdd(){ const mo=document.getElementById('slot-add-modal'); if(mo) mo.style.display='none'; }
+function schedChip(e,isToday,rec,slotKey){
+  let stCls='';
+  if(isToday){ const r=rec[e.id]; const ph=r&&r.phase?r.phase:'wait'; stCls=' st-'+ph; }
+  // 이름 옆에 치료 항목 표시 (처방 기준, 없으면 안내)
+  const plans=(e.plan&&e.plan.length)?e.plan:[];
+  const planTxt = plans.length ? plans.join('·') : '';
+  const planBadge = planTxt ? '<span class="sw-plan">'+esc(planTxt)+'</span>' : '';
   const picked = (pickedElderId===e.id) ? ' picked' : '';
   const assigned = slotOf(e,schedDay);
   const rm = assigned ? '<span class="sw-rm" onclick="removeFromSlot('+e.id+',event)" title="이 시간에서 빼기">✕</span>' : '';
@@ -3661,7 +3735,7 @@ function schedChip(e,isToday,rec){
     '<span class="drag-grip">⠿</span>'+
     '<span class="visit-ic" title="'+visitLabel(e.visit)+'">'+visitIcon(e.visit)+'</span>'+
     (e.room?'<span class="sw-room">'+esc(e.room)+'</span>':'')+
-    '<span class="sw-name">'+esc(e.name)+'</span>'+badge+rm+'</div>';
+    '<span class="sw-name">'+esc(e.name)+'</span>'+planBadge+rm+'</div>';
 }
 function removeFromSlot(id,ev){
   if(ev) ev.stopPropagation();
@@ -3767,6 +3841,7 @@ function printWeekSchedule(){
         const names=state.elders.filter(e=>e.status==='치료중'&&slotOf(e,day)===slot)
           .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}))
           .map(e=>(e.room?e.room+' ':'')+e.name);
+        getExtraAssign(day, slot).forEach(id=>{ const e=state.elders.find(x=>x.id===id); if(e&&e.status==='치료중') names.push((e.room?e.room+' ':'')+e.name); });
         tds+='<td class="'+(dayMove?'pw-move-cell':'')+'">'+(dayMove?'🚶 ':'')+(names.length?names.map(esc).join('<br>'):'')+'</td>';
       }
     });
@@ -4110,7 +4185,10 @@ function renderRecord(){
   const active=state.elders.filter(e=>{
     if(e.status!=='치료중') return false;
     if(slotOf(e,rdWd)) return true;
-    return !!dayRec[e.id];   // 기록이 있으면 스케줄 없어도 표시
+    // 추가 배정된 어르신도 포함
+    const ea=state.extraAssign&&state.extraAssign[rdWd];
+    if(ea && Object.keys(ea).some(s=>ea[s].indexOf(e.id)>=0)) return true;
+    return !!dayRec[e.id];
   });
   if(!state.elders.length){ list.innerHTML='<div class="empty">먼저 ‘어르신’ 탭에서 어르신을 등록해 주세요</div>'; return; }
   const addBox=recAddElderHtml(rdWd, dayRec);
@@ -7852,7 +7930,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-43';
+const APP_VERSION = '2026-07-09-44';
 function checkForUpdate(){
   try{
     const base=location.pathname;
