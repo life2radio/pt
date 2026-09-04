@@ -407,7 +407,16 @@
   .bed-area-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .bed-area-name { font-size: 14px; font-weight: 600; color: var(--navy); }
   .bed-multi-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
-  .sw-plan { font-size: 10.5px; color: var(--teal); background: var(--teal-bg,#EAF4F0); padding: 1px 7px; border-radius: 8px; margin-left: 5px; white-space: nowrap; }
+  .sw-plan { font-size: 10.5px; color: var(--teal); background: var(--teal-bg,#EAF4F0); padding: 2px 8px; border-radius: 8px; margin-left: 5px; white-space: nowrap; cursor: pointer; border: 1px solid transparent; }
+  .sw-plan:hover { border-color: var(--teal); }
+  .sw-plan.none { color: var(--muted); background: var(--sand); border: 1px dashed var(--line); }
+  .sp-group { margin-bottom: 14px; }
+  .sp-label { font-size: 12.5px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .sp-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sp-tag { font-size: 13px; padding: 7px 14px; border: 1px solid var(--line); background: #fff; border-radius: 16px; cursor: pointer; font-family: inherit; }
+  .sp-tag.pre { border-color: var(--teal); color: var(--teal); }
+  .sp-tag.on { background: var(--teal); color: #fff; border-color: var(--teal); font-weight: 600; }
+  .sp-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
   .sw-extra-tag { font-size: 10px; background: var(--amber); color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 4px; font-weight: 600; }
   .sw-elder.extra { border-left: 3px solid var(--amber); }
   .slot-add { background: #fff; border: 1px dashed var(--line); color: var(--muted); border-radius: 8px; width: 28px; height: 26px; cursor: pointer; font-size: 14px; margin-left: 4px; vertical-align: middle; }
@@ -3691,8 +3700,7 @@ function removeExtraAssign(day, slot, id, ev){
 function schedChipExtra(e,isToday,rec,slot){
   let stCls='';
   if(isToday){ const r=rec[e.id]; const ph=r&&r.phase?r.phase:'wait'; stCls=' st-'+ph; }
-  const plans=(e.plan&&e.plan.length)?e.plan.join('·'):'';
-  const planBadge = plans ? '<span class="sw-plan">'+esc(plans)+'</span>' : '';
+  const planBadge = slotPlanBadge(e, slot, true);
   return '<div class="sw-elder extra'+stCls+' v-'+(e.visit==='호실'?'room':e.visit==='혼합'?'mix':'clinic')+'">'+
     '<span class="visit-ic">'+visitIcon(e.visit)+'</span>'+
     (e.room?'<span class="sw-room">'+esc(e.room)+'</span>':'')+
@@ -3723,10 +3731,7 @@ function closeSlotAdd(){ const mo=document.getElementById('slot-add-modal'); if(
 function schedChip(e,isToday,rec,slotKey){
   let stCls='';
   if(isToday){ const r=rec[e.id]; const ph=r&&r.phase?r.phase:'wait'; stCls=' st-'+ph; }
-  // 이름 옆에 치료 항목 표시 (처방 기준, 없으면 안내)
-  const plans=(e.plan&&e.plan.length)?e.plan:[];
-  const planTxt = plans.length ? plans.join('·') : '';
-  const planBadge = planTxt ? '<span class="sw-plan">'+esc(planTxt)+'</span>' : '';
+  const planBadge = slotPlanBadge(e, slotKey, false);
   const picked = (pickedElderId===e.id) ? ' picked' : '';
   const assigned = slotOf(e,schedDay);
   const rm = assigned ? '<span class="sw-rm" onclick="removeFromSlot('+e.id+',event)" title="이 시간에서 빼기">✕</span>' : '';
@@ -3737,6 +3742,71 @@ function schedChip(e,isToday,rec,slotKey){
     (e.room?'<span class="sw-room">'+esc(e.room)+'</span>':'')+
     '<span class="sw-name">'+esc(e.name)+'</span>'+planBadge+rm+'</div>';
 }
+// 슬롯별 치료 지정
+function getSlotPlan(day, slot, id){
+  const sp=state.slotPlans && state.slotPlans[day] && state.slotPlans[day][slot];
+  return (sp && sp[id]) || null;   // null이면 미지정
+}
+function setSlotPlan(day, slot, id, treat){
+  if(!state.slotPlans) state.slotPlans={};
+  if(!state.slotPlans[day]) state.slotPlans[day]={};
+  if(!state.slotPlans[day][slot]) state.slotPlans[day][slot]={};
+  let arr=state.slotPlans[day][slot][id]||[];
+  const i=arr.indexOf(treat);
+  if(i>=0) arr.splice(i,1); else arr.push(treat);
+  if(arr.length) state.slotPlans[day][slot][id]=arr;
+  else {
+    delete state.slotPlans[day][slot][id];
+    if(!Object.keys(state.slotPlans[day][slot]).length) delete state.slotPlans[day][slot];
+    if(!Object.keys(state.slotPlans[day]).length) delete state.slotPlans[day];
+    if(!Object.keys(state.slotPlans).length) delete state.slotPlans;
+  }
+  save(); renderSched(); renderSlotPlanModal();
+}
+function slotPlanBadge(e, slotKey, isExtra){
+  const sel=getSlotPlan(schedDay, slotKey, e.id);
+  const txt = (sel && sel.length) ? sel.join('·') : '치료 선택';
+  const cls = (sel && sel.length) ? 'sw-plan' : 'sw-plan none';
+  return '<span class="'+cls+'" onclick="openSlotPlan(event,'+e.id+',\''+slotKey+'\')" title="이 시간에 할 치료 고르기">'+esc(txt)+'</span>';
+}
+var slotPlanCtx=null;
+function openSlotPlan(ev, id, slot){
+  if(ev) ev.stopPropagation();
+  slotPlanCtx={id, slot, day:schedDay};
+  let mo=document.getElementById('slot-plan-modal');
+  if(!mo){ mo=document.createElement('div'); mo.id='slot-plan-modal'; mo.className='modal-overlay'; document.body.appendChild(mo); }
+  mo.style.display='flex';
+  renderSlotPlanModal();
+}
+function renderSlotPlanModal(){
+  const mo=document.getElementById('slot-plan-modal'); if(!mo||!slotPlanCtx) return;
+  if(mo.style.display==='none') return;
+  const {id, slot, day}=slotPlanCtx;
+  const e=state.elders.find(x=>x.id===id); if(!e) return;
+  const sel=getSlotPlan(day, slot, id)||[];
+  const prescribed=(e.plan&&e.plan.length)?e.plan:[];
+  const others=(state.treatments||[]).filter(t=>prescribed.indexOf(t)<0);
+  const btn=(t,isPre)=>'<button class="sp-tag'+(sel.indexOf(t)>=0?' on':'')+(isPre?' pre':'')+'" onclick="setSlotPlan(\''+day+'\',\''+slot+'\','+id+',\''+esc(t)+'\')">'+esc(t)+'</button>';
+  mo.innerHTML='<div class="modal-box"><div class="modal-head"><b>'+esc((e.room?e.room+'호 ':'')+e.name)+' — '+day+'요일 '+slot+'</b><button onclick="closeSlotPlan()">✕</button></div>'+
+    '<div class="modal-body"><p class="hint">이 시간에 할 치료만 골라주세요. 여러 개 선택 가능하고, 다시 누르면 해제돼요.</p>'+
+    (prescribed.length?'<div class="sp-group"><div class="sp-label">처방된 치료</div><div class="sp-tags">'+prescribed.map(t=>btn(t,true)).join('')+'</div></div>':'')+
+    (others.length?'<div class="sp-group"><div class="sp-label">그 외 치료</div><div class="sp-tags">'+others.map(t=>btn(t,false)).join('')+'</div></div>':'')+
+    '<div class="sp-foot"><button class="btn" onclick="clearSlotPlan()">전체 해제</button><button class="btn teal" onclick="closeSlotPlan()">완료</button></div>'+
+    '</div></div>';
+}
+function clearSlotPlan(){
+  if(!slotPlanCtx) return;
+  const {id, slot, day}=slotPlanCtx;
+  if(state.slotPlans&&state.slotPlans[day]&&state.slotPlans[day][slot]){
+    delete state.slotPlans[day][slot][id];
+    if(!Object.keys(state.slotPlans[day][slot]).length) delete state.slotPlans[day][slot];
+    if(!Object.keys(state.slotPlans[day]).length) delete state.slotPlans[day];
+    if(!Object.keys(state.slotPlans).length) delete state.slotPlans;
+    save();
+  }
+  renderSched(); renderSlotPlanModal();
+}
+function closeSlotPlan(){ const mo=document.getElementById('slot-plan-modal'); if(mo) mo.style.display='none'; slotPlanCtx=null; }
 function removeFromSlot(id,ev){
   if(ev) ev.stopPropagation();
   const e=state.elders.find(x=>x.id===id);
@@ -3840,9 +3910,9 @@ function printWeekSchedule(){
       else {
         const names=state.elders.filter(e=>e.status==='치료중'&&slotOf(e,day)===slot)
           .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}))
-          .map(e=>(e.room?e.room+' ':'')+e.name);
-        getExtraAssign(day, slot).forEach(id=>{ const e=state.elders.find(x=>x.id===id); if(e&&e.status==='치료중') names.push((e.room?e.room+' ':'')+e.name); });
-        tds+='<td class="'+(dayMove?'pw-move-cell':'')+'">'+(dayMove?'🚶 ':'')+(names.length?names.map(esc).join('<br>'):'')+'</td>';
+          .map(e=>{ const sp=getSlotPlan(day,slot,e.id); return esc((e.room?e.room+' ':'')+e.name)+(sp&&sp.length?' <small>('+esc(sp.join('·'))+')</small>':''); });
+        getExtraAssign(day, slot).forEach(id=>{ const e=state.elders.find(x=>x.id===id); if(e&&e.status==='치료중'){ const sp=getSlotPlan(day,slot,e.id); names.push(esc((e.room?e.room+' ':'')+e.name)+(sp&&sp.length?' <small>('+esc(sp.join('·'))+')</small>':'')); } });
+        tds+='<td class="'+(dayMove?'pw-move-cell':'')+'">'+(dayMove?'🚶 ':'')+(names.length?names.join('<br>'):'')+'</td>';
       }
     });
     rows+='<tr><th class="pw-time">'+slot+'</th>'+tds+'</tr>';
@@ -7930,7 +8000,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-07-09-44';
+const APP_VERSION = '2026-07-09-45';
 function checkForUpdate(){
   try{
     const base=location.pathname;
