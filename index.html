@@ -2486,6 +2486,23 @@ var BED_AREAS = DEFAULT_BED_AREAS;
 function refreshBedAreas(){
   BED_AREAS = (state.bedAreas && state.bedAreas.length) ? state.bedAreas : DEFAULT_BED_AREAS;
 }
+// 앱 업데이트로 새 분류(도움·횟수·세트 등)가 생기면 저장된 항목에 자동 보충
+function mergeBedAreaUpdates(){
+  if(!state.bedAreas || !state.bedAreas.length) return;
+  let changed=false;
+  DEFAULT_BED_AREAS.forEach(def=>{
+    const cur=state.bedAreas.find(a=>a.key===def.key);
+    if(!cur) return;                       // 사용자가 지운 영역은 건드리지 않음
+    if(!cur.tags) cur.tags={};
+    Object.keys(def.tags).forEach(grp=>{
+      if(!cur.tags[grp]){                  // 새로 생긴 분류만 추가
+        cur.tags[grp]=def.tags[grp].slice();
+        changed=true;
+      }
+    });
+  });
+  if(changed){ save(); refreshBedAreas(); }
+}
 function ensureBedAreas(){
   if(!state.bedAreas || !state.bedAreas.length){
     state.bedAreas = JSON.parse(JSON.stringify(DEFAULT_BED_AREAS));
@@ -2606,6 +2623,7 @@ function renderBedcare(){
   const box=document.getElementById('bedcare-body'); if(!box) return;
   if(!state.bedLogs) state.bedLogs={};
   refreshBedAreas();
+  mergeBedAreaUpdates();
   const list=bedElders();
   const wd=WEEKDAYS[new Date(bedDate+'T00:00:00').getDay()]||'';
   let h='<div class="card"><div class="brief-datebar">'+
@@ -8112,7 +8130,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-17-01';
+const APP_VERSION = '2026-09-17-02';
 function checkForUpdate(){
   try{
     const base=location.pathname;
