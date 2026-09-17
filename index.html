@@ -1954,8 +1954,25 @@ const LOCK_KEY = 'pt_clinic_lock';
 function lockHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return String(Math.abs(h)); }
 let lockMode='unlock', lockTries=0;
 
+const LOCK_SESSION_KEY='pt_clinic_unlock_at';
+const LOCK_DURATION_MS=2*60*60*1000;   // 2시간
+function isUnlockValid(){
+  try{
+    const t=parseInt(localStorage.getItem(LOCK_SESSION_KEY)||'0',10);
+    if(!t) return false;
+    return (Date.now()-t) < LOCK_DURATION_MS;
+  }catch(e){ return false; }
+}
+function markUnlocked(){ try{ localStorage.setItem(LOCK_SESSION_KEY, String(Date.now())); }catch(e){} }
+function clearUnlock(){ try{ localStorage.removeItem(LOCK_SESSION_KEY); }catch(e){} }
 function initLock(){
   const stored=localStorage.getItem(LOCK_KEY);
+  // 비밀번호가 설정돼 있고 2시간 이내에 푼 적이 있으면 바로 통과
+  if(stored && isUnlockValid()){
+    const ls=document.getElementById('lock-screen');
+    if(ls) ls.style.display='none';
+    return;
+  }
   const sub=document.getElementById('lock-sub');
   const btn=document.getElementById('lock-btn');
   const forgot=document.getElementById('lock-forgot');
@@ -1966,7 +1983,7 @@ function initLock(){
     forgot.style.display='none';
   } else {
     lockMode='unlock';
-    sub.textContent='비밀번호를 입력하세요';
+    sub.innerHTML='비밀번호를 입력하세요<br><span style="font-size:12px;opacity:.75;">한 번 풀면 2시간 동안 유지돼요</span>';
     btn.textContent='잠금 해제';
     forgot.style.display='';
   }
@@ -1997,6 +2014,7 @@ function lockForgot(){
   const ok=confirm('비밀번호를 초기화할까요?\n\n새 비밀번호를 다시 설정하게 되며, 어르신 정보·치료 기록 등 모든 데이터는 그대로 유지됩니다.');
   if(!ok) return;
   localStorage.removeItem(LOCK_KEY);
+  clearUnlock();
   document.getElementById('lock-input').value='';
   document.getElementById('lock-msg').textContent='';
   lockTries=0;
@@ -2004,6 +2022,7 @@ function lockForgot(){
 }
 
 function unlockApp(){
+  markUnlocked();
   const ls=document.getElementById('lock-screen');
   if(ls) ls.style.display='none';
   document.getElementById('lock-input').value='';
@@ -2011,6 +2030,7 @@ function unlockApp(){
 }
 
 function lockNow(){
+  clearUnlock();
   const ls=document.getElementById('lock-screen');
   if(ls){ ls.style.display='flex'; }
   lockTries=0;
@@ -8130,7 +8150,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-17-02';
+const APP_VERSION = '2026-09-17-03';
 function checkForUpdate(){
   try{
     const base=location.pathname;
