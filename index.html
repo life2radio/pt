@@ -1503,6 +1503,8 @@
         <button class="btn teal" onclick="genAllNotes()">✍ 치료한 전원 일지 자동작성</button>
         <span class="hint" style="align-self:center;">치료 항목 체크된 어르신의 빈 일지를 한 번에 채워요</span>
       </div>
+      <input type="text" id="rec-search" class="modal-search no-print" placeholder="🔍 어르신 이름 또는 호실로 검색" oninput="filterRecList(this.value)" autocomplete="off">
+      <div id="rec-search-none" class="empty" style="display:none;">검색 결과가 없어요.</div>
       <div id="r-list"><div class="empty">먼저 ‘어르신’ 탭에서 어르신을 등록해 주세요</div></div>
     </div>
 
@@ -4391,6 +4393,14 @@ function recRemoveElder(id){
   delete state.records[recordDate][id];
   save(); renderRecord();
 }
+function filterRecList(q){
+  q=(q||'').trim().toLowerCase();
+  const blocks=document.querySelectorAll('#r-list .rec-block');
+  let shown=0;
+  blocks.forEach(b=>{ const hit=!q||(b.dataset.skey||'').indexOf(q)>=0; b.style.display=hit?'':'none'; if(hit) shown++; });
+  const none=document.getElementById('rec-search-none');
+  if(none) none.style.display=(q&&blocks.length&&shown===0)?'block':'none';
+}
 function renderRecord(){
   renderTreatments();
   const wd=WEEKDAYS[new Date(recordDate+'T00:00:00').getDay()]||'';
@@ -4431,7 +4441,8 @@ function renderRecord(){
     }).join('');
     const isAdded = !slotOf(e, rdWd);
     const addedTag = isAdded ? '<span class="rec-added-tag">추가</span><button class="rec-remove no-print" onclick="recRemoveElder('+e.id+')" title="오늘 기록에서 빼기">✕</button>' : '';
-    return '<div class="rec-block phase-'+phase+(rec.notDone?' notdone':'')+(isAdded?' added':'')+'"><div class="rec-top"><div class="rec-name">'+rm+esc(e.name)+(e.risks||[]).map(riskTag).join('')+planBadge+addedTag+'</div>'+
+    const skey=((e.room||'')+' '+(e.room?e.room+'호 ':'')+e.name).toLowerCase();
+    return '<div class="rec-block phase-'+phase+(rec.notDone?' notdone':'')+(isAdded?' added':'')+'" data-skey="'+esc(skey)+'"><div class="rec-top"><div class="rec-name">'+rm+esc(e.name)+(e.risks||[]).map(riskTag).join('')+planBadge+addedTag+'</div>'+
       '<div class="phase-seg" data-id="'+e.id+'">'+
       '<button class="ph ph-wait'+(phase==='wait'?' on':'')+'" onclick="setPhase('+e.id+',\'wait\')">대기</button>'+
       '<button class="ph ph-ongoing'+(phase==='ongoing'?' on':'')+'" onclick="setPhase('+e.id+',\'ongoing\')">치료중</button>'+
@@ -4467,6 +4478,7 @@ function renderRecord(){
       '</div>'+
       hlBtnHtml(e.id, today)+'</div>';
   }).join('') + addBox;
+  const rs=document.getElementById('rec-search'); if(rs && rs.value) filterRecList(rs.value);
   updateProgress();
 }
 function recExHtml(e){
@@ -4883,29 +4895,102 @@ function composeSimpleNote(e, treats, dateStr, salt, rec){
     });
   })();
 
-  // ① 치료 항목 — 상태에 맞는 구체 내용으로
+  // ① 치료 항목 — 온열 → 물리치료기기 → 운동 순서로 정렬
   const tList=(treats&&treats.length)?treats:[];
   const level=elderMobLevel(g, st);
-  const detailParts=[];
-  const plainParts=[];
-  tList.forEach((t,i)=>{
-    let pool=treatDetailFor(t, level);
-    if(pool&&pool.length){
-      pool=filterUnsafeDetail(pool, level, g, st, tq);
-      if(pool.length) detailParts.push(pick(pool, noteHash('TD'+t+idn+bucket+i)));
-      else plainParts.push(t);
+  const HEAT_T=['온열','적외선'];
+  const MODAL_T=['전기','초음파','공기압','도수치료','경사침대(틸트)'];
+  const heatT=tList.filter(t=>HEAT_T.indexOf(t)>=0);
+  const modalT=tList.filter(t=>MODAL_T.indexOf(t)>=0);
+  const exT=tList.filter(t=>HEAT_T.indexOf(t)<0 && MODAL_T.indexOf(t)<0 && t!=='평가');
+  const evalT=tList.filter(t=>t==='평가');
+  // 상태 (문장 선택용)
+  const pYes=(tq&&tq.pain==='있음')||(st&&st.pain==='있음'&&!(tq&&tq.pain==='없음'));
+  const pLow=(tq&&tq.cond==='저하')||(rec&&rec.notDone);
+  const sents=[];
+  // (1) 온열 — 가장 먼저
+  if(heatT.length){
+    let open;
+    const noEx=!exT.length;
+    if(noEx){
+      open = heatT.length>1
+        ? pick(['핫팩과 적외선으로 환부를 충분히 따뜻하게 함(약 15분).','핫팩 적용 후 적외선 조사하여 환부 온열 처치함.'], noteHash('HN2'+idn+bucket))
+        : (heatT[0]==='온열'
+          ? pick(['핫팩으로 환부 온열 적용함(15분).','환부에 핫팩을 적용해 충분히 데움(약 15분).','핫팩으로 환부의 굳은 근육을 따뜻하게 함.'], noteHash('HN'+idn+bucket))
+          : pick(['적외선 조사로 환부를 따뜻하게 함(15분).','환부에 적외선 조사함(15분).'], noteHash('HNI'+idn+bucket)));
+    } else if(heatT.length>1){
+      open=pick(['먼저 핫팩과 적외선으로 환부를 충분히 따뜻하게 함(약 15분).','치료 시작 전 핫팩 적용 후 적외선 조사하여 환부 온열 처치함.','운동 전 핫팩·적외선으로 환부의 굳은 근육과 관절 주변을 데움.'], noteHash('HO2'+idn+bucket));
+    } else if(heatT[0]==='온열'){
+      open=pick(['먼저 핫팩으로 환부 온열 적용함(15분).','치료 시작 전 핫팩을 적용해 환부를 충분히 데움(약 15분).','먼저 핫팩으로 환부의 굳은 근육과 관절 주변을 따뜻하게 함.','운동에 앞서 핫팩으로 환부 온열 처치함(15분).','핫팩 적용으로 치료를 시작하여 환부를 따뜻하게 함.'], noteHash('HO'+idn+bucket));
+    } else {
+      open=pick(['먼저 적외선 조사로 환부를 따뜻하게 함(15분).','치료 시작 전 적외선으로 환부 온열 처치함.','운동에 앞서 적외선 조사하여 환부 관절 주변을 데움.'], noteHash('HI'+idn+bucket));
     }
-    else plainParts.push(t);
+    const siteNm=(pYes&&tq&&tq.painSite&&tq.painSite.trim())?tq.painSite.trim():'';
+    if(siteNm){
+      const lc=siteNm.charCodeAt(siteNm.length-1);
+      const bat=(lc>=0xAC00&&lc<=0xD7A3)?((lc-0xAC00)%28!==0):false;
+      open=open.replace('환부를',siteNm+(bat?'을':'를')).replace('환부의 ',siteNm+'의 ').replace('환부',siteNm);
+    }
+    sents.push(open);
+  }
+  // (2) 물리치료기기
+  const MODAL_SENT={
+    '전기':['ICT(간섭파) 15분 적용함.','간섭파 전기치료 15분 시행함.','ICT 적용하여 근긴장 완화 도모함.','전기자극치료(ICT) 15분 진행함.'],
+    '전기_pain':['ICT 적용하여 통증 부위 자극함(15분).','간섭파 전기치료로 통증 완화 도모함(15분).'],
+    '초음파':['초음파 치료 5분 적용함.','환부에 초음파 조사함.','초음파로 심부 조직 이완 도모함.'],
+    '공기압':['하지 공기압(IPC) 20분 적용함.','공기압 치료로 하지 순환 촉진함.','IPC 적용하여 부종 관리함.'],
+    '도수치료':['도수로 관절을 부드럽게 가동함.','손으로 굳은 부위를 풀어드림.','도수 관절가동술 시행함.'],
+    '경사침대(틸트)':['경사침대로 기립 적응 훈련 시행함.','틸트 테이블 각도 올려 체중 부하 적응함.']
+  };
+  modalT.forEach((t,i)=>{
+    let pool=MODAL_SENT[t]||[t+' 시행함.'];
+    if(t==='전기' && pYes) pool=pool.concat(MODAL_SENT['전기_pain']);
+    sents.push(pick(pool, noteHash('TM'+t+idn+bucket+i)));
   });
+  // (3) 운동 — 온열 뒤에 배치
+  const exParts=[];
+  exT.forEach((t,i)=>{
+    let pool=treatDetailFor(t, level);
+    if(pool&&pool.length){ pool=filterUnsafeDetail(pool, level, g, st, tq); }
+    exParts.push((pool&&pool.length)?pick(pool, noteHash('TD'+t+idn+bucket+i)):t);
+  });
+  if(exParts.length){
+    const lead = heatT.length ? pick(['이어서 ','온열 후 ','따뜻해진 상태에서 '], noteHash('EL'+idn+bucket)) : '';
+    sents.push(lead+exParts.join(', ')+' '+pick(['진행함.','시행함.','실시함.'], noteHash('EV'+idn+bucket)));
+  }
+  if(evalT.length) sents.push('기능 평가 병행함.');
+  // (4) 온열 효과 연결 문장 — 통증·관절운동에 도움이 된 내용
+  if(heatT.length){
+    let pool;
+    if(pLow){
+      pool = exT.length
+        ? ['온열로 근긴장을 풀어준 뒤 무리 없는 범위에서 운동 진행함.','따뜻하게 이완시킨 후 강도를 낮춰 천천히 운동 진행함.']
+        : ['온열 적용하며 편안한 자세로 휴식 취하심.','따뜻하게 해드리며 컨디션 살핌.'];
+    } else if(exT.length && pYes){
+      pool=['온열로 통증과 근긴장이 줄어든 상태에서 운동해 한결 수월하게 따라오심.','따뜻해진 뒤 통증이 덜해져 관절운동 시 불편감이 줄어든 모습이었음.','온열 후 아픈 부위가 편해져 운동 범위를 무리 없이 가져감.','핫팩으로 통증이 완화되어 운동 중 통증 호소가 줄었음.','온열 처치 덕분에 통증이 누그러져 관절 움직임이 부드러웠음.'];
+    } else if(exT.length){
+      pool=['온열로 관절 주변 조직이 부드러워져 운동 시 관절 움직임이 한결 수월했음.','근육이 이완된 상태에서 운동해 뻣뻣함이 덜했음.','따뜻해진 뒤 관절 가동이 부드러워져 운동을 편안하게 수행하심.','핫팩으로 굳은 부위가 풀려 관절운동 범위를 더 여유 있게 가져감.','온열 후 근긴장이 완화되어 운동 동작이 훨씬 부드러웠음.'];
+    } else if(pYes){
+      pool=['온열 적용 후 통증이 한결 덜하다고 하심.','따뜻하게 한 뒤 아픈 부위가 편해졌다고 하심.','핫팩 후 통증이 누그러져 편안해하심.'];
+    } else {
+      pool=['온열 적용 후 근육이 이완되어 편안해하심.','따뜻하게 한 뒤 몸이 한결 풀렸다고 하심.','핫팩 후 뻣뻣함이 덜해져 편안해하심.'];
+    }
+    const bridge=pick(pool, noteHash('HE'+idn+bucket));
+    // 운동 문장 도입어와 효과 문장 첫머리가 겹치면 '이어서'로 바꿈
+    for(let k=0;k<sents.length;k++){
+      if(/^따뜻/.test(bridge) && sents[k].indexOf('따뜻해진 상태에서 ')===0) sents[k]='이어서 '+sents[k].slice('따뜻해진 상태에서 '.length);
+      if(/^온열 후/.test(bridge) && sents[k].indexOf('온열 후 ')===0) sents[k]='이어서 '+sents[k].slice('온열 후 '.length);
+    }
+    sents.push(bridge);
+  }
   let line1;
-  if(detailParts.length){
-    const all=detailParts.concat(plainParts.length?[plainParts.join('·')]:[]);
-    const verbs=['진행함.','시행함.','실시함.','받으셨음.'];
-    line1=all.join(', ')+' '+pick(verbs, noteHash('SD'+idn+bucket));
+  if(sents.length){
+    line1=sents.join(' ');
   } else {
     const tStr=tList.length?tList.join('·'):'치료';
     line1=pick(SIMPLE_POOL.did, noteHash('SD'+idn+bucket)).replace('{T}', tStr);
   }
+  const heatUsed = heatT.length>0;
 
   // ② 반응·참여
   const painYes=(tq&&tq.pain==='있음')||(st&&st.pain==='있음'&&!(tq&&tq.pain==='없음'));
@@ -4918,8 +5003,14 @@ function composeSimpleNote(e, treats, dateStr, salt, rec){
   else if(condLow) pool2=SIMPLE_POOL.react_low;
   else if(condGood) pool2=SIMPLE_POOL.react_good;
   else pool2=SIMPLE_POOL.react_mid;
+  if(heatUsed && !refused){
+    const DUP=/온열|시원|줄었|나아|낫다|편해|편안|풀렸|호소|통증|아프|아픈|덜하|개운|가벼워|수월|살살|조심|반응 없이/;
+    let f=pool2.filter(x=>!DUP.test(x));
+    if(!f.length) f=SIMPLE_POOL.react_mid.filter(x=>!DUP.test(x));
+    if(f.length) pool2=f;
+  }
   let line2=pick(pool2, noteHash('SR'+idn+bucket));
-  if(painYes && tq && tq.painSite && tq.painSite.trim()){
+  if(!heatUsed && painYes && tq && tq.painSite && tq.painSite.trim()){
     const site=tq.painSite.trim();
     const siteLines=[
       site+' 통증 호소하셔서 강도 조절하며 진행함.', site+' 통증 있으셔서 조심히 진행함.',
@@ -8150,7 +8241,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-17-03';
+const APP_VERSION = '2026-09-17-05';
 function checkForUpdate(){
   try{
     const base=location.pathname;
