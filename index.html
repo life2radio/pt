@@ -423,6 +423,57 @@
   .modal-head button { background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 8px; width: 30px; height: 30px; font-size: 14px; cursor: pointer; }
   .modal-body { padding: 16px 18px; overflow-y: auto; }
 
+  .nd-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .nd-tab { padding: 6px 10px; border: 1px solid var(--line); background: #fff; border-radius: 8px; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+  .nd-tab.on { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 700; }
+  .nd-tab.done { border-color: var(--teal); }
+  .nd-tab.flag { border-color: var(--amber); background: #FFF8E1; }
+  .nd-tab.on.flag { background: var(--amber); }
+  .nd-adl { display: flex; flex-direction: column; gap: 4px; }
+  .nd-adl-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .nd-adl-n { min-width: 110px; font-size: 13px; font-weight: 600; color: var(--navy); }
+  .nd-adl-o { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .nd-side { font-size: 11px; color: var(--muted); margin-left: 6px; }
+  .cq-opt.sm { font-size: 11.5px; padding: 4px 9px; }
+  .nd-ref { font-size: 12.5px; background: var(--sand); border-radius: 8px; padding: 8px 11px; margin-bottom: 8px; line-height: 1.6; }
+  .nd-ref.ltc { background: #EEF0FA; }
+  .nd-rat { margin-top: 6px; }
+
+
+  .fr-need { font-size: 11.5px; color: var(--danger); font-weight: 700; }
+  .fr-reason { display: flex; gap: 12px; align-items: center; font-size: 13px; margin-bottom: 10px; flex-wrap: wrap; }
+  .fr-reason span { color: var(--muted); }
+  .fr-memo { margin-top: 10px; }
+  .fr-memo label { font-size: 12.5px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .fr-memo textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+  .rs-danger { color: var(--danger); font-weight: 700; }
+
+
+  .ltc-sec { border-left: 3px solid #5B6ABF; }
+  .ltc-btns { display: inline-flex; gap: 6px; margin-left: auto; }
+  .ltc-photos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+  .ltc-ph img { width: 150px; height: auto; border: 1px solid var(--line); border-radius: 8px; cursor: zoom-in; display: block; }
+  .ltc-ph-meta { font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+  .ltc-meta { font-size: 12.5px; color: var(--ink); background: var(--sand); border-radius: 8px; padding: 7px 10px; margin-bottom: 8px; line-height: 1.6; }
+  .ltc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ltc-table th, .ltc-table td { border: 1px solid var(--line); padding: 5px 6px; vertical-align: top; text-align: left; line-height: 1.45; }
+  .ltc-table th { background: #EEF0FA; color: #3B4890; white-space: nowrap; }
+  .ltc-notes { margin-top: 8px; font-size: 12.5px; background: #FFF8E1; border: 1px solid #F5C518; border-radius: 8px; padding: 8px 12px; }
+  .ltc-notes ul { margin: 4px 0 0 18px; padding: 0; }
+  .ltc-h { font-size: 13px; font-weight: 700; color: #3B4890; margin: 12px 0 5px; display: flex; align-items: center; gap: 8px; }
+  .ltc-dom { font-size: 12px; font-weight: 700; color: var(--muted); margin: 8px 0 3px; }
+  .ltc-item-edit { border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; margin-bottom: 7px; background: #fff; }
+  .ltc-item-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 5px; }
+  .ltc-item-edit textarea { width: 100%; box-sizing: border-box; font-size: 12.5px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; font-family: inherit; }
+  .ltc-note-edit { display: flex; gap: 6px; margin-bottom: 5px; }
+  .ltc-note-edit input { flex: 1; }
+  .ltc-badge { font-size: 12px; margin-left: 3px; }
+  .ltc-bad { color: var(--danger); font-weight: 700; font-size: 12px; }
+  .ltc-warn { color: var(--amber); font-weight: 700; font-size: 12px; }
+  .ltc-fmt { font-size: 12px; margin-bottom: 8px; }
+  .ltc-fmt pre { background: var(--sand); padding: 8px 10px; border-radius: 8px; white-space: pre-wrap; font-size: 11.5px; }
+
+
   .gd-card { border-left: 3px solid var(--amber); }
   .gd-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
   .gd-tab { padding: 7px 13px; border: 1px solid var(--line); background: #fff; border-radius: 9px; font-size: 13px; cursor: pointer; font-family: inherit; }
@@ -1399,6 +1450,7 @@
       <button class="active" data-tab="dash" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>오늘</button>
       <button data-tab="briefing" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v14H7l-4 4z"/><path d="M8 8h8M8 12h5"/></svg>조회·석회</button>
       <button data-tab="counsel" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>상담</button>
+      <button data-tab="needs" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>욕구사정</button>
       <button data-tab="elders" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>어르신</button>
       <button data-tab="sched" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>스케줄</button>
       <button data-tab="record" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>치료기록</button>
@@ -1467,6 +1519,9 @@
   </section>
 
   <!-- 상담 -->
+  <section id="needs" class="panel">
+    <div id="needs-body"></div>
+  </section>
   <section id="counsel" class="panel">
     <div id="counsel-body"></div>
   </section>
@@ -1538,6 +1593,7 @@
     </div>
     <div class="card">
       <div class="card-title">등록된 어르신 <span class="count" id="e-count"></span></div>
+      <div class="row no-print" style="margin-bottom:8px;"><button class="btn teal" onclick="openLtcImport()">📑 개장 붙여넣기 → 자동 등록</button><span class="hint" style="align-self:center;">개장 사진을 채팅에 올려 정리된 텍스트를 받아 붙여넣으면 어르신이 등록되고 개장이 저장돼요</span></div>
       <input id="e-search" class="e-search" placeholder="🔍 이름·호실로 검색하면 그 어르신 전체 정보를 볼 수 있어요" oninput="renderElders()">
       <button class="btn no-print" style="margin-bottom:10px;" onclick="printSummaryCards()">🖨 물리치료 요약 카드 인쇄 (전 어르신 · 부재 시 확인용)</button>
       <div id="aicog-summary"></div>
@@ -1659,6 +1715,7 @@
       <div class="assess-tools">
         <button class="assess-tool at-priority" onclick="openAssess('status')"><span class="at-ic">🧭</span><span class="at-name">핵심 상태 체크</span><span class="at-desc">일지 정확도·꼭 하기</span></button>
         <button class="assess-tool at-priority" onclick="openAssess('fall')"><span class="at-ic">🚨</span><span class="at-name">낙상위험도</span><span class="at-desc">신규 필수·Huhn</span></button>
+        <button class="assess-tool at-priority" onclick="openAssess('braden')"><span class="at-ic">🩹</span><span class="at-name">욕창위험도</span><span class="at-desc">신규 필수·Braden</span></button>
         <button class="assess-tool" onclick="openAssess('rom')"><span class="at-ic">📐</span><span class="at-name">ROM</span><span class="at-desc">관절가동범위</span></button>
         <button class="assess-tool" onclick="openAssess('mmt')"><span class="at-ic">💪</span><span class="at-name">MMT</span><span class="at-desc">도수근력</span></button>
         <button class="assess-tool" onclick="openAssess('bbs')"><span class="at-ic">⚖️</span><span class="at-name">BBS</span><span class="at-desc">버그균형 14항목</span></button>
@@ -2150,7 +2207,8 @@ function go(btn){
   if(tab==='history') initHistory();
   if(tab==='program') initProgram();
   if(tab==='bedcare'){ bedDate=new Date().toISOString().slice(0,10); renderBedcare(); }
-  if(tab==='counsel') renderCounsel(); else { guideOpen=false; if(typeof renderGuideDrawer==='function') renderGuideDrawer(); }
+  if(tab==='counsel') renderCounsel();
+  if(tab==='needs') renderNeeds(); else { guideOpen=false; if(typeof renderGuideDrawer==='function') renderGuideDrawer(); }
   if(tab==='library') renderLibrary();
   if(tab==='briefing'){ briefDate = new Date().toISOString().slice(0,10); renderBriefing(); }
 }
@@ -3822,6 +3880,610 @@ function renderGuideDrawer(){
     '<div class="gd-drawer-body">'+guideCardHtml(c)+'</div>';
 }
 
+// ===== 개인별장기요양이용계획서(개장) =====
+// 공단 표준 욕구 항목 (개장에 실제 나오는 문구 기준). 목표·필요내용은 사진에서 확인된 표준 문구.
+const LTC_DOMAINS=['신체활동지원','정서지원','건강관리','기능회복훈련','응급지원','생활 및 환경관리','인지관리','일상생활지원'];
+const LTC_STD_ITEMS=[
+  {d:'신체활동지원', need:'개인위생관리', goal:'개인위생관리 잔존기능 향상, 청결상태유지를 통한 자존감 향상', content:'옷갈아입기 지시 및 지켜보기 도움, 옷갈아입기 도움, 옷 입고 뒷정리 하기, 몸씻기 도움, 머리감기 도움, 손발톱깎기'},
+  {d:'신체활동지원', need:'안전한 이동도움', goal:'이동능력의 유지 및 악화예방, 낙상발생 및 합병증 최소화', content:'이동 지시 및 지켜보기, 이동 시 부축 도움, 이동 시 적절한 보조기구 사용 도움, 위험요소 최소화 및 안전관리로 낙상예방'},
+  {d:'신체활동지원', need:'약챙겨먹기', goal:'정확한 복용으로 증상 완화', content:'정확한 복약도움(시간, 용량, 용법 등)'},
+  {d:'신체활동지원', need:'관절움직임 관리', goal:'운동기능 유지 및 악화예방', content:'관절운동지원'},
+  {d:'신체활동지원', need:'식사도움', goal:'', content:''},
+  {d:'신체활동지원', need:'배설도움', goal:'', content:''},
+  {d:'신체활동지원', need:'목욕도움', goal:'', content:''},
+  {d:'신체활동지원', need:'체위변경', goal:'', content:''},
+  {d:'신체활동지원', need:'구강관리', goal:'', content:''},
+  {d:'정서지원', need:'정서관리', goal:'사회적 고립감 감소, 정서적 안정감을 통한 생활의욕 향상', content:'다양한 방법으로 의사소통 도움, 욕구파악을 위한 관찰(행동, 소리, 동작 등), 비상연락망 준비, 말벗 및 위로 등 정서적 지원'},
+  {d:'건강관리', need:'약물관리', goal:'약물복용에 대한 이해도 증진, 올바른 약물 관리', content:'투약관리 지도, 약 복용 및 인슐린 주사'},
+  {d:'건강관리', need:'관절구축관리', goal:'관절구축 예방', content:'관절구축예방간호'},
+  {d:'건강관리', need:'기초 건강관리', goal:'건강상태 유지 및 질병 예방', content:'건강상태 관찰 및 측정, 건강교육 및 상담, 치매간호, 의료기관 의뢰'},
+  {d:'건강관리', need:'욕창관리', goal:'', content:''},
+  {d:'건강관리', need:'통증관리', goal:'', content:''},
+  {d:'기능회복훈련', need:'기능회복훈련', goal:'기능수행력 회복, 신경·근골격계 후유장애 회복 및 보완, 잔존기능의 유지 및 악화예방', content:'신체·인지기능 향상프로그램, 신체기능의 훈련, 기본동작 훈련, 일상생활동작 훈련, 인지기능프로그램, 여가·정서 프로그램, 가족대상 프로그램, 물리치료, 작업치료'},
+  {d:'응급지원', need:'응급상황관리', goal:'응급상황시 적절한 대처를 통한 합병증 및 2차손상예방', content:'응급서비스'},
+  {d:'생활 및 환경관리', need:'생활환경관리', goal:'청결하고 위생적인 생활환경 관리, 환경관리 통해 질병 및 감염 차단', content:'침구린넨 교환 및 정리, 환경관리, 물품관리, 세탁물관리'},
+  {d:'인지관리', need:'인지관리', goal:'', content:''},
+  {d:'인지관리', need:'인지자극', goal:'', content:''}
+];
+function ltcOf(e){ return (e&&e.ltcPlan)||null; }
+function ensureLtc(e){
+  if(!e.ltcPlan) e.ltcPlan={name:e.name||'',grade:'',birth:'',validFrom:'',validTo:'',burdenHome:'',burdenFac:'',limitHome:'',items:[],hope:'',notes:[],photos:[],issued:''};
+  if(!e.ltcPlan.items) e.ltcPlan.items=[];
+  if(!e.ltcPlan.notes) e.ltcPlan.notes=[];
+  if(!e.ltcPlan.photos) e.ltcPlan.photos=[];
+  return e.ltcPlan;
+}
+// ---- 붙여넣기 텍스트 파서 ----
+// 형식 예)
+// 성명: 유옥순
+// 등급: 4등급
+// 생년월일: 1934-03-28
+// 인정기간: 2023-12-03 ~ 2027-12-02
+// 본인부담율 시설: 8 (감경)
+// 본인부담율 재가: 6 (감경)
+// 월한도액: 1,409,700
+// 항목: 신체활동지원 | 개인위생관리 | 목표문장 | 필요내용
+// 희망급여: 노인요양시설
+// 유의사항: 문장
+function parseLtcText(txt){
+  const p={items:[],notes:[]};
+  const lines=String(txt||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  lines.forEach(l=>{
+    const m=l.match(/^([^:：]+)[:：]\s*(.*)$/); if(!m) return;
+    const k=m[1].trim(), v=m[2].trim();
+    if(/^성명|이름/.test(k)) p.name=v;
+    else if(/등급/.test(k)) p.grade=v;
+    else if(/생년월일|생일/.test(k)) p.birth=v.replace(/\./g,'-').replace(/\s/g,'');
+    else if(/인정기간|유효기간/.test(k)){ const d=v.replace(/\./g,'-').split(/~|∼|-\s*~/); if(d.length>=2){ p.validFrom=d[0].trim(); p.validTo=d[d.length-1].trim(); } else p.validFrom=v; }
+    else if(/본인부담.*시설|시설.*부담/.test(k)) p.burdenFac=v;
+    else if(/본인부담.*재가|재가.*부담/.test(k)) p.burdenHome=v;
+    else if(/월한도|한도액/.test(k)) p.limitHome=v;
+    else if(/^항목/.test(k)){ const c=v.split('|').map(x=>x.trim()); if(c.length>=2) p.items.push({d:c[0]||'',need:c[1]||'',goal:c[2]||'',content:c[3]||''}); }
+    else if(/희망급여/.test(k)) p.hope=v;
+    else if(/유의사항|유의/.test(k)) p.notes.push(v);
+    else if(/발급일/.test(k)) p.issued=v.replace(/\./g,'-');
+  });
+  return p;
+}
+function openLtcImport(){
+  const mo=ensureModal('ltc-import-modal');
+  mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>📑 개장 붙여넣기 → 어르신 등록</b><button onclick="closeLtcImport()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;">✕</button></div>'+
+    '<div class="modal-body" style="'+modalBodyStyle()+'">'+
+    '<p class="hint">개장 사진을 채팅에 올려 받은 정리 텍스트를 붙여넣으세요. 같은 이름의 어르신이 있으면 개장만 갱신하고, 없으면 새로 등록합니다.</p>'+
+    '<details class="ltc-fmt"><summary>입력 형식 보기</summary><pre>성명: 유옥순\n등급: 4등급\n생년월일: 1934-03-28\n인정기간: 2023-12-03 ~ 2027-12-02\n본인부담율 시설: 8 (감경)\n본인부담율 재가: 6 (감경)\n항목: 신체활동지원 | 개인위생관리 | 목표 | 필요내용\n항목: 건강관리 | 약물관리 | 목표 | 필요내용\n희망급여: 노인요양시설\n유의사항: 부드럽고 여유 있는 어조로…\n유의사항: 인지기능저하 예방을 위해…</pre></details>'+
+    '<textarea id="ltc-import-ta" class="note-ta" rows="12" placeholder="여기에 붙여넣기"></textarea>'+
+    '<div class="sp-foot"><button class="btn" onclick="closeLtcImport()">취소</button><button class="btn teal" onclick="doLtcImport()">확인 → 등록</button></div>'+
+    '</div></div>';
+  setTimeout(()=>{ const t=document.getElementById('ltc-import-ta'); if(t) t.focus(); },100);
+}
+function closeLtcImport(){ const mo=document.getElementById('ltc-import-modal'); if(mo) mo.remove(); }
+function ageFromBirth(b){ if(!b||!/^\d{4}/.test(b)) return ''; const y=parseInt(b.slice(0,4),10); const now=new Date(); let a=now.getFullYear()-y; const mm=parseInt((b.slice(5,7)||'1'),10), dd=parseInt((b.slice(8,10)||'1'),10); if(now.getMonth()+1<mm||(now.getMonth()+1===mm&&now.getDate()<dd)) a--; return String(a); }
+function doLtcImport(){
+  const ta=document.getElementById('ltc-import-ta'); if(!ta) return;
+  const p=parseLtcText(ta.value);
+  if(!p.name){ alert('"성명:" 줄이 필요합니다.'); return; }
+  let e=state.elders.find(x=>x.name===p.name);
+  let created=false;
+  if(!e){
+    e={id:Date.now(), name:p.name, room:'', status:'치료중', gender:'', age:ageFromBirth(p.birth), grade:p.grade||'', diag:'',
+       admit:today, visit:'치료실', plan:[], risks:[], days:[], slots:{}};
+    state.elders.push(e); created=true;
+  } else {
+    if(!confirm(p.name+' 어르신이 이미 있습니다. 개장 내용을 갱신할까요?')) return;
+    if(p.grade) e.grade=p.grade;
+    if(p.birth&&!e.age) e.age=ageFromBirth(p.birth);
+  }
+  const L=ensureLtc(e);
+  Object.assign(L,{name:p.name,grade:p.grade||L.grade,birth:p.birth||L.birth,validFrom:p.validFrom||L.validFrom,validTo:p.validTo||L.validTo,
+    burdenHome:p.burdenHome||L.burdenHome,burdenFac:p.burdenFac||L.burdenFac,limitHome:p.limitHome||L.limitHome,hope:p.hope||L.hope,issued:p.issued||L.issued});
+  if(p.items.length) L.items=p.items;
+  if(p.notes.length) L.notes=p.notes;
+  L.updatedAt=today;
+  save(); closeLtcImport(); renderElders();
+  alert((created?'새로 등록했습니다: ':'개장을 갱신했습니다: ')+p.name+'\n항목 '+L.items.length+'개, 유의사항 '+L.notes.length+'개');
+  openElderProfile(e.id);
+}
+// ---- 사진 첨부 (자동 축소) ----
+function ltcAddPhoto(id, input){
+  const e=state.elders.find(x=>x.id===id); if(!e||!input.files||!input.files[0]) return;
+  const file=input.files[0];
+  const rd=new FileReader();
+  rd.onload=function(ev){
+    const img=new Image();
+    img.onload=function(){
+      const MAX=1400; let w=img.width, h=img.height;
+      if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      const data=cv.toDataURL('image/jpeg',0.72);
+      const L=ensureLtc(e); L.photos.push({data, at:today, name:file.name||''});
+      save(); openElderProfile(id);
+    };
+    img.src=ev.target.result;
+  };
+  rd.readAsDataURL(file);
+}
+function ltcDelPhoto(id,i){ const e=state.elders.find(x=>x.id===id); if(!e||!e.ltcPlan) return; if(!confirm('이 개장 사진을 삭제할까요?')) return; e.ltcPlan.photos.splice(i,1); save(); openElderProfile(id); }
+function ltcViewPhoto(id,i){
+  const e=state.elders.find(x=>x.id===id); const ph=e&&e.ltcPlan&&e.ltcPlan.photos[i]; if(!ph) return;
+  const mo=ensureModal('ltc-photo-modal');
+  mo.style.padding='8px';
+  mo.innerHTML='<div style="position:relative;max-width:100%;max-height:100%;overflow:auto;background:#000;border-radius:12px;">'+
+    '<button onclick="document.getElementById(\'ltc-photo-modal\').remove()" style="position:sticky;top:8px;left:8px;float:left;background:rgba(255,255,255,.9);border:none;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;z-index:2;">✕ 닫기</button>'+
+    '<img src="'+ph.data+'" style="display:block;max-width:100%;height:auto;margin:0 auto;">'+
+    '</div>';
+}
+
+function ltcSectionHtml(e){
+  const L=e.ltcPlan;
+  const editing=!!e._ltcEdit;
+  let h='<div class="pf-sec ltc-sec"><div class="pf-h">📑 개인별장기요양이용계획서(개장) '+
+    '<span class="ltc-btns no-print">'+
+    (L?'<button class="brief-collapse" onclick="ltcToggleEdit('+e.id+')">'+(editing?'✓ 편집 끝':'✎ 편집')+'</button>':'<button class="brief-collapse" onclick="ltcToggleEdit('+e.id+')">＋ 직접 입력</button>')+
+    '<label class="brief-collapse" style="cursor:pointer;">📷 사진 첨부<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="ltcAddPhoto('+e.id+',this)"></label>'+
+    '</span></div>';
+  // 사진
+  if(L&&L.photos&&L.photos.length){
+    h+='<div class="ltc-photos">'+L.photos.map((p,i)=>'<div class="ltc-ph"><img src="'+p.data+'" onclick="ltcViewPhoto('+e.id+','+i+')" title="크게 보기"><div class="ltc-ph-meta">'+esc(p.at||'')+' <button class="hl-del no-print" onclick="ltcDelPhoto('+e.id+','+i+')">✕</button></div></div>').join('')+'</div>';
+  }
+  if(!L&&!editing){
+    h+='<div class="hint">아직 개장이 없어요. <b>📷 사진 첨부</b>로 원본을 넣고, <b>＋ 직접 입력</b> 또는 어르신 탭의 <b>📑 개장 붙여넣기</b>로 내용을 넣으세요.</div></div>';
+    return h;
+  }
+  const P=L||ensureLtc(e);
+  if(editing){
+    const inp=(k,label,ph)=>'<label class="cns-fld"><span>'+label+'</span><input type="text" value="'+esc(P[k]||'')+'" placeholder="'+(ph||'')+'" onchange="ltcSet('+e.id+',\''+k+'\',this.value)"></label>';
+    h+='<div class="cns-head">'+inp('grade','등급','4등급')+inp('birth','생년월일','1934-03-28')+inp('validFrom','인정기간 시작','2023-12-03')+inp('validTo','인정기간 종료','2027-12-02')+
+       inp('burdenFac','본인부담율(시설)','8 (감경)')+inp('burdenHome','본인부담율(재가)','6 (감경)')+inp('issued','발급일','')+'</div>';
+    h+='<div class="ltc-h">장기요양 필요영역 · 욕구 · 목표 · 필요내용</div>'+
+       '<p class="hint">개장에 나온 항목을 체크하세요. 표준 문구가 있으면 채워지고, 없으면 종이를 보고 직접 적어주세요.</p>';
+    LTC_DOMAINS.forEach(d=>{
+      const stds=LTC_STD_ITEMS.filter(x=>x.d===d); if(!stds.length) return;
+      h+='<div class="ltc-dom">'+d+'</div><div class="cq-opts">'+stds.map(st=>{
+        const on=P.items.some(it=>it.need===st.need);
+        return '<button class="cq-opt'+(on?' on':'')+'" onclick="ltcToggleItem('+e.id+',\''+esc(st.need)+'\')">'+esc(st.need)+'</button>';
+      }).join('')+'</div>';
+    });
+    h+='<div class="ltc-h">체크한 항목 내용</div>';
+    if(!P.items.length) h+='<div class="hint">항목을 체크하면 여기에 나타나요.</div>';
+    P.items.forEach((it,i)=>{
+      h+='<div class="ltc-item-edit"><div class="ltc-item-head"><b>'+esc(it.d)+' · '+esc(it.need)+'</b><button class="hl-del" onclick="ltcRemoveItem('+e.id+','+i+')">✕</button></div>'+
+        '<label class="cns-fld"><span>장기요양목표</span><textarea rows="2" onchange="ltcSetItem('+e.id+','+i+',\'goal\',this.value)">'+esc(it.goal||'')+'</textarea></label>'+
+        '<label class="cns-fld"><span>장기요양필요내용</span><textarea rows="2" onchange="ltcSetItem('+e.id+','+i+',\'content\',this.value)">'+esc(it.content||'')+'</textarea></label></div>';
+    });
+    h+='<div class="ltc-h">수급자 희망급여</div><input type="text" value="'+esc(P.hope||'')+'" placeholder="노인요양시설" onchange="ltcSet('+e.id+',\'hope\',this.value)" style="width:100%;box-sizing:border-box;">';
+    h+='<div class="ltc-h">유의사항 <button class="brief-collapse no-print" onclick="ltcAddNote('+e.id+')">＋ 추가</button></div>';
+    (P.notes||[]).forEach((n,i)=>{ h+='<div class="ltc-note-edit"><input type="text" value="'+esc(n)+'" onchange="ltcSetNote('+e.id+','+i+',this.value)"><button class="hl-del" onclick="ltcDelNote('+e.id+','+i+')">✕</button></div>'; });
+  } else {
+    const meta=[];
+    if(P.grade) meta.push('등급 <b>'+esc(P.grade)+'</b>');
+    if(P.validFrom||P.validTo) meta.push('인정기간 <b>'+esc(P.validFrom||'')+' ~ '+esc(P.validTo||'')+'</b>'+ltcValidBadge(P.validTo));
+    if(P.burdenFac) meta.push('본인부담율(시설) <b>'+esc(P.burdenFac)+'%</b>');
+    if(P.hope) meta.push('희망급여 <b>'+esc(P.hope)+'</b>');
+    if(meta.length) h+='<div class="ltc-meta">'+meta.join(' · ')+'</div>';
+    if(P.items.length){
+      h+='<table class="ltc-table"><thead><tr><th>필요영역</th><th>욕구</th><th>목표</th><th>필요내용</th></tr></thead><tbody>'+
+        P.items.map(it=>'<tr><td>'+esc(it.d)+'</td><td><b>'+esc(it.need)+'</b></td><td>'+esc(it.goal||'')+'</td><td>'+esc(it.content||'')+'</td></tr>').join('')+'</tbody></table>';
+    }
+    if(P.notes&&P.notes.length){
+      h+='<div class="ltc-notes"><b>유의사항</b><ul>'+P.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul></div>';
+    }
+    if(!P.items.length&&!(P.notes&&P.notes.length)&&!(P.photos&&P.photos.length)) h+='<div class="hint">내용이 비어 있어요. ✎ 편집으로 입력하세요.</div>';
+  }
+  h+='</div>';
+  return h;
+}
+function ltcValidBadge(to){
+  if(!to||!/^\d{4}-\d{2}-\d{2}$/.test(to)) return '';
+  const diff=Math.round((new Date(to+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);
+  if(diff<0) return ' <span class="ltc-bad">⚠ 만료</span>';
+  if(diff<=60) return ' <span class="ltc-warn">⚠ '+diff+'일 남음 — 갱신 준비</span>';
+  return '';
+}
+function ltcToggleEdit(id){ const e=state.elders.find(x=>x.id==id); if(!e) return; if(!e.ltcPlan) ensureLtc(e); e._ltcEdit=!e._ltcEdit; if(!e._ltcEdit) delete e._ltcEdit; save(); openElderProfile(id); }
+function ltcSet(id,k,v){ const e=state.elders.find(x=>x.id==id); if(!e) return; const L=ensureLtc(e); L[k]=v; L.updatedAt=today; if(k==='grade'&&v) e.grade=v; save(); }
+function ltcToggleItem(id,need){
+  const e=state.elders.find(x=>x.id==id); if(!e) return; const L=ensureLtc(e);
+  const i=L.items.findIndex(it=>it.need===need);
+  if(i>=0) L.items.splice(i,1);
+  else { const st=LTC_STD_ITEMS.find(x=>x.need===need); L.items.push({d:st?st.d:'',need,goal:st?st.goal:'',content:st?st.content:''}); }
+  L.updatedAt=today; save(); openElderProfile(id);
+}
+function ltcRemoveItem(id,i){ const e=state.elders.find(x=>x.id==id); if(!e||!e.ltcPlan) return; e.ltcPlan.items.splice(i,1); save(); openElderProfile(id); }
+function ltcSetItem(id,i,k,v){ const e=state.elders.find(x=>x.id==id); if(!e||!e.ltcPlan||!e.ltcPlan.items[i]) return; e.ltcPlan.items[i][k]=v; save(); }
+function ltcAddNote(id){ const e=state.elders.find(x=>x.id==id); if(!e) return; ensureLtc(e).notes.push(''); save(); openElderProfile(id); }
+function ltcSetNote(id,i,v){ const e=state.elders.find(x=>x.id==id); if(!e||!e.ltcPlan) return; e.ltcPlan.notes[i]=v; save(); }
+function ltcDelNote(id,i){ const e=state.elders.find(x=>x.id==id); if(!e||!e.ltcPlan) return; e.ltcPlan.notes.splice(i,1); save(); openElderProfile(id); }
+// 계획서 대조용: 개장 항목별로 계획 텍스트에 반영됐는지
+function ltcCoverage(e, planText){
+  const L=ltcOf(e); if(!L||!L.items.length) return [];
+  const t=(planText||'').replace(/\s/g,'');
+  const KEY={'개인위생관리':['위생','세면','목욕','옷','손발톱'],'안전한 이동도움':['이동','낙상','보행','부축','보조기'],'약챙겨먹기':['복약','약'],'관절움직임 관리':['관절','ROM','가동'],
+    '정서관리':['정서','말벗','의사소통','정서적'],'약물관리':['투약','약물','약'],'관절구축관리':['구축','관절'],'기초 건강관리':['건강','관찰','측정','활력'],
+    '기능회복훈련':['기능회복','근력','기본동작','일상생활동작','물리치료','훈련'],'응급상황관리':['응급'],'생활환경관리':['환경','침구','세탁','물품'],'식사도움':['식사'],'배설도움':['배설','기저귀','화장실'],
+    '목욕도움':['목욕'],'체위변경':['체위'],'구강관리':['구강','양치'],'욕창관리':['욕창'],'통증관리':['통증'],'인지관리':['인지'],'인지자극':['인지자극','인지']};
+  return L.items.map(it=>{ const ks=KEY[it.need]||[it.need.replace(/\s/g,'')]; const ok=ks.some(k=>t.indexOf(k.replace(/\s/g,''))>=0); return {need:it.need, d:it.d, ok}; });
+}
+
+// ===== 욕구사정 (지표 24) =====
+var needsView='list'; var needsId=null; var needsTab='nutrition';
+const ADL10=['옷 벗고 입기','세수하기','양치질하기','식사하기','목욕하기','체위변경 하기','일어나 앉기','옮겨 앉기','화장실 사용하기','몸단장하기'];
+const ADL_LV=['완전자립','부분도움','완전도움'];
+const JOINTS6=['어깨','팔꿈치','손목 및 수지','고관절','무릎','발목'];
+const NEEDS_TABS=[
+  {k:'nutrition', n:'1. 영양상태', qs:[
+    {k:'nut',q:'영양상태',o:['양호','적당','부족','매우 나쁨']},
+    {k:'mealType',q:'식사형태',o:['일반식','다진식','죽식','미음','유동식(경관식)','연하식','갈은식','기타']},
+    {k:'mealTx',q:'치료식이',o:['없음','당뇨식','저염식','고단백식','체중조절식'],multi:true},
+    {k:'mealProb',q:'식사 시 문제점',o:['양호','저작곤란','소화불량','오심·구토','가끔 사레걸림','자주 사레걸림','연하곤란','경관영양','기타'],multi:true},
+    {k:'avoid',q:'기피식품 (필수)',o:['없음','있음'],req:true,memoReq:'있음'},
+    {k:'urine',q:'소변상태',o:['양호','요실금','배뇨곤란','유치도뇨관','방광루','요루','기타']},
+    {k:'stool',q:'대변상태',o:['양호','지속적인 설사','변비','장루','기타']},
+    {k:'diaper',q:'기저귀 착용',o:['착용','미착용']}
+  ]},
+  {k:'oral', n:'2. 구강상태', qs:[
+    {k:'teeth',q:'치아상태',o:['양호','청결불량','치아 약함','틀니','잔존 치아 없음','기타'],multi:true},
+    {k:'gum',q:'잇몸상태',o:['양호','치은염증','치석','기타'],multi:true}
+  ]},
+  {k:'disease', n:'3. 질병상태', qs:[
+    {k:'pastHx',q:'과거 병력',o:[]},{k:'dx',q:'현 진단명',o:[]},{k:'chronic',q:'만성질환',o:[]},
+    {k:'circ',q:'순환기계',o:['없음','고혈압','심장질환','뇌졸중','기타'],multi:true},
+    {k:'neuro',q:'신경계',o:['없음','경도인지장애','중등도치매','중증치매','파킨슨병','간질','기타'],multi:true},
+    {k:'msk',q:'근골격계',o:['없음','관절염','골다공증','골절 후유증','기타'],multi:true},
+    {k:'psych',q:'정신·행동장애',o:['없음','우울증','불안장애','기타'],multi:true},
+    {k:'resp',q:'호흡기계',o:['없음','COPD','천식','폐렴 과거력','기타'],multi:true},
+    {k:'renal',q:'만성 신장질환',o:['없음','있음']},
+    {k:'allergy',q:'알레르기',o:['없음','식품','기타'],multi:true},
+    {k:'sore',q:'욕창',o:['없음','1단계','2단계','3단계','4단계']},
+    {k:'sorePart',q:'욕창 부위',o:['천골','발뒤꿈치','고관절','견갑골','기타'],multi:true},
+    {k:'soreDev',q:'욕창방지 도구',o:['없음','에어매트리스','쿠션','기타'],multi:true}
+  ]},
+  {k:'body', n:'4. 신체상태', qs:[
+    {k:'state',q:'수급자 상태',o:['자립','준와상','와상'],req:true},
+    {k:'height',q:'키(cm)',o:[]},{k:'weight',q:'체중(kg)',o:[]}
+  ], adl:true},
+  {k:'cog', n:'5. 인지상태', qs:[
+    {k:'demMed',q:'치매약 복용',o:['복용','미복용','해당없음']},
+    {k:'bpsd',q:'행동심리증상',o:['없음','망상','배회','환각','반복적인 행동','부적절한 행동','폭력적 행동','불안','우울'],multi:true}
+  ], cist:true},
+  {k:'comm', n:'6. 의사소통', qs:[
+    {k:'hearing',q:'청력상태',o:['정상','약간 저하','보통 저하','심한 저하','전혀 안 들림']},
+    {k:'comm',q:'의사소통',o:['원활','가능','부분 가능','불가']},
+    {k:'speech',q:'발음능력',o:['정확','약간 불명확','불명확','불가']}
+  ]},
+  {k:'family', n:'7. 가족 및 환경', qs:[
+    {k:'cohab',q:'동거인(입소 전)',o:['독거','배우자','자녀','기타']},
+    {k:'sons',q:'아들 수',o:[]},{k:'daughters',q:'딸 수',o:[]},
+    {k:'carer',q:'주수발자',o:['있음','없음']},{k:'carerRel',q:'주수발자 관계',o:[]},
+    {k:'econ',q:'경제상태',o:['일반','감경','기초수급']},
+    {k:'burden',q:'수발부담',o:['매우 적음','적음','보통','큼','매우 큼']}
+  ]},
+  {k:'resource', n:'8. 자원이용', qs:[
+    {k:'hosp',q:'진료병원·진료과',o:[]},{k:'regular',q:'정기진료',o:['유','무']},{k:'tel',q:'병원 전화번호',o:[]},
+    {k:'religion',q:'종교활동',o:['없음','기독교','천주교','불교','기타']}
+  ]},
+  {k:'rehab', n:'9. 재활상태', qs:[
+    {k:'paresis',q:'운동장애',o:['없음','우측상지','좌측상지','우측하지','좌측하지'],multi:true},
+    {k:'fall3m',q:'지난 3개월 간 낙상',o:['없음','매일','주 1회 이상','월 1회 이상','가끔']},
+    {k:'gait',q:'걸음걸이 및 균형',o:['정상','서거나 걸을 때 균형 유지 못함','일어서거나 걸을 때 어지러움','보조도구나 부축해서 걷기']}
+  ], joints:true, ref:true},
+  {k:'subj', n:'10. 주관적 욕구', qs:[
+    {k:'who',q:'누가',o:['수급자 본인','보호자','둘 다']},{k:'when',q:'언제',o:[]},{k:'how',q:'어떤 방법으로',o:['면담','전화','관찰']},{k:'want',q:'무엇을 원함',o:[]}
+  ]},
+  {k:'summary', n:'11. 총평', qs:[], summary:true}
+];
+function ensureNeeds(){ if(!state.needs) state.needs=[]; return state.needs; }
+function needsById(id){ return (state.needs||[]).find(n=>n.id===id); }
+function saveNeeds(n){ ensureNeeds(); const i=state.needs.findIndex(x=>x.id===n.id); if(i>=0) state.needs[i]=n; else state.needs.push(n); save(); }
+function needsTabData(n,k){ if(!n.tabs) n.tabs={}; if(!n.tabs[k]) n.tabs[k]={f:{},m:{},author:'',rationale:'',adl:{},joints:{}}; if(!n.tabs[k].f) n.tabs[k].f={}; if(!n.tabs[k].m) n.tabs[k].m={}; return n.tabs[k]; }
+
+function renderNeeds(){
+  const box=document.getElementById('needs-body'); if(!box) return;
+  ensureNeeds();
+  if(needsView==='form') return renderNeedsForm(box);
+  const list=(state.needs||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const elders=state.elders.filter(e=>e.status==='치료중').sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
+  let h='<div class="card"><div class="card-title">✅ 새 욕구사정</div>'+
+    '<p class="hint">어르신을 고르면 시작됩니다. 케어포 욕구사정과 같은 11개 탭이며, 각 탭에 <b>판단근거</b>를 쓰고 마지막에 <b>총평</b>을 씁니다.</p>'+
+    '<input type="text" class="modal-search" placeholder="🔍 어르신 검색" oninput="filterList(this,\'needs-pick\')">'+
+    '<div class="rec-pick-list" id="needs-pick">'+elders.map(e=>{
+      const last=list.find(n=>n.elderId===e.id);
+      return '<button class="rec-pick-row" data-key="'+esc(((e.room||'')+' '+e.name).toLowerCase())+'" onclick="startNeeds('+e.id+')">'+(e.room?'<b>'+esc(e.room)+'호</b> ':'')+esc(e.name)+
+        (last?'<span class="slot-add-cur">최근 '+esc(last.date)+'</span>':'<span class="slot-add-cur none">기록 없음</span>')+'</button>';
+    }).join('')+'</div></div>';
+  h+='<div class="card"><div class="card-title">욕구사정 기록 <span class="count">'+list.length+'</span></div><div class="cns-list">';
+  if(!list.length) h+='<div class="empty">아직 없습니다.</div>';
+  list.forEach(n=>{ const e=state.elders.find(x=>x.id===n.elderId); const done=needsDoneCount(n);
+    h+='<button class="cns-row" onclick="openNeeds('+n.id+')"><span class="cns-row-ic">✅</span><span class="cns-row-main"><b>'+esc(e?((e.room?e.room+'호 ':'')+e.name):'(삭제된 어르신)')+'</b>'+
+      '<span class="cns-row-sub">'+esc(n.reason||'')+' · 판단근거 '+done+'/11'+(n.carepoDone?' · 케어포 입력 완료':'')+'</span></span><span class="cns-row-date">'+esc(n.date||'')+'</span></button>'; });
+  h+='</div></div>';
+  box.innerHTML=h;
+}
+function needsDoneCount(n){ let c=0; NEEDS_TABS.forEach(t=>{ const d=n.tabs&&n.tabs[t.k]; const txt=t.summary?(n.summary||''):((d&&d.rationale)||''); if(txt.trim()) c++; }); return c; }
+function startNeeds(elderId){
+  const n={id:Date.now(), elderId, date:today, reason:'신규', author:'', tabs:{}, summary:'', carepoDone:false, flags:{}};
+  saveNeeds(n); needsId=n.id; needsTab='nutrition'; needsView='form'; renderNeeds();
+}
+function openNeeds(id){ needsId=id; needsTab='nutrition'; needsView='form'; renderNeeds(); }
+function backNeeds(){ needsView='list'; needsId=null; renderNeeds(); }
+function delNeeds(id){ if(!confirm('이 욕구사정을 삭제할까요?')) return; state.needs=(state.needs||[]).filter(n=>n.id!==id); save(); backNeeds(); }
+function nSet(id,k,v){ const n=needsById(id); if(!n) return; n[k]=v; saveNeeds(n); if(k==='reason') renderNeeds(); }
+function nTabSet(id,tab,k,v){ const n=needsById(id); if(!n) return; const d=needsTabData(n,tab); d[k]=v; if(n.flags) delete n.flags[tab]; saveNeeds(n); }
+function nField(id,tab,k,v,multi){
+  const n=needsById(id); if(!n) return; const d=needsTabData(n,tab);
+  if(multi){ let a=d.f[k]; if(!Array.isArray(a)) a=a?[a]:[]; if(v==='없음'){ a=(a.indexOf('없음')>=0)?[]:['없음']; } else { const i=a.indexOf(v); if(i>=0) a.splice(i,1); else { a=a.filter(x=>x!=='없음'); a.push(v); } } if(a.length) d.f[k]=a; else delete d.f[k]; }
+  else { if(d.f[k]===v) delete d.f[k]; else d.f[k]=v; }
+  if(n.flags) delete n.flags[tab];
+  saveNeeds(n); renderNeeds();
+}
+function nMemo(id,tab,k,v){ const n=needsById(id); if(!n) return; const d=needsTabData(n,tab); if(v&&v.trim()) d.m[k]=v.trim(); else delete d.m[k]; if(n.flags) delete n.flags[tab]; saveNeeds(n); }
+function nAdl(id,item,v){ const n=needsById(id); if(!n) return; const d=needsTabData(n,'body'); if(!d.adl) d.adl={}; if(d.adl[item]===v) delete d.adl[item]; else d.adl[item]=v; saveNeeds(n); renderNeeds(); }
+function nJoint(id,j,side,v){ const n=needsById(id); if(!n) return; const d=needsTabData(n,'rehab'); if(!d.joints) d.joints={}; const key=j+'_'+side; if(d.joints[key]===v) delete d.joints[key]; else d.joints[key]=v; saveNeeds(n); renderNeeds(); }
+function nA(n,tab,k){ const d=(n.tabs&&n.tabs[tab])||{}; const v=(d.f||{})[k]; return Array.isArray(v)?v.join('·'):(v||''); }
+function nM(n,tab,k){ const d=(n.tabs&&n.tabs[tab])||{}; return ((d.m||{})[k])||''; }
+function renderNeedsForm(box){
+  const n=needsById(needsId); if(!n){ needsView='list'; return renderNeeds(); }
+  const e=state.elders.find(x=>x.id===n.elderId)||{name:'?'};
+  const T=NEEDS_TABS.find(t=>t.k===needsTab)||NEEDS_TABS[0];
+  const d=needsTabData(n,T.k);
+  const prev=(state.needs||[]).filter(x=>x.elderId===n.elderId&&x.id!==n.id&&x.date<=n.date).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  let h='<div class="card"><button class="btn" onclick="backNeeds()">‹ 목록</button> <button class="btn danger-btn" style="float:right" onclick="delNeeds('+n.id+')">삭제</button></div>';
+  h+='<div class="card"><div class="card-title">✅ 욕구사정 — '+esc((e.room?e.room+'호 ':'')+e.name)+'</div>'+
+    '<div class="cns-head">'+
+    fld('작성일','<input type="date" value="'+(n.date||today)+'" onchange="nSet('+n.id+',\'date\',this.value)">')+
+    fld('조사사유', sel3(['신규','재사정','상태변화'], n.reason, "nSet("+n.id+",'reason',this.value)"))+
+    fld('작성자','<input type="text" value="'+esc(n.author||'')+'" onchange="nSet('+n.id+',\'author\',this.value)" placeholder="이름">')+
+    '</div>'+
+    (prev?'<div class="row" style="margin-top:8px;"><button class="btn" onclick="copyPrevNeeds('+n.id+','+prev.id+')">📋 직전 욕구사정('+esc(prev.date)+') 불러오기</button><span class="hint" style="align-self:center;">불러오면 모든 탭에 "변경 여부 확인 필요" 표시가 붙어요</span></div>':'')+
+    ltcMiniPanel(e)+
+    '</div>';
+  // 탭 바
+  h+='<div class="card"><div class="nd-tabs">'+NEEDS_TABS.map(t=>{ const td=n.tabs&&n.tabs[t.k]; const ok=t.summary?!!(n.summary||'').trim():!!(td&&td.rationale&&td.rationale.trim()); const fl=n.flags&&n.flags[t.k];
+    return '<button class="nd-tab'+(t.k===needsTab?' on':'')+(ok?' done':'')+(fl?' flag':'')+'" onclick="needsTab=\''+t.k+'\';renderNeeds();">'+t.n+(ok?' ✓':'')+(fl?' ⚠':'')+'</button>'; }).join('')+'</div>';
+  if(n.flags&&n.flags[T.k]) h+='<div class="cns-guide">⚠ 직전 기록에서 불러온 내용입니다. <b>변경 여부를 확인</b>하고 필요하면 수정하세요. (항목을 고치면 표시가 사라져요)</div>';
+  // 탭 본문
+  if(T.summary){
+    h+=summaryHtml(n);
+  } else {
+    h+='<div class="cns-head" style="margin-bottom:8px;">'+fld('이 탭 작성자','<input type="text" value="'+esc(d.author||n.author||'')+'" onchange="nTabSet('+n.id+',\''+T.k+'\',\'author\',this.value)">')+'</div>';
+    if(T.ref) h+=rehabRefPanel(e);
+    if(T.cist) h+=cistRefPanel(e);
+    T.qs.forEach(q=>{ h+=nqBlock(n,T.k,q); });
+    if(T.adl) h+=adlGridHtml(n);
+    if(T.joints) h+=jointsGridHtml(n);
+    h+=rationaleHtml(n,T);
+  }
+  h+='</div>';
+  // 처리 상태
+  h+='<div class="card"><div class="card-title">✅ 처리 상태</div><div class="cns-chk">'+
+    '<label><input type="checkbox"'+(n.carepoDone?' checked':'')+' onchange="nSet('+n.id+',\'carepoDone\',this.checked)"> 케어포 입력 완료</label></div></div>';
+  box.innerHTML=h;
+}
+function sel3(opts,cur,onch){ return '<select onchange="'+onch+'">'+opts.map(o=>'<option'+(cur===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'; }
+function nqBlock(n,tab,q){
+  const d=needsTabData(n,tab); let cur=d.f[q.k]; if(!Array.isArray(cur)) cur=cur?[cur]:[];
+  const need = q.req && !cur.length;
+  const memoReq = q.memoReq && cur.indexOf(q.memoReq)>=0 && !d.m[q.k];
+  let h='<div class="cq"><div class="cq-q">'+q.q+(need?' <span class="fr-need">(필수)</span>':'')+(memoReq?' <span class="fr-need">(내용을 적어주세요)</span>':'')+'</div>';
+  if(q.o.length) h+='<div class="cq-opts">'+q.o.map(o=>'<button class="cq-opt'+(cur.indexOf(o)>=0?' on':'')+'" onclick="nField('+n.id+',\''+tab+'\',\''+q.k+'\',\''+esc(o)+'\','+(q.multi?'true':'false')+')">'+o+'</button>').join('')+'</div>';
+  h+='<input class="cq-memo" type="text" placeholder="'+(q.o.length?'구체적 내용·관찰 메모':'내용 입력')+'" value="'+esc(d.m[q.k]||'')+'" onchange="nMemo('+n.id+',\''+tab+'\',\''+q.k+'\',this.value)"></div>';
+  return h;
+}
+function adlGridHtml(n){
+  const d=needsTabData(n,'body'); const a=d.adl||{};
+  let h='<div class="ltc-h">일상생활동작(ADL) 10항목</div><div class="nd-adl">';
+  ADL10.forEach(it=>{ h+='<div class="nd-adl-row"><span class="nd-adl-n">'+it+(a[it]?'':' <span class="fr-need">·</span>')+'</span><span class="nd-adl-o">'+ADL_LV.map(l=>'<button class="cq-opt sm'+(a[it]===l?' on':'')+'" onclick="nAdl('+n.id+',\''+it+'\',\''+l+'\')">'+l+'</button>').join('')+'</span></div>'; });
+  return h+'</div>';
+}
+function jointsGridHtml(n){
+  const d=needsTabData(n,'rehab'); const j=d.joints||{};
+  let h='<div class="ltc-h">관절구축 (좌/우)</div><div class="nd-adl">';
+  JOINTS6.forEach(jt=>{ h+='<div class="nd-adl-row"><span class="nd-adl-n">'+jt+'</span><span class="nd-adl-o">'+['좌','우'].map(s=>{ const cur=j[jt+'_'+s]; return '<span class="nd-side">'+s+'</span>'+['없음','있음'].map(v=>'<button class="cq-opt sm'+(cur===v?' on':'')+'" onclick="nJoint('+n.id+',\''+jt+'\',\''+s+'\',\''+v+'\')">'+v+'</button>').join(''); }).join('')+'</span></div>'; });
+  return h+'</div>';
+}
+function rehabRefPanel(e){
+  const g=(typeof latestEvalData==='function')?latestEvalData(e.id):null; if(!g||!g.has) return '<div class="nd-ref"><b>📊 참고</b> 저장된 평가가 없습니다.</div>';
+  const st=g.status||{};
+  const items=[];
+  if(g.rom!=null) items.push('ROM 달성률 '+g.rom+'%'); if(g.mmtU!=null) items.push('MMT 상지 '+g.mmtU); if(g.mmtL!=null) items.push('MMT 하지 '+g.mmtL);
+  if(g.adl!=null) items.push('K-ADL '+g.adl+'점'); if(g.bbs!=null) items.push('BBS '+g.bbs); if(g.tug!=null) items.push('TUG '+g.tug+'초');
+  if(g.fall!=null) items.push('낙상(Huhn) '+g.fall+'점'+(g.fallJudge?' '+g.fallJudge:'')); if(g.braden!=null) items.push('욕창(Braden) '+g.braden+'점');
+  if(st.gait) items.push('보행 '+st.gait); if(st.transfer) items.push('기립 '+st.transfer);
+  return '<div class="nd-ref"><b>📊 참고 — 최근 평가</b> (자동으로 채우지 않아요. 보면서 판단하세요)<div>'+(items.length?items.map(esc).join(' · '):'값 없음')+'</div></div>';
+}
+function cistRefPanel(e){
+  const g=(typeof latestEvalData==='function')?latestEvalData(e.id):null; const c=g&&g.cist!=null?g.cist:null;
+  return '<div class="nd-ref"><b>🧠 참고 — 인지</b> '+(c!=null?'최근 CIST '+c+'점':'CIST 기록 없음')+(g&&g.status&&g.status.cog?' · 핵심상태 인지 '+g.status.cog:'')+'<div class="hint">판단근거에는 인지 수준(최근 CIST 결과 또는 검사 제외 사유)과 지남력·기억력·감정 상태를 함께 적어주세요.</div></div>';
+}
+function ltcMiniPanel(e){
+  const L=e&&e.ltcPlan; if(!L||!L.items||!L.items.length) return '';
+  return '<div class="nd-ref ltc"><b>📑 개장 필요영역</b> '+L.items.map(it=>esc(it.need)).join(' · ')+(L.notes&&L.notes.length?'<div class="hint">유의: '+L.notes.map(esc).join(' / ')+'</div>':'')+'</div>';
+}
+function copyPrevNeeds(id, prevId){
+  const n=needsById(id), p=needsById(prevId); if(!n||!p) return;
+  if(!confirm('직전 욕구사정 내용을 불러올까요? 날짜·작성자는 비워지고, 모든 탭에 확인 필요 표시가 붙습니다.')) return;
+  n.tabs=JSON.parse(JSON.stringify(p.tabs||{})); n.summary=p.summary||''; n.author=''; n.flags={};
+  NEEDS_TABS.forEach(t=>{ n.flags[t.k]=true; if(n.tabs[t.k]) n.tabs[t.k].author=''; });
+  saveNeeds(n); renderNeeds();
+}
+
+// ---- 판단근거 생성 ----
+const BLANK='[   ]';
+function eunNeun(w){ if(!w) return '은(는)'; const c=w.trim().charCodeAt(w.trim().length-1); if(c<0xAC00||c>0xD7A3) return '은(는)'; return ((c-0xAC00)%28)?'은':'는'; }
+function eulReul(w){ if(!w) return '을(를)'; const c=w.trim().charCodeAt(w.trim().length-1); if(c<0xAC00||c>0xD7A3) return '을(를)'; return ((c-0xAC00)%28)?'을':'를'; }
+function iGa(w){ if(!w) return '이(가)'; const c=w.trim().charCodeAt(w.trim().length-1); if(c<0xAC00||c>0xD7A3) return '이(가)'; return ((c-0xAC00)%28)?'이':'가'; }
+function listJ(arr, j){ const last=arr[arr.length-1]; return arr.join(', ')+(j==='eun'?eunNeun(last):j==='eul'?eulReul(last):iGa(last)); }
+
+function rationaleHtml(n,T){
+  const d=needsTabData(n,T.k);
+  return '<div class="nd-rat"><div class="card-title" style="margin-top:14px;">📝 판단근거 <span class="fr-need">(필수)</span>'+
+    '<span class="note-btns no-print"><button class="note-gen" onclick="genRationale('+n.id+',\''+T.k+'\',false)">초안 만들기</button>'+
+    '<button class="note-gen simple" onclick="genRationale('+n.id+',\''+T.k+'\',true)">완성문장 만들기</button>'+
+    '<button class="note-gen copy" onclick="copyNeedsField('+n.id+',\''+T.k+'\',this)">📋 복사</button></span></div>'+
+    '<div class="cns-guide">공식: <b>[상태] + [근거: 관찰·측정·기록·진단] + [필요한 도움]</b>. 예) "왼쪽 편마비로 옷을 갈아입을 때 일부 도움을 주어야 함". 초안의 <b>'+BLANK+'</b>는 직접 채우세요. 체크만 있고 판단근거가 없으면 불인정됩니다.</div>'+
+    '<textarea class="note-ta" rows="7" onchange="nTabSet('+n.id+',\''+T.k+'\',\'rationale\',this.value)">'+esc(d.rationale||'')+'</textarea>'+
+    ratWarnHtml(n,T.k)+'</div>';
+}
+function ratWarnHtml(n,tab){
+  const d=needsTabData(n,tab); const t=(d.rationale||'').trim(); const w=[];
+  if(t&&t.length<20) w.push('판단근거가 너무 짧아요 (20자 미만).');
+  if(t.indexOf(BLANK)>=0) w.push('빈칸 '+BLANK+'이 남아 있어요.');
+  const dup=(state.needs||[]).some(x=>x.id!==n.id&&x.elderId!==n.elderId&&x.tabs&&x.tabs[tab]&&(x.tabs[tab].rationale||'').trim()===t&&t);
+  if(dup) w.push('다른 어르신 기록과 문장이 같아요 — 반드시 수정하세요 (복사 기록은 불인정).');
+  return w.length?'<div class="cns-draft-warn">⚠ '+w.join(' ')+'</div>':'';
+}
+function copyNeedsField(id,tab,btn){ const n=needsById(id); if(!n) return; const t=tab==='summary'?(n.summary||''):((n.tabs&&n.tabs[tab]&&n.tabs[tab].rationale)||''); if(!t){ alert('먼저 문장을 만들어 주세요.'); return; } if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(()=>{ btn.textContent='✓ 복사됨'; setTimeout(()=>btn.textContent='📋 복사',1500); }); else alert(t); }
+function pj(v){ return v?v.split('·').join(', '):''; }   // multi 표시
+function genRationale(id,tab,finish){
+  const n=needsById(id); if(!n) return; const d=needsTabData(n,tab);
+  const e=state.elders.find(x=>x.id===n.elderId)||{};
+  const g=(typeof latestEvalData==='function')?latestEvalData(n.elderId):null;
+  const A=(k)=>nA(n,tab,k), M=(k)=>nM(n,tab,k);
+  const B=finish?'':BLANK;      // 완성형이면 빈칸 대신 생략/일반문
+  const S=[]; // 상태
+  const R=[]; // 근거
+  const H=[]; // 도움
+  const add=(arr,t)=>{ if(t) arr.push(t); };
+  if(tab==='nutrition'){
+    add(S, A('nut')&&'영양상태는 '+A('nut')+'한 편임');
+    add(S, A('mealType')&&A('mealType')+'을 섭취함'+(A('mealTx')&&A('mealTx')!=='없음'?'('+pj(A('mealTx'))+' 적용)':''));
+    const pb=A('mealProb'); if(pb&&pb!=='양호') add(R,'식사 시 '+pj(pb)+' 관찰됨'+(M('mealProb')?'('+M('mealProb')+')':''));
+    if(A('avoid')==='있음') add(R,'기피식품은 '+(M('avoid')||B)+'임'); else if(A('avoid')==='없음') add(R,'기피식품은 없음');
+    const ur=A('urine'), st=A('stool');
+    if(ur&&ur!=='양호') add(R,'소변은 '+ur+' 상태'); if(st&&st!=='양호') add(R,'대변은 '+st+' 상태');
+    if(A('diaper')==='착용') add(R,'기저귀 착용 중');
+    if(pb&&/사레|연하/.test(pb)) add(H,'식사 시 자세 유지와 천천히 드시도록 지켜보기 도움이 필요함');
+    if(A('diaper')==='착용'||(ur&&ur!=='양호')) add(H,'배설 상태 관찰과 기저귀 교환·피부 관리가 필요함');
+    if(A('avoid')==='있음') add(H,'기피식품을 제외한 식단 제공이 필요함');
+    if(A('nut')==='부족'||A('nut')==='매우 나쁨') add(H,'식사량 관찰과 영양 보충 검토가 필요함');
+  } else if(tab==='oral'){
+    add(S, A('teeth')&&'치아상태는 '+pj(A('teeth'))+'임'); add(S, A('gum')&&A('gum')!=='양호'&&'잇몸에 '+pj(A('gum'))+' 관찰됨');
+    if(M('teeth')) add(R,M('teeth'));
+    if(/틀니/.test(A('teeth'))) add(H,'틀니 세척·보관 도움과 착용 확인이 필요함');
+    if(/청결불량|치은염증|치석/.test(A('teeth')+A('gum'))) add(H,'식후 구강 청결 도움이 필요함');
+    if(/잔존 치아 없음|치아 약함/.test(A('teeth'))) add(H,'저작에 맞는 식사형태 제공이 필요함');
+  } else if(tab==='disease'){
+    add(S, M('dx')&&'현 진단명은 '+M('dx')+'임'); add(S, M('chronic')&&'만성질환으로 '+M('chronic')+'이 있음');
+    ['circ','neuro','msk','psych','resp'].forEach(k=>{ const v=A(k); if(v&&v!=='없음') add(R,({circ:'순환기계',neuro:'신경계',msk:'근골격계',psych:'정신·행동',resp:'호흡기계'})[k]+' '+pj(v)+(M(k)?'('+M(k)+')':'')); });
+    if(A('renal')==='있음') add(R,'만성 신장질환 있음');
+    if(A('allergy')&&A('allergy')!=='없음') add(R,'알레르기('+pj(A('allergy'))+(M('allergy')?': '+M('allergy'):'')+') 있음');
+    if(M('pastHx')) add(R,'과거 병력: '+M('pastHx'));
+    if(A('sore')&&A('sore')!=='없음') { add(R,'욕창 '+A('sore')+(A('sorePart')?'('+pj(A('sorePart'))+')':'')+' 있음'+(A('soreDev')&&A('soreDev')!=='없음'?', '+pj(A('soreDev'))+' 사용 중':'')); add(H,'욕창 부위 관찰과 체위변경·압박 완화가 필요함'); }
+    if(g&&g.braden!=null&&g.braden<=18) add(R,'욕창위험도(Braden) '+g.braden+'점으로 '+(g.braden<=12?'고위험':'위험')+'군');
+    if(/치매/.test(A('neuro'))) add(H,'치매 증상 관찰과 복약 확인이 필요함');
+    if(/고혈압|심장/.test(A('circ'))) add(H,'활력징후 정기 측정과 복약 관리가 필요함');
+    if(!H.length) add(H,'질병 상태 관찰과 정기 진료·복약 관리가 필요함');
+  } else if(tab==='body'){
+    add(S, A('state')&&'수급자 상태는 '+A('state')+'임'); if(M('height')||M('weight')) add(R,'키 '+(M('height')||'-')+'cm, 체중 '+(M('weight')||'-')+'kg');
+    const adl=d.adl||{}; const full=ADL10.filter(i=>adl[i]==='완전도움'), part=ADL10.filter(i=>adl[i]==='부분도움'), ind=ADL10.filter(i=>adl[i]==='완전자립');
+    if(ind.length) add(R,listJ(ind,'eun')+' 스스로 가능함');
+    if(part.length) add(R,listJ(part,'eun')+' 일부 도움이 필요함');
+    if(full.length) add(R,listJ(full,'eun')+' 전적인 도움이 필요함');
+    if(g&&g.adl!=null) add(R,'K-ADL '+g.adl+'점'); if(g&&g.mmtL!=null) add(R,'하지 근력 MMT '+g.mmtL+'등급');
+    if(full.length) add(H,full.slice(0,3).join('·')+' 시 전적인 도움 제공이 필요함');
+    if(part.length) add(H,part.slice(0,3).join('·')+' 시 지켜보기와 일부 도움이 필요함');
+    if(A('state')==='와상') add(H,'체위변경과 관절운동 등 부동 합병증 예방이 필요함');
+  } else if(tab==='cog'){
+    if(g&&g.cist!=null) add(S,'최근 CIST '+g.cist+'점'); else add(S,'인지 수준: '+(finish?'검사 결과 또는 제외 사유 기재 필요':B));
+    add(R, A('demMed')==='복용'&&'치매약 복용 중'); const bp=A('bpsd'); if(bp&&bp!=='없음') add(R,'행동심리증상으로 '+pj(bp)+' 관찰됨'+(M('bpsd')?'('+M('bpsd')+')':'')); else if(bp==='없음') add(R,'특이 행동심리증상 없음');
+    if(g&&g.status&&g.status.cog) add(R,'지시 수행 '+g.status.cog);
+    add(R,'지남력·기억력·감정 상태: '+(M('demMed')||B));
+    if(bp&&bp!=='없음') add(H,'증상 발생 시 안정 유도와 안전 확인이 필요함');
+    if(A('demMed')==='복용') add(H,'복약 확인이 필요함');
+    if(!H.length) add(H,'인지 자극 활동 참여 유도와 지남력 유지 지원이 필요함');
+  } else if(tab==='comm'){
+    add(S, A('hearing')&&'청력은 '+A('hearing')); add(S, A('comm')&&'의사소통은 '+A('comm')); add(S, A('speech')&&'발음은 '+A('speech'));
+    if(M('comm')) add(R,M('comm'));
+    if(/저하|안 들림/.test(A('hearing'))) add(H,'가까이에서 천천히 크게 말하고 필요시 필담·몸짓을 병행해야 함');
+    if(/부분 가능|불가/.test(A('comm'))) add(H,'표정·행동 관찰로 욕구를 파악하는 도움이 필요함');
+    if(!H.length) add(H,'현 의사소통 수준을 유지하도록 대화 기회를 제공함');
+  } else if(tab==='family'){
+    add(S, A('cohab')&&'입소 전 '+A('cohab')+(A('cohab')==='독거'?' 생활':'와 동거'));
+    if(M('sons')||M('daughters')) add(R,'자녀 아들 '+(M('sons')||'0')+'명, 딸 '+(M('daughters')||'0')+'명');
+    if(A('carer')==='있음') add(R,'주수발자는 '+(M('carerRel')||B)+'임'); else if(A('carer')==='없음') add(R,'주수발자 없음');
+    add(R, A('econ')&&'경제상태 '+A('econ')); add(R, A('burden')&&'수발부담 '+A('burden'));
+    if(A('carer')==='없음'||/큼/.test(A('burden'))) add(H,'보호자 부담을 고려한 정기 상담과 연락 체계 유지가 필요함'); else add(H,'보호자와 정기적으로 상태를 공유함');
+  } else if(tab==='resource'){
+    add(S, M('hosp')&&M('hosp')+'에서 '+(A('regular')==='유'?'정기 진료 중':'진료받음'));
+    add(R, M('tel')&&'연락처 '+M('tel')); add(R, A('religion')&&A('religion')!=='없음'&&'종교 '+A('religion')+(M('religion')?'('+M('religion')+')':''));
+    if(A('regular')==='유') add(H,'정기 진료 일정 관리와 동행·약 수령 지원이 필요함');
+    if(A('religion')&&A('religion')!=='없음') add(H,'종교활동 참여 기회 제공');
+    if(!H.length) add(H,'필요 시 의료기관 연계');
+  } else if(tab==='rehab'){
+    const pa=A('paresis'); if(pa&&pa!=='없음') add(S,pj(pa)+' 운동장애 있음'); else if(pa==='없음') add(S,'특이 운동장애 없음');
+    const jt=d.joints||{}; const has=JOINTS6.flatMap(j=>['좌','우'].filter(s=>jt[j+'_'+s]==='있음').map(s=>s+' '+j)); if(has.length) add(R,'관절구축 '+has.join(', ')); else if(Object.keys(jt).length) add(R,'관절구축 없음');
+    if(A('fall3m')) add(R,'지난 3개월 낙상 '+A('fall3m')); if(A('gait')) add(R,'걸음걸이·균형: '+A('gait'));
+    if(g){ const r=[]; if(g.rom!=null) r.push('ROM '+g.rom+'%'); if(g.mmtU!=null) r.push('MMT 상지 '+g.mmtU); if(g.mmtL!=null) r.push('MMT 하지 '+g.mmtL); if(g.bbs!=null) r.push('BBS '+g.bbs); if(g.fall!=null) r.push('낙상위험 '+g.fall+'점'); if(r.length) add(R,'평가 결과 '+r.join(', ')); }
+    if(has.length) add(H,'구축 부위 관절가동운동과 자세 관리가 필요함');
+    if(/균형 유지 못함|어지러움/.test(A('gait'))||(A('fall3m')&&A('fall3m')!=='없음')) add(H,'이동 시 부축·지켜보기와 낙상 예방 환경 정비가 필요함');
+    if(/보조도구/.test(A('gait'))) add(H,'보행보조기구 사용 하 보행훈련 지속이 필요함');
+    if(pa&&pa!=='없음') add(H,'환측 보호와 잔존기능 유지를 위한 근력·관절운동이 필요함');
+    if(!H.length) add(H,'현 기능 유지를 위한 근력·관절운동 지속이 필요함');
+  } else if(tab==='subj'){
+    const who=A('who')||B, when=M('when')||B, how=A('how')||B, want=M('want')||B;
+    const s=who+iGa(who)+' '+when+' '+how+eulReul(how)+' 통해 "'+want+'"'+eulReul(want)+' 원한다고 표현함.';
+    d.rationale=s; saveNeeds(n); renderNeeds(); return;
+  }
+  let out;
+  if(finish){
+    const sent=(arr)=>arr.map(x=>x.replace(/[.\s]+$/,'')+'.').join(' ');
+    const s1=sent(S); const r1=R.length?'관찰·평가 결과 '+R.map(x=>x.replace(/[.\s]+$/,'')).join(', ')+'.':''; const h1=sent(H);
+    out=[s1,r1,h1].filter(Boolean).join(' ').replace(/\.\./g,'.').replace(/\s+/g,' ');
+  } else {
+    out='[상태] '+(S.length?S.join(', '):BLANK)+'\n[근거] '+(R.length?R.join(', '):BLANK)+'\n[필요한 도움] '+(H.length?H.join(', '):BLANK);
+  }
+  d.rationale=out; saveNeeds(n); renderNeeds();
+}
+// ---- 총평 ----
+function summaryHtml(n){
+  return '<div class="cns-guide"><b>총평은 서술형만 인정</b>됩니다. 1~10번 탭의 핵심을 모아 "전반적 상태 → 주요 문제 → 필요한 급여 방향"으로 정리하세요. 아래 버튼은 각 탭 판단근거를 모아 초안을 만듭니다.</div>'+
+    '<div class="card-title">📝 총평 <span class="fr-need">(필수)</span>'+
+    '<span class="note-btns no-print"><button class="note-gen" onclick="genSummary('+n.id+',false)">초안 만들기</button><button class="note-gen simple" onclick="genSummary('+n.id+',true)">완성문장 만들기</button><button class="note-gen copy" onclick="copyNeedsField('+n.id+',\'summary\',this)">📋 복사</button></span></div>'+
+    '<textarea class="note-ta" rows="10" onchange="nSet('+n.id+',\'summary\',this.value)">'+esc(n.summary||'')+'</textarea>'+
+    summaryWarn(n);
+}
+function summaryWarn(n){
+  const t=(n.summary||'').trim(); const w=[];
+  if(t&&t.length<40) w.push('총평이 너무 짧아요.');
+  if(t.indexOf(BLANK)>=0) w.push('빈칸이 남아 있어요.');
+  const dup=(state.needs||[]).some(x=>x.id!==n.id&&x.elderId!==n.elderId&&(x.summary||'').trim()===t&&t); if(dup) w.push('다른 어르신 총평과 같아요 — 수정하세요.');
+  const missing=NEEDS_TABS.filter(t2=>!t2.summary&&!((n.tabs&&n.tabs[t2.k]&&n.tabs[t2.k].rationale)||'').trim()).map(t2=>t2.n.replace(/^\d+\.\s*/,''));
+  if(missing.length) w.push('판단근거가 비어 있는 탭: '+missing.join(', '));
+  return w.length?'<div class="cns-draft-warn">⚠ '+w.join(' ')+'</div>':'';
+}
+function genSummary(id,finish){
+  const n=needsById(id); if(!n) return; const e=state.elders.find(x=>x.id===n.elderId)||{};
+  const g=(typeof latestEvalData==='function')?latestEvalData(n.elderId):null;
+  const st=nA(n,'body','state'); const L=e.ltcPlan;
+  const parts=[];
+  let head=(e.name||'수급자')+' 어르신은 '+(e.grade?e.grade+' 수급자로 ':'')+(st?st+' 상태':'')+(g&&g.cist!=null?(st?'이며 ':'')+'최근 CIST '+g.cist+'점으로 인지 '+(g.cist>=20?'양호':g.cist>=15?'경도 저하':'저하')+' 상태':'')+'임.';
+  parts.push(head.replace(/로 임\./,'임.').replace(/ 상태 임/,' 상태임'));
+  // 주요 문제 (탭 판단근거의 [상태]/첫 문장 요약)
+  const probs=[];
+  const pick1=(tab)=>{ const r=((n.tabs&&n.tabs[tab]&&n.tabs[tab].rationale)||'').replace(/\[[^\]]*\]\s*/g,'').split(/\n|\. /)[0].trim(); return r&&r!==BLANK?r:''; };
+  ['rehab','disease','nutrition'].forEach(t=>{ const p=pick1(t); if(p&&!/CIST|수급자 상태/.test(p)) probs.push(p); });
+  const adlP=(n.tabs&&n.tabs.body&&n.tabs.body.adl)||{}; const fullA=ADL10.filter(i=>adlP[i]==='완전도움'); if(fullA.length) probs.push(fullA.slice(0,3).join('·')+' 등 일상생활동작에 전적인 도움이 필요함');
+  if(g&&g.fall!=null&&g.fall>=5) probs.push('낙상위험도 '+g.fall+'점으로 낙상 예방이 필요함');
+  if(g&&g.braden!=null&&g.braden<=18) probs.push('욕창위험도 '+g.braden+'점으로 욕창 예방이 필요함');
+  if(probs.length) parts.push('주요 상태로는 '+probs.join(', ')+'.');
+  // 주관적 욕구
+  const want=nM(n,'subj','want'); if(want) parts.push('수급자·보호자는 "'+want+'"'+eulReul(want)+' 원함.');
+  // 필요 방향
+  const dir=[];
+  if(st==='와상') dir.push('체위변경·관절운동 등 부동 합병증 예방');
+  if(g&&g.fall!=null&&g.fall>=5) dir.push('이동 시 부축과 낙상 예방 환경 관리');
+  if(g&&g.braden!=null&&g.braden<=18) dir.push('욕창 예방 피부 관리');
+  const adl=(n.tabs&&n.tabs.body&&n.tabs.body.adl)||{}; if(ADL10.some(i=>adl[i]==='완전도움'||adl[i]==='부분도움')) dir.push('일상생활동작 도움');
+  if(nA(n,'rehab','paresis')&&nA(n,'rehab','paresis')!=='없음') dir.push('잔존기능 유지를 위한 기능회복훈련·물리치료');
+  if(nA(n,'cog','bpsd')&&nA(n,'cog','bpsd')!=='없음') dir.push('행동심리증상 관찰과 정서 지원');
+  if(L&&L.items&&L.items.length) dir.push('개장의 필요영역('+L.items.map(i=>i.need).slice(0,5).join(', ')+(L.items.length>5?' 외':'')+') 반영');
+  if(dir.length) parts.push('따라서 '+dir.join(', ')+'을 중심으로 급여를 제공할 필요가 있음.');
+  else parts.push('필요한 급여 방향: '+(finish?'현 기능 유지와 안전 관리를 중심으로 급여 제공':BLANK));
+  let out=parts.join(' ').replace(/\s+/g,' ').replace(/\.\./g,'.');
+  if(!finish) out+='\n\n※ 초안입니다. 빠진 탭 내용과 어르신 고유의 상황을 보충하세요.';
+  n.summary=out; saveNeeds(n); renderNeeds();
+}
+
 let editingElderId = null;
 
 function calcAge(birth){
@@ -3972,9 +4634,10 @@ function elderCardHtml(e){
   const aiBadge = aiCogBadge(e.aicog);
   const evBadge = evalDoneBadge(e.id);
   const planLine = (e.plan&&e.plan.length) ? '<div class="plan-line">처방: '+e.plan.map(esc).join(' · ')+'</div>' : '';
+  const ltcBadge = (e.ltcPlan&&(e.ltcPlan.items.length||(e.ltcPlan.photos&&e.ltcPlan.photos.length))) ? '<span class="ltc-badge" title="개장 있음">📑</span>' : '';
   const dischLine = (e.status==='퇴원'&&e.dischargedAt) ? '<div class="disch-line">🏠 퇴원일 '+esc(e.dischargedAt)+'</div>' : '';
   return '<div class="elder'+(e.status==='퇴원'?' discharged':'')+'"><div class="photo" onclick="openElderProfile('+e.id+')" style="cursor:pointer;">'+esc(e.name.slice(0,1))+'</div>'+
-    '<div class="elder-main" onclick="openElderProfile('+e.id+')" style="cursor:pointer;"><div class="elder-name">'+roomBadge+esc(e.name)+visitBadge+aiBadge+evBadge+(e.risks||[]).map(riskTag).join('')+'</div>'+
+    '<div class="elder-main" onclick="openElderProfile('+e.id+')" style="cursor:pointer;"><div class="elder-name">'+roomBadge+esc(e.name)+ltcBadge+visitBadge+aiBadge+evBadge+(e.risks||[]).map(riskTag).join('')+'</div>'+
     '<div class="meta">'+(esc(meta)||'정보 없음')+'</div>'+admitLine+dischLine+planLine+'</div>'+
     '<button class="del prof-btn" onclick="openElderProfile('+e.id+')" title="전체 정보 보기">📋</button>'+
     '<select class="status" onchange="setStatus('+e.id+',this.value)">'+
@@ -4301,7 +4964,7 @@ function elderHeaderHtml(e){
 function buildEvalSnapshot(id, uptoDate){
   const evs=(state.evals[id]||[]).filter(e=>!uptoDate||e.date<=uptoDate).sort((a,b)=>a.date.localeCompare(b.date));
   const snap={detail:{}};
-  const metrics=['mmtU','mmtL','rom','adl','bbs','tug','frt','cist','vas','fall','painCount'];
+  const metrics=['mmtU','mmtL','rom','adl','bbs','tug','frt','cist','vas','fall','braden','painCount'];
   evs.forEach(e=>{
     metrics.forEach(k=>{ if(e[k]!=null) snap[k]=e[k]; });
     if(e.detail){ Object.keys(e.detail).forEach(dk=>{ if(e.detail[dk]!=null) snap.detail[dk]=e.detail[dk]; }); }
@@ -4312,6 +4975,7 @@ function evalKeyFindings(ev){
   const d=ev.detail||{}; const rows=[];
   // 낙상
   if(ev.fall!=null){ const j=(d.fall&&d.fall.judge)?d.fall.judge:''; rows.push({dom:'🚨 낙상 위험', val:ev.fall+'점', interp:j||'—', danger:/아주|높음/.test(j)}); }
+  if(ev.braden!=null){ const j=(d.braden&&d.braden.judge)?d.braden.judge:''; rows.push({dom:'🩹 욕창 위험(Braden)', val:ev.braden+'/23점', interp:j||'—', danger:/고위험|위험$/.test(j)&&!/낮음/.test(j)}); }
   // 인지 (CIST)
   if(ev.cist!=null) rows.push({dom:'🧠 인지(CIST)', val:ev.cist+' / 30', interp:'선별 결과(정상/저하 판정은 검사지 연령·학력 기준)', danger:false});
   // 일상생활 자립(ADL)
@@ -4435,6 +5099,7 @@ function openElderProfile(id){
 
   // 3) 평가 기록
   const evs=(state.evals[id]||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  h+=ltcSectionHtml(e);
   h+='<div class="pf-sec"><div class="pf-h">📊 평가 기록 '+(evs.length?'('+evs.length+'회)':'')+'</div>';
   if(!evs.length){ h+='<div class="pf-empty">아직 저장된 평가가 없어요. 평가 탭에서 평가하면 여기에 모여요.</div>'; }
   else {
@@ -6365,7 +7030,7 @@ function openAssess(tool){
   if(!id){ evMsg('먼저 위에서 어르신을 선택해 주세요','err'); document.getElementById('ev-elder').focus(); return; }
   assessTool=tool; assessElderId=id; assessDate=date;
   const e=state.elders.find(x=>x.id==id);
-  const titles={status:'🧭 핵심 상태 체크 (치료일지 정확도)',rom:'📐 ROM 관절가동범위',mmt:'💪 MMT 도수근력검사',bbs:'⚖️ BBS 버그균형척도',tug:'⏱️ TUG 일어나 걷기 검사',adl:'🧺 K-ADL 일상생활활동',vas:'😣 VAS 통증 척도',pain:'📍 통증 부위 표시',frt:'🙆 FRT 기능적 팔뻗기 검사',cist:'🧠 CIST 인지선별검사',fall:'🚨 낙상위험도 평가 (Huhn)',motor:'🦿 운동장애 및 관절제한 평가',power:'🏋️ 근력 평가',basic:'🧎 기본동작 평가'};
+  const titles={status:'🧭 핵심 상태 체크 (치료일지 정확도)',rom:'📐 ROM 관절가동범위',mmt:'💪 MMT 도수근력검사',bbs:'⚖️ BBS 버그균형척도',tug:'⏱️ TUG 일어나 걷기 검사',adl:'🧺 K-ADL 일상생활활동',vas:'😣 VAS 통증 척도',pain:'📍 통증 부위 표시',frt:'🙆 FRT 기능적 팔뻗기 검사',cist:'🧠 CIST 인지선별검사',fall:'🚨 낙상위험도 평가 (Huhn)',braden:'🩹 욕창위험도 평가 (Braden)',motor:'🦿 운동장애 및 관절제한 평가',power:'🏋️ 근력 평가',basic:'🧎 기본동작 평가'};
   document.getElementById('assess-title').textContent=titles[tool]||'평가';
   document.getElementById('assess-who').textContent=(e?((e.room?e.room+'호 ':'')+e.name):'')+' · 평가일 '+date;
   // 기존 저장된 상세 불러오기
@@ -6383,6 +7048,7 @@ function openAssess(tool){
   else if(tool==='frt') body.innerHTML=renderFRT(prev);
   else if(tool==='cist') body.innerHTML=renderCIST(prev);
   else if(tool==='fall') body.innerHTML=renderFallRisk(prev);
+  else if(tool==='braden') body.innerHTML=renderBraden(prev);
   else if(tool==='motor') body.innerHTML=renderMotor(prev);
   else if(tool==='power') body.innerHTML=renderPower(prev);
   else if(tool==='basic') body.innerHTML=renderBasic(prev);
@@ -6612,6 +7278,75 @@ function renderFallRisk(prev){
   h += '<div class="fr-guide">📌 판정 기준 (Huhn): <b>4점 이하</b> 낙상위험 낮음 · <b>5~10점</b> 높음 · <b>11점 이상</b> 아주 높음</div>';
   return h;
 }
+// ---- 욕창위험도 (Braden Scale) — 케어포 문구 기준 ----
+const BRADEN_ITEMS=[
+  { key:'sense', name:'감각인지 정도', note:'압박으로 인한 불편감을 인지하고 의미 있게 반응할 수 있는 정도', opts:[
+    {pt:1, label:'완전 제한됨 (완전히 못 느낌)', desc:'의식 저하나 진정으로 통증 자극에 반응(신음, 움찔거림, 움켜쥠)이 없음. 또는 신체 대부분의 통증 감각 능력이 제한됨'},
+    {pt:2, label:'매우 제한됨', desc:'통증 자극에만 반응함. 신음이나 불안정한 행동 외에는 불편감을 표현하지 못함. 또는 신체 절반 이상에서 통증·불편을 느끼지 못하는 감각장애가 있음'},
+    {pt:3, label:'약간 제한됨', desc:'말로 하는 지시에 반응하나 불편감이나 체위변경 필요를 항상 표현하지는 못함. 또는 사지 한두 곳에서 통증·불편을 느끼지 못하는 감각장애가 있음'},
+    {pt:4, label:'손상 없음', desc:'말로 하는 지시에 반응함. 통증·불편감을 느끼고 표현하는 데 감각 결손이 없음'} ] },
+  { key:'moist', name:'습기여부', note:'피부가 습기에 노출되는 정도', opts:[
+    {pt:1, label:'항상 젖어 있음', desc:'땀·소변 등으로 피부가 거의 항상 젖어 있음. 몸을 움직이거나 돌릴 때마다 축축함이 확인됨'},
+    {pt:2, label:'자주 젖어 있음', desc:'항상은 아니지만 자주 젖어 있음. 시트를 적어도 하루 1회는 교환해야 함'},
+    {pt:3, label:'가끔 젖어 있음', desc:'가끔 젖어 있음. 시트를 하루 1회 정도 추가로 교환함'},
+    {pt:4, label:'거의 젖어있지 않음', desc:'피부가 대체로 건조함. 시트는 정해진 때만 교환함'} ] },
+  { key:'act', name:'활동상태', note:'신체 활동의 정도', opts:[
+    {pt:1, label:'항상 침대에만 누워 있음', desc:'침상에 누워서만 지냄'},
+    {pt:2, label:'의자에 앉아 있을 수 있음', desc:'보행 능력이 매우 제한되거나 없음. 체중을 지탱하지 못하며 의자나 휠체어로 옮길 때 도움이 필요함'},
+    {pt:3, label:'가끔 걸을 수 있음', desc:'낮 동안 가끔 짧은 거리를 도움 있이 또는 없이 걷지만, 대부분은 침대나 의자에서 지냄'},
+    {pt:4, label:'자주 걸을 수 있음', desc:'깨어 있는 동안 적어도 2시간마다 방 안을 걷고, 하루 2회 이상 방 밖으로 나감'} ] },
+  { key:'mob', name:'움직임', note:'체위를 바꾸고 조절하는 능력', opts:[
+    {pt:1, label:'완전히 못 움직임 (스스로 움직일 수 없음)', desc:'도움 없이는 몸이나 사지의 위치를 조금도 바꾸지 못함'},
+    {pt:2, label:'매우 제한됨', desc:'몸이나 사지의 위치를 가끔 조금 바꾸지만, 스스로 자주 또는 의미 있게 바꾸지는 못함'},
+    {pt:3, label:'약간 제한됨', desc:'몸이나 사지의 위치를 자주 스스로 바꾸나 그 정도가 적음'},
+    {pt:4, label:'제한 없음', desc:'도움 없이 자주, 크게 체위를 바꿈'} ] },
+  { key:'nutri', name:'영양상태', note:'평소 식사 섭취 양상', opts:[
+    {pt:1, label:'매우나쁨', desc:'제공된 식사의 1/3 이하를 먹음. 단백질(고기·유제품)을 하루 2회분 이하 섭취. 수분 섭취 부족, 보충 식이를 먹지 않음. 또는 금식·맑은 유동식·5일 이상 정맥주입 중'},
+    {pt:2, label:'부족함', desc:'제공된 식사의 약 1/2만 먹음. 단백질을 하루 3회분 정도 섭취. 가끔 보충 식이를 먹음. 또는 적정량 이하의 유동식이나 경관영양을 받음'},
+    {pt:3, label:'적당함', desc:'제공된 식사의 1/2 이상을 먹음. 단백질을 하루 4회분 섭취. 가끔 식사를 거부하나 보충 식이는 대체로 먹음. 또는 필요량을 충족하는 경관영양·정맥영양을 받음'},
+    {pt:4, label:'양호함', desc:'매 식사 대부분을 먹고 거부하지 않음. 단백질을 하루 4회분 이상 섭취. 가끔 간식을 먹으며 보충 식이가 필요 없음'} ] },
+  { key:'fric', name:'마찰력과 응전력', note:'이동 시 피부가 끌리거나 미끄러지는 정도', opts:[
+    {pt:1, label:'문제 있음', desc:'이동 시 중등도~최대 도움이 필요하며, 시트에 끌리지 않고는 몸을 들어올릴 수 없음. 침대나 의자에서 자주 미끄러져 내려와 자주 다시 위치를 잡아줘야 함. 경직·구축·초조로 거의 항상 마찰이 생김'},
+    {pt:2, label:'잠정적으로 문제있음', desc:'약하게 움직이거나 최소한의 도움이 필요함. 이동 시 시트·의자·억제대 등에 피부가 어느 정도 미끄러짐. 대부분 좋은 자세를 유지하나 가끔 미끄러짐'},
+    {pt:3, label:'문제없음', desc:'침대나 의자에서 스스로 움직임. 이동 시 몸을 완전히 들어올릴 수 있는 근력이 있음. 항상 좋은 자세를 유지함'} ] }
+];
+function renderBraden(prev){
+  const sel=(prev&&prev.sel)||{};
+  let h='<div class="as-hint"><b>케어포 욕창위험도(Braden) 화면과 같은 순서·문구</b>입니다. 각 선택지 아래 판단 기준을 보고 고르세요. <b>6항목 모두 선택해야 저장</b>됩니다. 총점 6~23점 · <b>18점 이하 위험</b> · <b>12점 이하 고위험</b> (평가매뉴얼 지표 29 기준)</div>';
+  h+='<div class="fr-reason"><span>조사사유</span>'+['신규','재사정','상태변화'].map(r=>'<label><input type="radio" name="br-reason" value="'+r+'"'+((prev&&prev.reason)===r?' checked':(!prev&&r==='신규'?' checked':''))+'> '+r+'</label>').join('')+'</div>';
+  BRADEN_ITEMS.forEach(it=>{
+    h+='<div class="fr-item"><div class="fr-q">'+it.name+(sel[it.key]==null?' <span class="fr-need">(평가필요)</span>':'')+'</div>';
+    if(it.note) h+='<div class="fr-note">'+esc(it.note)+'</div>';
+    h+='<div class="fr-opts">';
+    it.opts.forEach(o=>{
+      const on=sel[it.key]===o.pt;
+      h+='<button type="button" class="fr-opt'+(on?' on':'')+'" data-br="'+it.key+'" data-pt="'+o.pt+'" onclick="pickBraden(this)">'+
+        '<span class="fr-pt">'+o.pt+'점</span><span class="fr-label">'+o.label+'<span class="fr-desc">'+esc(o.desc)+'</span></span></button>';
+    });
+    h+='</div></div>';
+  });
+  h+='<div class="fr-memo"><label>비고</label><textarea id="br-memo" rows="2" placeholder="관찰 근거를 적어두면 욕구사정·계획서에 그대로 이어집니다. 예: 천골부 발적 없음, 야간 기저귀 2회 교환">'+esc((prev&&prev.memo)||'')+'</textarea></div>';
+  return h;
+}
+function pickBraden(btn){
+  const key=btn.dataset.br;
+  document.querySelectorAll('[data-br="'+key+'"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const q=btn.closest('.fr-item').querySelector('.fr-need'); if(q) q.remove();
+  computeAssess();
+}
+function bradenSelected(){
+  const sel={}; let sum=0, done=0;
+  document.querySelectorAll('.fr-opt.on[data-br]').forEach(b=>{ sel[b.dataset.br]=parseInt(b.dataset.pt,10); });
+  BRADEN_ITEMS.forEach(it=>{ if(sel[it.key]!=null){ sum+=sel[it.key]; done++; } });
+  return {sel, sum, done, total:BRADEN_ITEMS.length};
+}
+function bradenJudge(sum){
+  if(sum<=12) return {t:'욕창발생 고위험', c:'danger', lv:'high'};
+  if(sum<=18) return {t:'욕창발생 위험', c:'warn', lv:'risk'};
+  return {t:'욕창 위험 낮음', c:'ok', lv:'low'};
+}
+
 function pickFall(btn){
   const key=btn.dataset.fr;
   // 같은 항목 내 다른 선택 해제
@@ -6962,6 +7697,13 @@ function computeAssess(){
     const j=fallJudge(sum);
     const miss = done<total ? ' <span class="rs-mid">('+(total-done)+'개 항목 미선택)</span>' : '';
     html='합계 <b>'+sum+'</b>점 · <span class="rs-'+j.c+'">'+j.t+'</span>'+miss;
+  } else if(assessTool==='braden'){
+    const {sum,done,total}=bradenSelected();
+    const j=bradenJudge(sum);
+    const miss = done<total ? ' <span class="rs-mid">('+(total-done)+'개 항목 미선택 — 모두 선택해야 저장)</span>' : '';
+    html='합계 <b>'+sum+'</b>/23점 · <span class="rs-'+j.c+'">'+j.t+'</span>'+miss+
+      (done===total&&j.lv==='high'?' <span class="rs-danger">매일 욕창 관찰·기록 대상</span>':'')+
+      (done===total&&j.lv!=='low'?' <span class="rs-mid">분기별 재평가</span>':'');
   } else if(assessTool==='motor'){
     const {move,joint,pain}=motorSelected();
     const mv=Object.keys(move).length, jt=Object.keys(joint).length;
@@ -7040,6 +7782,13 @@ function saveAssess(){
     const j=fallJudge(sum);
     entry.fall=sum;
     entry.detail.fall={sel, sum, reason:reasonEl?reasonEl.value:'신규', judge:j.t};
+  } else if(assessTool==='braden'){
+    const {sel,sum,done,total}=bradenSelected();
+    if(done<total){ alert('욕창위험도는 6개 항목을 모두 선택해야 저장할 수 있어요. ('+(total-done)+'개 미선택)'); return; }
+    const reasonEl=document.querySelector('input[name="br-reason"]:checked');
+    const j=bradenJudge(sum);
+    entry.braden=sum;
+    entry.detail.braden={sel, sum, reason:reasonEl?reasonEl.value:'신규', judge:j.t, level:j.lv, memo:(document.getElementById('br-memo')||{}).value||''};
   } else if(assessTool==='motor'){
     const {move,joint,pain}=motorSelected();
     const memo=(document.getElementById('mt-memo')||{}).value||'';
@@ -7626,6 +8375,8 @@ function latestEvalData(id){
   return {
     has: evs.length>0, date: evs[0]?evs[0].date:null,
     fall: pick(en=>en.fall),
+    braden: pick(en=>en.braden),
+    bradenLevel: pick(en=>(en.detail&&en.detail.braden)?en.detail.braden.level:null),
     fallJudge: pick(en=>(en.detail&&en.detail.fall)?en.detail.fall.judge:null),
     rom: pick(en=>en.rom),
     romDetail: pick(en=>(en.detail&&en.detail.rom&&Object.keys(en.detail.rom).length)?en.detail.rom:null),
@@ -9237,7 +9988,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-27-02';
+const APP_VERSION = '2026-09-27-05';
 function checkForUpdate(){
   try{
     const base=location.pathname;
