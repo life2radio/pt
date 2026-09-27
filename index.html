@@ -422,6 +422,96 @@
   .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--navy); color: #fff; font-size: 15px; }
   .modal-head button { background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 8px; width: 30px; height: 30px; font-size: 14px; cursor: pointer; }
   .modal-body { padding: 16px 18px; overflow-y: auto; }
+
+  .gd-card { border-left: 3px solid var(--amber); }
+  .gd-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+  .gd-tab { padding: 7px 13px; border: 1px solid var(--line); background: #fff; border-radius: 9px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .gd-tab.on { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 700; }
+  .gd-body { font-size: 13.5px; line-height: 1.65; color: var(--ink); }
+  .gd-h { font-size: 13.5px; font-weight: 700; color: var(--navy); margin: 12px 0 5px; padding-left: 8px; border-left: 3px solid var(--teal); }
+  .gd-note { font-size: 12.5px; color: #7a5b1c; background: #FFF8E1; border: 1px solid #F5C518; border-radius: 8px; padding: 8px 11px; margin-bottom: 9px; }
+  .gd-tip { font-size: 12.5px; color: var(--teal); background: var(--teal-bg,#EAF4F0); border-radius: 8px; padding: 7px 10px; margin-top: 6px; }
+  .gd-warn { font-size: 11px; color: var(--danger); font-weight: 700; }
+  .gd-sub { font-size: 11.5px; color: var(--muted); }
+  .gd-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
+  .gd-table th, .gd-table td { border: 1px solid var(--line); padding: 6px 7px; text-align: left; vertical-align: top; }
+  .gd-table th { background: var(--sand); color: var(--navy); font-weight: 700; white-space: nowrap; }
+  .gd-list { margin: 4px 0 4px 20px; padding: 0; }
+  .gd-list li { margin: 3px 0; }
+  .gd-done { display: inline-block; margin-top: 10px; padding: 8px 14px; border: 1.5px solid var(--teal); color: var(--teal); background: #fff; border-radius: 10px; font-size: 13px; cursor: pointer; font-weight: 600; font-family: inherit; }
+  .gd-done.on { background: var(--teal); color: #fff; }
+  .gd-life { margin-bottom: 9px; }
+  .gd-life-h { font-size: 12.5px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+  .gd-life textarea { width: 100%; box-sizing: border-box; font-size: 13px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; resize: vertical; }
+  .gd-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); background: #fff; z-index: 9990; box-shadow: -6px 0 24px rgba(0,0,0,.22); display: flex; flex-direction: column; }
+  .gd-drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--amber); color: #fff; font-size: 15px; flex-shrink: 0; }
+  .gd-drawer-head button { background: rgba(255,255,255,.25); color: #fff; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .gd-drawer-body { padding: 12px 16px 30px; overflow-y: auto; }
+  @media (max-width: 720px){ .gd-drawer { top: 40vh; width: 100%; border-radius: 16px 16px 0 0; } }
+
+
+  .cns-new { display: grid; grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 8px; }
+  .cns-type { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 14px 8px; background: #fff; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; font-family: inherit; }
+  .cns-type:hover { border-color: var(--teal); background: var(--teal-bg,#EAF4F0); }
+  .cns-ic { font-size: 22px; }
+  .cns-tn { font-size: 13.5px; font-weight: 700; color: var(--navy); }
+  .cns-td { font-size: 11px; color: var(--muted); }
+  .cns-list { display: flex; flex-direction: column; gap: 5px; }
+  .cns-row { display: flex; align-items: center; gap: 10px; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; cursor: pointer; font-family: inherit; }
+  .cns-row:hover { border-color: var(--teal); }
+  .cns-row-ic { font-size: 17px; }
+  .cns-row-main { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .cns-row-main b { font-size: 14px; color: var(--navy); }
+  .cns-row-sub { font-size: 11.5px; color: var(--muted); }
+  .cns-row-date { font-size: 11.5px; color: var(--muted); }
+  .cns-week { font-size: 11px; background: var(--amber); color: #fff; padding: 1px 7px; border-radius: 8px; }
+  .cns-head { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 8px; }
+  .cns-fld { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+  .cns-fld input, .cns-fld select { width: 100%; box-sizing: border-box; }
+  .cns-weekbtns { display: flex; gap: 6px; margin-top: 10px; }
+  .wk-btn { flex: 1; padding: 9px; border: 1px solid var(--line); background: #fff; border-radius: 9px; cursor: pointer; font-size: 13px; }
+  .wk-btn.on { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 700; }
+  .cns-focus { font-size: 12.5px; color: var(--teal); background: var(--teal-bg,#EAF4F0); padding: 7px 11px; border-radius: 8px; margin-bottom: 8px; }
+  .cns-guide { font-size: 12px; color: #7a5b1c; background: #FFF8E1; border: 1px solid #F5C518; border-radius: 8px; padding: 9px 12px; margin-bottom: 12px; line-height: 1.6; }
+  .cq { padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .cq:last-child { border-bottom: none; }
+  .cq-q { font-size: 13.5px; font-weight: 600; color: var(--navy); margin-bottom: 5px; }
+  .cq-opts { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
+  .cq-opt { font-size: 12.5px; padding: 6px 12px; border: 1px solid var(--line); background: #fff; border-radius: 14px; cursor: pointer; font-family: inherit; }
+  .cq-opt.on { background: var(--teal); color: #fff; border-color: var(--teal); font-weight: 600; }
+  .cq-opt.unk { border-style: dashed; color: var(--muted); }
+  .cq-opt.unk.on { background: var(--amber); border-color: var(--amber); color: #fff; }
+  .cq-memo { width: 100%; box-sizing: border-box; font-size: 13px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; }
+  .cq-div { font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 4px; padding-top: 10px; border-top: 2px solid var(--line); }
+  .cns-draft-warn { font-size: 12px; color: var(--danger); background: #FCF1ED; border-radius: 8px; padding: 6px 10px; margin-bottom: 7px; }
+  .cns-chk { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13.5px; }
+  .cns-chk label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .doc-list { display: flex; flex-direction: column; gap: 6px; }
+  .doc-row { border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; background: #fff; }
+  .doc-row.ok { border-color: var(--teal); background: #F5FAF8; }
+  .doc-main { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .doc-n { font-size: 13.5px; font-weight: 600; color: var(--navy); }
+  .doc-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; padding-left: 24px; line-height: 1.5; }
+  .doc-exp { font-size: 12px; margin-top: 5px; padding-left: 24px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .doc-bad { color: var(--danger); font-weight: 600; }
+  .doc-ok { color: var(--teal); }
+  .item-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .item-row { display: flex; align-items: center; gap: 5px; font-size: 12.5px; border: 1px solid var(--line); border-radius: 14px; padding: 6px 11px; cursor: pointer; background: #fff; }
+  .item-row.ok { background: var(--teal-bg,#EAF4F0); border-color: var(--teal); }
+  .fee-sel { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .fee-box { background: var(--sand); border-radius: 10px; padding: 12px 14px; }
+  .fee-line { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; }
+  .fee-line.total { border-top: 1px solid var(--line); margin-top: 5px; padding-top: 8px; font-size: 15px; color: var(--navy); }
+  .fee-note { font-size: 11.5px; color: var(--muted); margin-top: 7px; }
+  .lead-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: #fff; margin-bottom: 8px; }
+  .lead-top { display: flex; justify-content: space-between; align-items: center; }
+  .lead-top b { font-size: 14.5px; color: var(--navy); }
+  .lead-date { font-size: 11.5px; color: var(--muted); }
+  .lead-meta { font-size: 12.5px; color: var(--ink); margin-top: 4px; }
+  .lead-memo { font-size: 12.5px; color: var(--muted); background: var(--sand); border-radius: 7px; padding: 7px 10px; margin-top: 6px; }
+  .lead-btns { display: flex; gap: 6px; margin-top: 9px; }
+  .danger-btn { border-color: var(--danger); color: var(--danger); }
+
   .modal-search { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; }
   .modal-search:focus { border-color: var(--teal); outline: none; }
   .rec-pick-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto; }
@@ -1308,6 +1398,7 @@
     <nav class="tabs">
       <button class="active" data-tab="dash" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>오늘</button>
       <button data-tab="briefing" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v14H7l-4 4z"/><path d="M8 8h8M8 12h5"/></svg>조회·석회</button>
+      <button data-tab="counsel" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>상담</button>
       <button data-tab="elders" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>어르신</button>
       <button data-tab="sched" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>스케줄</button>
       <button data-tab="record" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>치료기록</button>
@@ -1373,6 +1464,11 @@
 
     <!-- 백업 알림 -->
     <div id="ds-backup"></div>
+  </section>
+
+  <!-- 상담 -->
+  <section id="counsel" class="panel">
+    <div id="counsel-body"></div>
   </section>
 
   <!-- 어르신 -->
@@ -2054,6 +2150,7 @@ function go(btn){
   if(tab==='history') initHistory();
   if(tab==='program') initProgram();
   if(tab==='bedcare'){ bedDate=new Date().toISOString().slice(0,10); renderBedcare(); }
+  if(tab==='counsel') renderCounsel(); else { guideOpen=false; if(typeof renderGuideDrawer==='function') renderGuideDrawer(); }
   if(tab==='library') renderLibrary();
   if(tab==='briefing'){ briefDate = new Date().toISOString().slice(0,10); renderBriefing(); }
 }
@@ -2826,6 +2923,905 @@ function genBedNote(id, regen){
   out+=' '+pick(closers, noteHash('BC'+id+bucket));
   log.note=out; save(); renderBedcare();
 }
+// ===== 상담 모듈 =====
+var counselView='list';        // list | new | detail | lead
+var counselEditId=null;
+var counselNewType=null;
+const COUNSEL_TYPES={
+  initial:{name:'입소 초기상담', icon:'🏠', place:'상담실', target:'보호자', carepo:false,
+    desc:'입소를 알아보러 오신 단계. 시설 안내와 어르신 정보 파악을 함께 합니다.'},
+  pre:{name:'입소 전 상담', icon:'📋', place:'상담실', target:'보호자', carepo:false,
+    desc:'입소 확정 후 준비물·서류·비용을 확정하고 어르신 정보를 상세히 받습니다.'},
+  week:{name:'신규적응면담', icon:'🗓', place:'생활실', target:'수급자 본인', carepo:true,
+    desc:'입소일부터 7일 간격 4주간, 수급자 본인과 면담합니다. (매뉴얼 지표 13)'},
+  regular:{name:'정기상담', icon:'🔁', place:'생활실', target:'본인 또는 보호자', carepo:true,
+    desc:'분기별 1회 이상 실시합니다.'},
+  adhoc:{name:'수시상담', icon:'💬', place:'생활실', target:'상황별', carepo:true,
+    desc:'필요할 때 수시로 실시합니다.'},
+  end:{name:'종료상담', icon:'🚪', place:'상담실', target:'보호자', carepo:true,
+    desc:'퇴소 시 연계기록 작성용입니다. (지표 39)'}
+};
+const COUNSEL_DIV=['생활(요양)','간호','물리(작업)','프로그램','영양(식사)','행정','기타'];
+const COUNSEL_METHOD=['면담','전화상담','방문','화상','기타'];
+const COUNSEL_PLACE=['상담실','생활실','프로그램실','전화','기타'];
+
+// 신규적응면담 주차별 질문
+const WEEK_SETS={
+  1:{title:'1주차 — 첫 적응', focus:'낯선 환경에 대한 반응, 불안, 기본 생활을 확인합니다.',
+    guide:'어르신 본인의 말씀을 그대로 옮겨 적으면 좋습니다. 예) "밤에 자꾸 깨요". 단순히 "적응 잘 하심"만 쓰면 판단근거가 없어 불인정될 수 있습니다. 불편사항이 있으면 어떤 조치를 했는지까지 조치내용에 적어주세요.',
+    qs:[
+      {k:'feel', q:'지내시기 어떠신지', o:['편안함','아직 낯섦','많이 불편함']},
+      {k:'sleep', q:'잠자리', o:['잘 주무심','자주 깨심','못 주무심']},
+      {k:'meal', q:'식사', o:['잘 드심','조금 드심','거의 못 드심']},
+      {k:'toilet', q:'화장실 이용', o:['불편 없음','도움 필요','불안해하심']},
+      {k:'people', q:'직원·같은 방 어르신', o:['편하게 느끼심','어색해하심','갈등 있음']},
+      {k:'home', q:'집 생각', o:['없음','가끔','자주 말씀하심']}
+    ]},
+  2:{title:'2주차 — 생활 리듬', focus:'식사·수면·배설이 자리 잡았는지 확인합니다.',
+    guide:'1주차와 비교해 나아졌는지 나빠졌는지를 함께 적으면 경과가 드러납니다. 식사·배변 문제는 영양·요양파트 전달 여부까지 조치내용에 남겨주세요.',
+    qs:[
+      {k:'mealAmt', q:'식사량 변화', o:['늘었음','비슷','줄었음']},
+      {k:'taste', q:'음식 입맛', o:['맞음','보통','안 맞음']},
+      {k:'sleep2', q:'수면', o:['좋아짐','비슷','나빠짐']},
+      {k:'bowel', q:'배변', o:['규칙적','변비','설사']},
+      {k:'diaper', q:'기저귀·화장실', o:['잘 맞음','조정 필요']},
+      {k:'bath', q:'목욕', o:['편안','부담스러워하심']},
+      {k:'pain', q:'통증·불편', o:['없음','있음']}
+    ]},
+  3:{title:'3주차 — 활동·관계', focus:'프로그램 참여, 관계, 하고 싶은 것을 확인합니다.',
+    guide:'좋아하시는 활동과 하고 싶으신 것을 구체적으로 적어두면 급여제공계획과 프로그램 운영에 반영할 수 있습니다.',
+    qs:[
+      {k:'prog', q:'프로그램 참여', o:['적극적','보통','거부']},
+      {k:'like', q:'좋아하시는 활동', o:[]},
+      {k:'pt', q:'물리치료', o:['만족','보통','힘들어하심']},
+      {k:'room', q:'같은 방 어르신과', o:['잘 지내심','무관심','갈등']},
+      {k:'day', q:'낮 시간', o:['활동적','주로 누워계심']},
+      {k:'mood', q:'기분·표정', o:['밝음','보통','가라앉음']},
+      {k:'want', q:'하고 싶으신 것', o:[]}
+    ]},
+  4:{title:'4주차 — 종합·요구', focus:'한 달 적응을 평가하고 앞으로의 요구를 확인합니다. 계획서 반영으로 이어집니다.',
+    guide:'한 달간의 변화(나아진 점·힘든 점)를 구체적으로 적어주세요. 확인된 요구는 급여제공계획서에 반영하고, 상담 의견의 급여 반영 기록으로도 남습니다.',
+    qs:[
+      {k:'adapt', q:'한 달 지내보시니', o:['적응 잘 됨','적응 중','어려움']},
+      {k:'better', q:'처음보다 나아진 점', o:[]},
+      {k:'hard', q:'아직 힘드신 점', o:[]},
+      {k:'health', q:'건강 변화', o:['좋아짐','비슷','나빠짐']},
+      {k:'hope', q:'앞으로 바라시는 것', o:[]},
+      {k:'planChange', q:'급여제공계획 변경 필요', o:['없음','필요']}
+    ]}
+};
+const WEEK_COMMON=[
+  {k:'trouble', q:'불편한 점', o:[]},
+  {k:'visit', q:'가족 면회', o:['다녀감','예정','아직 없음']}
+];
+
+// 입소 서류 (포시즌 기준)
+const ADMIT_DOCS=[
+  {n:'장기요양인정서 사본', from:'건강보험공단 (280-9353)', cond:''},
+  {n:'표준장기요양계획서 사본', from:'건강보험공단 (280-9353)', cond:''},
+  {n:'공동생활을 위한 건강진단서 1부', from:'병원 (X-ray·채혈)', cond:'', expire:30,
+    note:'결핵·장티푸스·세균성이질·성병·B형간염·매독·골다공증 등 전염병 유무 확인 / 입소 1개월 이내'},
+  {n:'의사소견서 (기저질환 소견)', from:'병원', cond:'병원에서 오시는 경우'},
+  {n:'복용약·처방전', from:'병원', cond:'', note:'의사처방전과 개별봉투에 이름 표기'},
+  {n:'치매검사지 (MMSE·CIST)', from:'병원', cond:'치매약 복용 시'},
+  {n:'가족관계증명서 또는 주민등록등본', from:'동사무소', cond:'', note:'입소자 기준'},
+  {n:'주민등록증 사본', from:'', cond:'', note:'어르신·보호자'},
+  {n:'연계기록지', from:'', cond:'타 요양원에서 오시는 경우'},
+  {n:'수급자 증명서', from:'', cond:'기초생활수급자인 경우'}
+];
+const ADMIT_ITEMS=[
+  '평상복(상·하) 3벌 이상','속옷·양말 3~5벌','실내화','지팡이·보행보조기','안경','틀니','면도기','화장품',
+  '물병(빨대는 실리콘)','기저귀(착용 시)'
+];
+// 2026 수가표 (설정에서 수정 가능)
+var FEE_TABLE_DEFAULT={
+  year:'2026',
+  daily:{'1등급':93070,'2등급':86340,'3~5등급':81540},
+  // 실제 수가표 본인부담금 (30일/31일)
+  self:{
+    '일반 20%':{'1등급':[558420,577030],'2등급':[518040,535300],'3~5등급':[489240,505540]},
+    '감경 12%':{'1등급':[335050,346220],'2등급':[310820,321180],'3~5등급':[293540,303320]},
+    '감경 8%':{'1등급':[223360,230810],'2등급':[207210,214120],'3~5등급':[195690,202210]},
+    '기초수급자':{'1등급':[0,0],'2등급':[0,0],'3~5등급':[0,0]}
+  },
+  meal:{30:372000,31:384400},
+  mealDay:12400, mealNote:'3식 3,800원 + 간식 2식 1,000원',
+  premiumRoom:0,
+  doctorFee:{'초진':18840,'재진':13370}
+};
+function feeTable(){ return state.feeTable||FEE_TABLE_DEFAULT; }
+function calcFee(grade, burdenKey, days){
+  const ft=feeTable();
+  const idx=(days===30)?0:1;
+  const d=ft.daily[grade]||0;
+  const total=d*days;
+  let self=0;
+  if(ft.self&&ft.self[burdenKey]&&ft.self[burdenKey][grade]) self=ft.self[burdenKey][grade][idx];
+  const meal=(ft.meal&&ft.meal[days])?ft.meal[days]:(ft.mealDay*days);
+  const room=(ft.premiumRoom||0)*days;
+  return {total, self, meal, room, sum:self+meal+room};
+}
+// 초기상담 질문 (11묶음 간략)
+const INIT_SETS=[
+  {g:'시설 안내', chk:true, qs:[
+    {k:'tour', q:'시설 소개·둘러보기', o:['안내함']},
+    {k:'proc', q:'입소 절차·서류 안내', o:['안내함']},
+    {k:'items', q:'준비물 안내', o:['안내함']},
+    {k:'fee', q:'본인부담금·비급여 안내', o:['안내함']},
+    {k:'daily', q:'일과·식사·목욕 일정 안내', o:['안내함']},
+    {k:'visitRule', q:'면회 방법·시간 안내', o:['안내함']},
+    {k:'ptInfo', q:'물리치료·프로그램 운영 안내', o:['안내함']}
+  ]},
+  {g:'등급·급여', qs:[
+    {k:'grade', q:'장기요양등급', o:['1등급','2등급','3등급','4등급','5등급','인지지원','신청 중','없음']},
+    {k:'burden', q:'본인부담 구분', o:['일반 20%','감경 12%','감경 8%','기초수급자','확인 필요']}
+  ]},
+  {g:'식사·영양', qs:[
+    {k:'mealType', q:'식사 형태', o:['일반식','반찬 다진식','죽식','미음','유동식','연하식','모름']},
+    {k:'mealTx', q:'치료식이', o:['없음','당뇨식','저염식','고단백식','체중조절식','모름']},
+    {k:'choke', q:'사레 걸림', o:['없음','가끔','자주','모름']},
+    {k:'avoid', q:'기피식품', o:['없음','있음','모름']},
+    {k:'allergy', q:'알레르기 식품', o:['없음','있음','모름']}
+  ]},
+  {g:'배설', qs:[
+    {k:'urine', q:'소변', o:['양호','요실금','배뇨곤란','유치도뇨관','모름']},
+    {k:'stool', q:'대변', o:['양호','변비','설사','장루','모름']},
+    {k:'diaperUse', q:'기저귀 착용', o:['착용','미착용','모름']},
+    {k:'diaperSize', q:'기저귀 사이즈', o:[]}
+  ]},
+  {g:'질병·약', qs:[
+    {k:'dx', q:'현재 진단명', o:[]},
+    {k:'meds', q:'복용 중인 약', o:[]},
+    {k:'hosp', q:'다니는 병원·진료과', o:[]},
+    {k:'nextVisit', q:'다음 진료일', o:[]},
+    {k:'sore', q:'욕창', o:['없음','있음','모름']}
+  ]},
+  {g:'신체·이동', qs:[
+    {k:'bodyState', q:'상태', o:['자립','준와상','와상','모름']},
+    {k:'move', q:'이동', o:['독립 보행','워커','지팡이','휠체어','침상','모름']},
+    {k:'standHelp', q:'기립·앉기 도움', o:['도움없이','부분도움','완전도움','모름']},
+    {k:'fall3m', q:'최근 3개월 낙상', o:['없음','1~2회','3회 이상','모름']}
+  ]},
+  {g:'인지·행동', qs:[
+    {k:'dementia', q:'치매 진단', o:['없음','있음','모름']},
+    {k:'demMed', q:'치매약 복용', o:['없음','복용 중','모름']},
+    {k:'orient', q:'지남력', o:['양호','때때로 혼란','지남력 없음','모름']},
+    {k:'bpsd', q:'행동증상', o:['없음','배회','망상','환각','반복행동','불안','우울','공격성','모름'], multi:true},
+    {k:'calm', q:'진정되는 방법', o:[]}
+  ]},
+  {g:'의사소통', qs:[
+    {k:'hearing', q:'청력', o:['양호','약간 저하','보청기 사용','거의 안 들림','모름']},
+    {k:'speak', q:'의사표현', o:['가능','단답 가능','어려움','불가','모름']},
+    {k:'callName', q:'선호 호칭', o:[]}
+  ]},
+  {g:'가족·환경', qs:[
+    {k:'mainCare', q:'주수발자(관계)', o:[]},
+    {k:'visitFreq', q:'면회 예상 빈도', o:['주 1회 이상','월 2~3회','월 1회','어려움','모름']},
+    {k:'decider', q:'의사결정권자', o:[]},
+    {k:'emergency', q:'비상연락 (1·2순위)', o:[]}
+  ]},
+  {g:'재활·기능', qs:[
+    {k:'contract', q:'관절구축 부위', o:[]},
+    {k:'paresis', q:'운동장애', o:['없음','우측 상지','좌측 상지','우측 하지','좌측 하지','모름'], multi:true},
+    {k:'prevRehab', q:'이전 재활·물리치료', o:['없음','받았음','모름']}
+  ]},
+  {g:'생활습관·선호', qs:[
+    {k:'sleepTime', q:'기상·취침 시간', o:[]},
+    {k:'religion', q:'종교·종교활동', o:[]},
+    {k:'hobby', q:'좋아하는 활동·음악·TV', o:[]},
+    {k:'dislike', q:'싫어하는 것·피할 것', o:[]}
+  ]},
+  {g:'의향·요구', qs:[
+    {k:'lifeSustain', q:'연명의료 의향', o:['사전연명의료의향서 등록함','가족 의향 있음','미결정','모름']},
+    {k:'elderWant', q:'어르신 본인이 원하는 것', o:[]},
+    {k:'famWant', q:'보호자가 원하는 것', o:[]},
+    {k:'worry', q:'걱정되는 점', o:[]}
+  ]},
+  {g:'상담 결과', qs:[
+    {k:'result', q:'상담 결과', o:['입소 결정','검토 중','타 시설 비교 중','보류','입소 안 함']},
+    {k:'wishDate', q:'입소 희망 시기', o:[]},
+    {k:'noReason', q:'입소 안 하신 이유', o:['비용','위치','다른 시설 선택','재가 유지','병원 입원','시기 미정','기타']},
+    {k:'recontact', q:'재연락 희망 시기', o:['1개월 후','3개월 후','6개월 후','연락 원치 않음','미정']}
+  ]}
+];
+
+// ---- 저장 ----
+function ensureCounsel(){ if(!state.counsels) state.counsels=[]; return state.counsels; }
+function counselById(id){ return (state.counsels||[]).find(c=>c.id===id); }
+function saveCounsel(c){
+  ensureCounsel();
+  const i=state.counsels.findIndex(x=>x.id===c.id);
+  if(i>=0) state.counsels[i]=c; else state.counsels.push(c);
+  save();
+}
+function delCounsel(id){
+  if(!confirm('이 상담 기록을 삭제할까요?')) return;
+  state.counsels=(state.counsels||[]).filter(c=>c.id!==id);
+  save(); counselView='list'; renderCounsel();
+}
+// ---- 목록 ----
+function renderCounsel(){
+  const box=document.getElementById('counsel-body'); if(!box) return;
+  ensureCounsel();
+  if(counselView==='new') return renderCounselForm(box, null, counselNewType);
+  if(counselView==='detail') return renderCounselForm(box, counselById(counselEditId), null);
+  if(counselView==='lead') return renderLeadList(box);
+  const list=(state.counsels||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const leads=list.filter(c=>c.type==='initial'&&c.fields&&c.fields.result==='입소 안 함');
+  const main=list.filter(c=>!(c.type==='initial'&&c.fields&&c.fields.result==='입소 안 함'));
+  let h='<div class="card"><div class="card-title">💬 새 상담 작성</div><div class="cns-new">'+
+    Object.keys(COUNSEL_TYPES).map(k=>{const t=COUNSEL_TYPES[k];
+      return '<button class="cns-type" onclick="startCounsel(\''+k+'\')"><span class="cns-ic">'+t.icon+'</span><span class="cns-tn">'+t.name+'</span><span class="cns-td">'+t.target+'</span></button>';
+    }).join('')+'</div></div>';
+  h+='<div class="card"><div class="card-title">🌱 잠재 고객 <span class="count">'+leads.length+'</span>'+
+     '<button class="brief-collapse no-print" onclick="counselView=\'lead\';renderCounsel();">목록 보기</button></div>'+
+     '<p class="hint">입소하지 않으신 분들의 상담 기록입니다. 재연락 시기가 되면 알려드립니다.</p></div>';
+  h+='<div class="card"><div class="card-title">상담 기록 <span class="count">'+main.length+'</span></div>'+
+     '<input type="text" class="modal-search" placeholder="🔍 어르신·보호자 이름으로 검색" oninput="filterList(this,\'cns-list\')">'+
+     '<div class="cns-list" id="cns-list">';
+  if(!main.length) h+='<div class="empty">아직 상담 기록이 없어요. 위에서 새 상담을 시작하세요.</div>';
+  main.forEach(c=>{
+    const t=COUNSEL_TYPES[c.type]||{name:c.type,icon:'💬'};
+    const nm=c.elderName||'(이름 미입력)';
+    const key=(nm+' '+(c.targetName||'')).toLowerCase();
+    h+='<button class="cns-row" data-key="'+esc(key)+'" onclick="openCounsel('+c.id+')">'+
+      '<span class="cns-row-ic">'+t.icon+'</span>'+
+      '<span class="cns-row-main"><b>'+esc(nm)+'</b>'+(c.week?' <span class="cns-week">'+c.week+'주차</span>':'')+
+      '<span class="cns-row-sub">'+t.name+(c.targetName?' · '+esc(c.targetName):'')+'</span></span>'+
+      '<span class="cns-row-date">'+esc(c.date||'')+'</span></button>';
+  });
+  h+='</div></div>';
+  box.innerHTML=h;
+}
+function startCounsel(type){ counselNewType=type; counselEditId=null; counselView='new'; renderCounsel(); }
+function openCounsel(id){ counselEditId=id; counselView='detail'; renderCounsel(); }
+function backCounsel(){ counselView='list'; counselEditId=null; guideOpen=false; renderGuideDrawer(); renderCounsel(); }
+// ---- 잠재고객 ----
+function renderLeadList(box){
+  const leads=(state.counsels||[]).filter(c=>c.type==='initial'&&c.fields&&c.fields.result==='입소 안 함')
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  let h='<div class="card"><button class="btn" onclick="backCounsel()">‹ 상담 목록</button></div>';
+  h+='<div class="card"><div class="card-title">🌱 잠재 고객 <span class="count">'+leads.length+'</span></div>'+
+     '<p class="hint">입소하지 않으셨지만 다시 연락드릴 수 있는 분들입니다.</p><div class="cns-list">';
+  if(!leads.length) h+='<div class="empty">아직 없습니다.</div>';
+  leads.forEach(c=>{
+    const f=c.fields||{};
+    h+='<div class="lead-card"><div class="lead-top"><b>'+esc(c.elderName||'(이름 미입력)')+'</b>'+
+      '<span class="lead-date">'+esc(c.date||'')+' 상담</span></div>'+
+      '<div class="lead-meta">보호자 '+esc(c.targetName||'—')+(c.targetRel?' ('+esc(c.targetRel)+')':'')+
+      (c.targetTel?' · '+esc(c.targetTel):'')+'</div>'+
+      '<div class="lead-meta">사유: '+esc(val1(f.noReason)||'—')+' · 재연락: '+esc(val1(f.recontact)||'미정')+'</div>'+
+      (c.leadMemo?'<div class="lead-memo">'+esc(c.leadMemo)+'</div>':'')+
+      '<div class="lead-btns"><button class="btn" onclick="openCounsel('+c.id+')">상담 내용 보기</button>'+
+      '<button class="btn teal" onclick="leadToElder('+c.id+')">＋ 어르신으로 등록</button></div></div>';
+  });
+  h+='</div></div>';
+  box.innerHTML=h;
+}
+function leadToElder(id){
+  const c=counselById(id); if(!c) return;
+  if(!c.elderName){ alert('어르신 성함이 입력되어 있어야 등록할 수 있어요.'); return; }
+  if(!confirm(c.elderName+' 어르신을 정식 어르신으로 등록할까요?\n상담에서 받은 정보가 함께 들어갑니다.')) return;
+  const f=c.fields||{};
+  const e={id:Date.now(), name:c.elderName, room:'', status:'치료중',
+    gender:c.elderGender||'', age:c.elderAge||'', grade:val1(f.grade)||'', diag:val1(f.dx)||'',
+    admit:today, visit:'치료실', plan:[], risks:[], days:[], slots:{}, fromCounsel:c.id};
+  state.elders.push(e);
+  c.converted=true; c.convertedElderId=e.id;
+  save(); alert('등록했습니다. 어르신 탭에서 확인하세요.');
+  renderElders(); backCounsel();
+}
+function val1(v){ return Array.isArray(v)?v.join('·'):(v||''); }
+
+// ---- 작성 화면 ----
+function renderCounselForm(box, c, newType){
+  const type=c?c.type:newType;
+  const T=COUNSEL_TYPES[type]||{};
+  if(!c){
+    c={id:Date.now(), type, date:today, week:(type==='week'?1:null), fields:{}, docs:{}, items:{},
+      place:T.place||'', method:'면담', div:(type==='week'?'생활(요양)':''), staff:'', elderName:'',
+      targetName:'', targetRel:'', targetTel:'', content:'', action:'', memo:'', leadMemo:'',
+      carepoDone:false, signDone:false};
+  }
+  const f=c.fields||{};
+  let h='<div class="card"><button class="btn" onclick="backCounsel()">‹ 목록</button>'+
+    (c.id&&state.counsels&&state.counsels.some(x=>x.id===c.id)?'<button class="btn danger-btn" style="float:right" onclick="delCounsel('+c.id+')">삭제</button>':'')+'</div>';
+  h+='<div class="card"><div class="card-title">'+(T.icon||'')+' '+(T.name||'')+
+    (type==='week'?' <span class="cns-week">'+(c.week||1)+'주차</span>':'')+'</div>'+
+    '<p class="hint">'+(T.desc||'')+(T.carepo?' <b>케어포에 입력하는 기록입니다.</b>':' <b>내부 보관용입니다. 케어포에는 입력하지 않습니다.</b>')+'</p>';
+  // 공통 헤더
+  h+='<div class="cns-head">'+
+    fld('상담일자','<input type="date" value="'+(c.date||today)+'" onchange="cnsSet('+c.id+',\'date\',this.value)">')+
+    fld('시간','<input type="text" placeholder="예: 14:10~14:30" value="'+esc(c.time||'')+'" onchange="cnsSet('+c.id+',\'time\',this.value)">')+
+    fld('어르신 성함','<input type="text" value="'+esc(c.elderName||'')+'" onchange="cnsSet('+c.id+',\'elderName\',this.value)" placeholder="어르신 이름">')+
+    fld('상담대상자','<input type="text" value="'+esc(c.targetName||'')+'" onchange="cnsSet('+c.id+',\'targetName\',this.value)" placeholder="이름">')+
+    fld('관계','<input type="text" value="'+esc(c.targetRel||'')+'" onchange="cnsSet('+c.id+',\'targetRel\',this.value)" placeholder="본인/자녀 등">')+
+    fld('연락처','<input type="text" value="'+esc(c.targetTel||'')+'" onchange="cnsSet('+c.id+',\'targetTel\',this.value)">')+
+    fld('상담방법', sel(COUNSEL_METHOD, c.method, c.id, 'method'))+
+    fld('장소', sel(COUNSEL_PLACE, c.place, c.id, 'place'))+
+    (T.carepo?fld('상담구분', sel(COUNSEL_DIV, c.div, c.id, 'div')):'')+
+    fld('상담직원','<input type="text" value="'+esc(c.staff||'')+'" onchange="cnsSet('+c.id+',\'staff\',this.value)" placeholder="작성자">')+
+    '</div>';
+  if(type==='week'){
+    h+='<div class="cns-weekbtns">'+[1,2,3,4].map(w=>'<button class="wk-btn'+((c.week||1)===w?' on':'')+'" onclick="cnsSet('+c.id+',\'week\','+w+')">'+w+'주차</button>').join('')+'</div>';
+  }
+  h+='</div>';
+  // 보호자 안내 자료 (초기·입소전 상담)
+  if(type==='initial'||type==='pre'){
+    const op=!!c.guideExpanded;
+    h+='<div class="card gd-card"><div class="card-title">📖 보호자 안내 자료 '+
+      '<button class="brief-collapse no-print" onclick="cnsSet('+c.id+',\'guideExpanded\','+(op?'false':'true')+');renderCounsel();">'+(op?'▾ 접기':'▸ 펼치기')+'</button>'+
+      '<button class="brief-collapse no-print" onclick="toggleGuideDrawer()" title="옆에 띄워두고 작성하기">📌 옆에 띄우기</button></div>'+
+      (op?guideCardHtml(c):'<div class="brief-collapsed-hint">서류 · 준비물 · 비용 · 생활 안내 — 펼쳐서 보며 설명하세요. 설명한 항목을 체크하면 상담 문장에 반영됩니다.</div>')+'</div>';
+  }
+  // 질문 영역
+  if(type==='week') h+=weekQsHtml(c);
+  else if(type==='initial') h+=initQsHtml(c);
+  else if(type==='pre') h+=preQsHtml(c);
+  else h+=freeQsHtml(c);
+  // 문장 생성
+  h+='<div class="card"><div class="card-title">📝 상담내용 '+
+    '<button class="note-gen simple no-print" onclick="genCounselText('+c.id+')">문장 만들기</button>'+
+    '<button class="note-gen copy no-print" onclick="copyField('+c.id+',\'content\',this)">📋 복사</button></div>'+
+    '<div class="cns-draft-warn">자동 생성된 초안입니다. <b>반드시 검토 후 수정</b>하세요.</div>'+
+    '<textarea class="note-ta" rows="10" onchange="cnsSet('+c.id+',\'content\',this.value)">'+esc(c.content||'')+'</textarea></div>';
+  h+='<div class="card"><div class="card-title">🛠 조치내용 '+
+    '<button class="note-gen copy no-print" onclick="copyField('+c.id+',\'action\',this)">📋 복사</button></div>'+
+    '<textarea class="note-ta" rows="6" onchange="cnsSet('+c.id+',\'action\',this.value)">'+esc(c.action||'')+'</textarea></div>';
+  if(T.carepo){
+    h+='<div class="card"><div class="card-title">✅ 처리 상태</div><div class="cns-chk">'+
+      '<label><input type="checkbox"'+(c.carepoDone?' checked':'')+' onchange="cnsSet('+c.id+',\'carepoDone\',this.checked)"> 케어포 입력 완료</label>'+
+      '<label><input type="checkbox"'+(c.signDone?' checked':'')+' onchange="cnsSet('+c.id+',\'signDone\',this.checked)"> 설명·서명 완료</label>'+
+      '</div></div>';
+  }
+  if(type==='initial'&&val1(f.result)==='입소 안 함'){
+    h+='<div class="card"><div class="card-title">🌱 잠재 고객 메모</div>'+
+      '<p class="hint">나중에 다시 연락드릴 때 참고할 내용을 적어두세요.</p>'+
+      '<textarea class="note-ta" rows="3" onchange="cnsSet('+c.id+',\'leadMemo\',this.value)">'+esc(c.leadMemo||'')+'</textarea></div>';
+  }
+  box.innerHTML=h;
+  if(!state.counsels.some(x=>x.id===c.id)){ saveCounsel(c); counselEditId=c.id; counselView='detail'; }
+}
+function fld(label, inner){ return '<label class="cns-fld"><span>'+label+'</span>'+inner+'</label>'; }
+function sel(opts, cur, id, key){
+  return '<select onchange="cnsSet('+id+',\''+key+'\',this.value)"><option value="">-선택-</option>'+
+    opts.map(o=>'<option'+(cur===o?' selected':'')+'>'+o+'</option>').join('')+'</select>';
+}
+function cnsSet(id, key, v){
+  const c=counselById(id); if(!c) return;
+  c[key]=v; saveCounsel(c);
+  if(key==='week'||key==='fields') renderCounsel();
+  if(key==='week') renderCounsel();
+}
+function cnsSetField(id, k, v, multi){
+  const c=counselById(id); if(!c) return;
+  if(!c.fields) c.fields={};
+  if(multi){
+    let arr=c.fields[k]; if(!Array.isArray(arr)) arr=arr?[arr]:[];
+    const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v);
+    if(arr.length) c.fields[k]=arr; else delete c.fields[k];
+  } else {
+    if(c.fields[k]===v) delete c.fields[k]; else c.fields[k]=v;
+  }
+  saveCounsel(c); renderCounsel();
+}
+function cnsSetMemo(id, k, v){
+  const c=counselById(id); if(!c) return;
+  if(!c.memos) c.memos={};
+  if(v&&v.trim()) c.memos[k]=v.trim(); else delete c.memos[k];
+  saveCounsel(c);
+}
+function qBlock(c, q, multi){
+  const f=c.fields||{}, m=c.memos||{};
+  let cur=f[q.k]; if(!Array.isArray(cur)) cur=cur?[cur]:[];
+  let h='<div class="cq"><div class="cq-q">'+q.q+'</div>';
+  if(q.o&&q.o.length){
+    h+='<div class="cq-opts">'+q.o.map(o=>'<button class="cq-opt'+(cur.indexOf(o)>=0?' on':'')+(o==='모름'||o==='확인 필요'?' unk':'')+
+      '" onclick="cnsSetField('+c.id+',\''+q.k+'\',\''+esc(o)+'\','+(q.multi||multi?'true':'false')+')">'+o+'</button>').join('')+'</div>';
+  }
+  h+='<input class="cq-memo" type="text" placeholder="메모 (구체적으로)" value="'+esc(m[q.k]||'')+'" onchange="cnsSetMemo('+c.id+',\''+q.k+'\',this.value)"></div>';
+  return h;
+}
+function weekQsHtml(c){
+  const w=c.week||1, S=WEEK_SETS[w];
+  let h='<div class="card"><div class="card-title">'+S.title+'</div>'+
+    '<div class="cns-focus">'+S.focus+'</div>'+
+    '<div class="cns-guide"><b>작성 안내</b><br>'+S.guide+'</div>';
+  S.qs.forEach(q=>{ h+=qBlock(c,q); });
+  h+='<div class="cq-div">매주 공통</div>';
+  WEEK_COMMON.forEach(q=>{ h+=qBlock(c,q); });
+  h+='</div>';
+  return h;
+}
+function initQsHtml(c){
+  let h='';
+  INIT_SETS.forEach((g,gi)=>{
+    h+='<div class="card"><div class="card-title">'+(gi+1)+'. '+g.g+'</div>';
+    if(g.g==='상담 결과') h+='<p class="hint">상담 결과가 <b>입소 안 함</b>이면 잠재 고객 목록으로 보관됩니다.</p>';
+    g.qs.forEach(q=>{ h+=qBlock(c,q); });
+    h+='</div>';
+  });
+  return h;
+}
+
+function preQsHtml(c){
+  const f=c.fields||{}, d=c.docs||{}, it=c.items||{};
+  let h='<div class="card"><div class="card-title">1. 입소 실무 확정</div>';
+  [{k:'admitDate',q:'입소 예정일',o:[]},{k:'admitTime',q:'입소 예정 시간',o:[]},
+   {k:'roomNo',q:'배정 호실',o:[]},{k:'comeWith',q:'동행하실 분',o:[]},
+   {k:'transport',q:'당일 이동 방법',o:['가족 차량','구급차','시설 차량','기타']}].forEach(q=>{h+=qBlock(c,q);});
+  h+='</div>';
+  // 서류
+  h+='<div class="card"><div class="card-title">2. 서류 확인</div>'+
+     '<p class="hint">체크하지 않은 서류는 <b>할 일</b>로 등록해 입소 당일 전에 챙기세요.</p><div class="doc-list">';
+  ADMIT_DOCS.forEach((doc,i)=>{
+    const st=d[i]||{};
+    h+='<div class="doc-row'+(st.ok?' ok':'')+'">'+
+      '<label class="doc-main"><input type="checkbox"'+(st.ok?' checked':'')+' onchange="cnsDoc('+c.id+','+i+',\'ok\',this.checked)">'+
+      '<span class="doc-n">'+esc(doc.n)+'</span></label>'+
+      '<div class="doc-sub">'+(doc.from?esc(doc.from):'')+(doc.cond?' · <b>'+esc(doc.cond)+'</b>':'')+(doc.note?'<br>'+esc(doc.note):'')+'</div>'+
+      (doc.expire?'<div class="doc-exp">발급일 <input type="date" value="'+(st.issued||'')+'" onchange="cnsDoc('+c.id+','+i+',\'issued\',this.value)">'+docExpireMsg(st.issued, f.admitDate, doc.expire)+'</div>':'')+
+      '</div>';
+  });
+  h+='</div></div>';
+  // 준비물
+  h+='<div class="card"><div class="card-title">3. 준비물 안내</div><div class="item-list">';
+  ADMIT_ITEMS.forEach((n,i)=>{
+    h+='<label class="item-row'+(it[i]?' ok':'')+'"><input type="checkbox"'+(it[i]?' checked':'')+' onchange="cnsItem('+c.id+','+i+',this.checked)">'+esc(n)+'</label>';
+  });
+  h+='</div><p class="hint">치약·칫솔·휴지 등 생활필수품은 요양원에서 제공합니다. 옷에는 이름을 표기해 주세요. 귀중품은 보호자께서 보관해 주세요.</p></div>';
+  // 어르신 정보 (초기상담과 동일 세트)
+  h+='<div class="card"><div class="card-title">4. 어르신 정보 상세 확인</div>'+
+     '<p class="hint">초기상담에서 확인하지 못한 항목을 이번에 채워주세요. 여기서 받은 정보가 <b>욕구사정</b>으로 이어집니다.</p></div>';
+  INIT_SETS.slice(2,12).forEach((g,gi)=>{
+    h+='<div class="card"><div class="card-title">'+g.g+'</div>';
+    g.qs.forEach(q=>{ h+=qBlock(c,q); });
+    h+='</div>';
+  });
+  // 비용
+  h+=feeHtml(c);
+  // 의료·응급
+  h+='<div class="card"><div class="card-title">의료·응급</div>';
+  [{k:'lifeSustain',q:'연명의료 의향',o:['사전연명의료의향서 등록함','가족 의향 있음','미결정']},
+   {k:'erHosp',q:'응급 시 이송 희망 병원',o:[]},
+   {k:'decider',q:'의사결정권자',o:[]},
+   {k:'emergency',q:'비상연락 (1·2순위)',o:[]}].forEach(q=>{h+=qBlock(c,q);});
+  h+='</div>';
+  // 생활 안내
+  h+='<div class="card"><div class="card-title">시설 생활 안내</div>';
+  [{k:'gDaily',q:'일과·식사·목욕 일정 안내',o:['안내함']},
+   {k:'gVisit',q:'면회 방법·시간 안내',o:['안내함']},
+   {k:'gOut',q:'외출·외박 절차 안내',o:['안내함']},
+   {k:'gPt',q:'물리치료·프로그램 안내',o:['안내함']},
+   {k:'famReq',q:'보호자 요청사항·당부',o:[]}].forEach(q=>{h+=qBlock(c,q);});
+  h+='</div>';
+  return h;
+}
+function docExpireMsg(issued, admitDate, days){
+  if(!issued) return '';
+  const base=admitDate&&/^\d{4}-\d{2}-\d{2}$/.test(admitDate)?admitDate:today;
+  const diff=Math.round((new Date(base+'T00:00:00')-new Date(issued+'T00:00:00'))/86400000);
+  if(diff>days) return '<span class="doc-bad">⚠ 입소일 기준 '+diff+'일 전 발급 — 재발급 필요('+days+'일 이내)</span>';
+  return '<span class="doc-ok">✓ 유효 ('+diff+'일 전 발급)</span>';
+}
+function cnsDoc(id,i,k,v){ const c=counselById(id); if(!c) return; if(!c.docs) c.docs={}; if(!c.docs[i]) c.docs[i]={}; c.docs[i][k]=v; saveCounsel(c); renderCounsel(); }
+function cnsItem(id,i,v){ const c=counselById(id); if(!c) return; if(!c.items) c.items={}; if(v) c.items[i]=true; else delete c.items[i]; saveCounsel(c); }
+function feeHtml(c){
+  const f=c.fields||{}, ft=feeTable();
+  const grade=val1(f.feeGrade)||'', bd=val1(f.feeBurden)||'', days=parseInt(val1(f.feeDays)||'31',10);
+  let calc=null;
+  if(grade&&bd) calc=calcFee(grade,bd,days);
+  let h='<div class="card"><div class="card-title">💰 비용 안내 <span class="ba-sub">('+ft.year+' 수가 기준)</span></div>'+
+    '<div class="fee-sel">'+
+    '<div class="cq-opts">'+['1등급','2등급','3~5등급'].map(g=>'<button class="cq-opt'+(grade===g?' on':'')+'" onclick="cnsSetField('+c.id+',\'feeGrade\',\''+g+'\',false)">'+g+'</button>').join('')+'</div>'+
+    '<div class="cq-opts">'+['일반 20%','감경 12%','감경 8%','기초수급자'].map(b=>'<button class="cq-opt'+(bd===b?' on':'')+'" onclick="cnsSetField('+c.id+',\'feeBurden\',\''+b+'\',false)">'+b+'</button>').join('')+'</div>'+
+    '<div class="cq-opts">'+['30','31'].map(d=>'<button class="cq-opt'+(String(days)===d?' on':'')+'" onclick="cnsSetField('+c.id+',\'feeDays\',\''+d+'\',false)">'+d+'일</button>').join('')+'</div>'+
+    '</div>';
+  if(calc){
+    h+='<div class="fee-box">'+
+      '<div class="fee-line"><span>장기요양급여 본인부담금</span><b>'+won(calc.self)+'</b></div>'+
+      '<div class="fee-line"><span>식대·간식비 (1일 '+won(ft.mealDay)+')</span><b>'+won(calc.meal)+'</b></div>'+
+      (calc.room?'<div class="fee-line"><span>상급침실료</span><b>'+won(calc.room)+'</b></div>':'')+
+      '<div class="fee-line total"><span>본인부담 총액</span><b>'+won(calc.sum)+'</b></div>'+
+      '<div class="fee-note">※ 계약의사 진료비(초진 '+won(ft.doctorFee['초진'])+' · 재진 '+won(ft.doctorFee['재진'])+')와 의료비(약제비 등)는 별도입니다.</div>'+
+      '</div>';
+  } else h+='<div class="hint">등급과 본인부담 구분을 고르면 금액이 계산됩니다.</div>';
+  h+='<div class="cq"><div class="cq-q">비용 안내 여부</div><div class="cq-opts">'+
+     ['설명함','동의하심','재확인 필요'].map(o=>{const cur=val1(f.feeExplain);
+       return '<button class="cq-opt'+(cur===o?' on':'')+'" onclick="cnsSetField('+c.id+',\'feeExplain\',\''+o+'\',false)">'+o+'</button>';}).join('')+
+     '</div></div></div>';
+  return h;
+}
+function won(n){ return (n||0).toLocaleString('ko-KR')+'원'; }
+function freeQsHtml(c){
+  const divQ={'물리(작업)':[{k:'pain',q:'통증',o:['없음','있음']},{k:'move',q:'이동 상태',o:['독립','워커','지팡이','휠체어','침상']},{k:'ptReq',q:'재활 요구',o:[]},{k:'fall',q:'낙상',o:['없음','있음']}],
+    '간호':[{k:'med',q:'약 관련',o:[]},{k:'dz',q:'질병·증상',o:[]},{k:'wound',q:'상처·피부',o:['없음','있음']},{k:'hosp',q:'병원 진료',o:[]}],
+    '영양(식사)':[{k:'amt',q:'식사량',o:['양호','감소','거의 못 드심']},{k:'form',q:'식사 형태',o:['일반식','다진식','죽식','유동식']},{k:'avoid',q:'기피식품',o:['없음','있음']},{k:'weight',q:'체중 변화',o:['증가','유지','감소']}],
+    '생활(요양)':[{k:'adl',q:'일상생활',o:[]},{k:'bowel',q:'배설',o:['양호','문제 있음']},{k:'bath',q:'목욕',o:['양호','거부']},{k:'sleep',q:'수면',o:['양호','불량']}],
+    '프로그램':[{k:'part',q:'참여도',o:['적극적','보통','거부']},{k:'pref',q:'선호 활동',o:[]}],
+    '행정':[{k:'fee',q:'비용·계약',o:[]},{k:'doc',q:'서류',o:[]}],
+    '기타':[{k:'etc',q:'내용',o:[]}]};
+  const qs=divQ[c.div]||[{k:'topic',q:'상담 주제',o:[]}];
+  let h='<div class="card"><div class="card-title">상담 내용 확인</div>';
+  if(!c.div) h+='<p class="hint">위에서 <b>상담구분</b>을 고르면 그에 맞는 질문이 나타납니다.</p>';
+  qs.forEach(q=>{ h+=qBlock(c,q); });
+  h+=qBlock(c,{k:'req',q:'요구·희망사항',o:[]});
+  h+=qBlock(c,{k:'actionTaken',q:'조치',o:['타 부서 전달','계획 반영 필요','경과 관찰','안내·설명','해결됨'],multi:true});
+  h+='</div>';
+  if(c.type==='end'){
+    h+='<div class="card"><div class="card-title">🚪 연계기록 (지표 39)</div>';
+    [{k:'endDate',q:'퇴소일',o:[]},{k:'endGrade',q:'등급',o:['1등급','2등급','3등급','4등급','5등급']},
+     {k:'endState',q:'심신기능 상태',o:[]},{k:'endGave',q:'제공한 급여',o:[]},
+     {k:'endPlan',q:'퇴소 후 서비스 이용계획',o:[]},{k:'endReason',q:'퇴소 사유',o:['가정 복귀','병원 입원','타 시설 이용','사망','기타']}].forEach(q=>{h+=qBlock(c,q);});
+    h+='</div>';
+  }
+  return h;
+}
+
+// ---- 문장 자동 생성 ----
+function kdate(d){ if(!d) return ''; const p=d.split('-'); return p[0]+'년 '+parseInt(p[1],10)+'월 '+parseInt(p[2],10)+'일'; }
+function cnsHeadSent(c){
+  const T=COUNSEL_TYPES[c.type]||{};
+  let s=kdate(c.date);
+  if(c.time) s+=' '+c.time;
+  if(c.place) s+=' '+c.place+'에서';
+  const who=(c.targetName?c.targetName+' 님':'')+(c.targetRel?'('+c.targetRel+')':'');
+  if(c.type==='week') s+=' 수급자 본인과 면담을 실시하였습니다.';
+  else if(who) s+=' '+who+'과 '+(T.name||'상담')+'을 실시하였습니다.';
+  else s+=' '+(T.name||'상담')+'을 실시하였습니다.';
+  return s;
+}
+function ans(c,k){ const f=c.fields||{}; const v=f[k]; return Array.isArray(v)?v.join('·'):(v||''); }
+function memo(c,k){ return (c.memos||{})[k]||''; }
+function pair(c,k,label,tmpl){
+  const a=ans(c,k), m=memo(c,k);
+  if(!a&&!m) return '';
+  if(a==='모름'||a==='확인 필요') return '';
+  let s=tmpl?tmpl(a,m):(label+'에 대해서는 '+(a||m)+(a&&m?'하다고 하셨으며, '+m+'라고 말씀하셨습니다.':'라고 하셨습니다.'));
+  return s;
+}
+function genCounselText(id){
+  const c=counselById(id); if(!c) return;
+  let out='';
+  if(c.type==='week') out=genWeekText(c);
+  else if(c.type==='initial') out=genInitText(c);
+  else if(c.type==='pre') out=genPreText(c);
+  else out=genFreeText(c);
+  c.content=out;
+  c.action=genActionText(c);
+  saveCounsel(c);
+  // 중복 문장 경고
+  const dup=(state.counsels||[]).filter(x=>x.id!==c.id&&x.content&&x.content===out);
+  renderCounsel();
+  if(dup.length) alert('⚠️ 다른 어르신 기록과 문장이 같습니다.\n반드시 수정해 주세요. (평가에서 복사·붙여넣기 기록은 불인정될 수 있습니다)');
+}
+function toSent(v){
+  if(!v) return '';
+  v=String(v).trim();
+  const MAP={'편안함':'편안하시다','아직 낯섦':'아직 낯설다','많이 불편함':'많이 불편하시다',
+    '잘 주무심':'잘 주무신다','자주 깨심':'자주 깨신다','못 주무심':'잘 못 주무신다',
+    '잘 드심':'잘 드신다','조금 드심':'조금 드신다','거의 못 드심':'거의 못 드신다',
+    '불편 없음':'불편이 없으시다','도움 필요':'도움이 필요하시다','불안해하심':'불안해하신다',
+    '편하게 느끼심':'편하게 느끼신다','어색해하심':'어색해하신다','갈등 있음':'갈등이 있으시다',
+    '없음':'없으시다','가끔':'가끔 하신다','자주 말씀하심':'자주 말씀하신다',
+    '늘었음':'늘었다','비슷':'비슷하다','줄었음':'줄었다','맞음':'입에 맞으시다','보통':'보통이시다','안 맞음':'입에 맞지 않으시다',
+    '좋아짐':'좋아지셨다','나빠짐':'나빠지셨다','규칙적':'규칙적이시다','변비':'변비가 있으시다','설사':'설사가 있으시다',
+    '잘 맞음':'잘 맞으시다','조정 필요':'조정이 필요하시다','편안':'편안해하신다','부담스러워하심':'부담스러워하신다',
+    '있음':'있으시다','적극적':'적극적으로 참여하신다','거부':'참여를 거부하신다',
+    '만족':'만족하신다','힘들어하심':'힘들어하신다','잘 지내심':'잘 지내신다','무관심':'무관심하시다','갈등':'갈등이 있으시다',
+    '활동적':'활동적으로 지내신다','주로 누워계심':'주로 누워서 지내신다','밝음':'밝으시다','가라앉음':'가라앉아 계시다',
+    '적응 잘 됨':'적응이 잘 되셨다','적응 중':'적응 중이시다','어려움':'어려움이 있으시다',
+    '필요':'필요하다','다녀감':'다녀가셨다','예정':'예정되어 있다','아직 없음':'아직 없다'};
+  if(MAP[v]) return MAP[v];
+  if(/(니다|습니다|하심|하셨|입니다)$/.test(v)) return v;
+  if(/(심|음|됨|함)$/.test(v)) return v.replace(/심$/,'신다').replace(/음$/,'다').replace(/됨$/,'된다').replace(/함$/,'한다');
+  return v+'이다';
+}
+const QLABEL={'지내시기 어떠신지':'지내시는 소감','한 달 지내보시니':'한 달간 지내신 소감','직원·같은 방 어르신':'직원 및 같은 방 어르신과의 관계','급여제공계획 변경 필요':null,'불편한 점':'불편사항'};
+function sentOf(q, a, m){
+  if(QLABEL.hasOwnProperty(q)){ if(QLABEL[q]===null) return ''; q=QLABEL[q]; }
+  if(a&&m) return q+'에 대해서는 '+toSent(a)+'고 하셨으며, '+mSent(m)+'.';
+  if(a) return q+'에 대해서는 '+toSent(a)+'고 표현하셨습니다.';
+  return q+'에 대해서는 '+mSent(m)+'.';
+}
+function mSent(m){
+  m=String(m||'').trim().replace(/[.\s]+$/,'');
+  if(/(습니다|입니다)$/.test(m)) return m;
+  if(/하심$/.test(m)) return m.replace(/하심$/,'하셨습니다');
+  if(/(가심|오심|계심|주심|드심|내심)$/.test(m)) return m.replace(/심$/,'셨습니다');
+  if(/(하셨음|했음)$/.test(m)) return m.replace(/(하셨음|했음)$/,'하셨습니다');
+  if(/있음$/.test(m)) return m.replace(/있음$/,'있습니다');
+  if(/없음$/.test(m)) return m.replace(/없음$/,'없습니다');
+  if(/(음|됨|함)$/.test(m)) return m.replace(/음$/,'습니다').replace(/됨$/,'되었습니다').replace(/함$/,'하였습니다');
+  return m+'라고 말씀하셨습니다';
+}
+function genWeekText(c){
+  const w=c.week||1, S=WEEK_SETS[w];
+  const ps=[];
+  ps.push(cnsHeadSent(c)+' 입소 '+w+'주차 적응 상태를 확인하기 위한 면담입니다.');
+  const lines=[];
+  S.qs.forEach(q=>{
+    const a=ans(c,q.k), m=memo(c,q.k);
+    if(!a&&!m) return;
+    if(a==='모름') return;
+    const ln=sentOf(q.q, a, m); if(ln) lines.push(ln);
+  });
+  if(lines.length) ps.push(lines.join(' '));
+  // 공통
+  const vis=ans(c,'visit'), visM=memo(c,'visit');
+  if(vis||visM){
+    let t='가족 면회와 관련하여, ';
+    if(vis==='다녀감') t+='최근 가족이 다녀가셨다고 하셨습니다.';
+    else if(vis==='예정') t+='가족 면회가 예정되어 있다고 하셨습니다.';
+    else t+='아직 면회는 없었다고 하셨습니다.';
+    if(visM) t=t.replace(/최근 가족이 다녀가셨다고 하셨습니다\.$/, mSent(visM)+'.');
+    ps.push(t);
+  }
+  const tr=memo(c,'trouble');
+  if(tr) ps.push('그 외 불편사항으로는 '+mSent(tr)+'.');
+  else ps.push('그 외 특별한 불편사항은 없다고 하셨습니다.');
+  if(w===4 && ans(c,'planChange')==='필요'){
+    ps.push('면담 결과 수급자의 요구가 확인되어 급여제공계획 변경이 필요한 것으로 판단됩니다.');
+  }
+  return ps.join('\n\n');
+}
+function genInitText(c){
+  const f=c.fields||{};
+  const ps=[];
+  ps.push(cnsHeadSent(c)+' 입소를 문의하신 단계로, 시설 안내와 함께 어르신의 상태를 확인하였습니다.');
+  const guided=['tour','proc','items','fee','daily','visitRule','ptInfo'].filter(k=>ans(c,k));
+  if(guided.length){
+    const nm={tour:'시설 소개',proc:'입소 절차와 제출 서류',items:'준비물',fee:'본인부담금 및 비급여 항목',daily:'일과와 식사·목욕 일정',visitRule:'면회 방법',ptInfo:'물리치료 및 프로그램 운영'};
+    ps.push(guided.map(k=>nm[k]).join(', ')+'에 대하여 안내드렸습니다.');
+  }
+  const g=ans(c,'grade'), b=ans(c,'burden');
+  if(g||b) ps.push('장기요양등급은 '+(g||'확인 필요')+'이며, 본인부담 구분은 '+(b||'확인 필요')+'입니다.');
+  const body=[];
+  const add=(t)=>{ if(t) body.push(t); };
+  add(joinInfo(c,[['dx','진단명은'],['meds','복용 중인 약은'],['hosp','다니는 병원은'],['nextVisit','다음 진료일은']],'건강 상태와 관련하여, '));
+  add(joinInfo(c,[['bodyState','상태는'],['move','이동은'],['standHelp','기립·앉기는'],['fall3m','최근 3개월 낙상은']],'신체·이동 기능은 '));
+  add(joinInfo(c,[['mealType','식사 형태는'],['mealTx','치료식이는'],['choke','사레는'],['avoid','기피식품은'],['allergy','알레르기는']],'식사와 관련하여, '));
+  add(joinInfo(c,[['urine','소변은'],['stool','대변은'],['diaperUse','기저귀는']],'배설 상태는 '));
+  add(joinInfo(c,[['dementia','치매 진단은'],['demMed','치매약 복용은'],['orient','지남력은'],['bpsd','행동증상은'],['calm','진정 방법은']],'인지·행동 상태는 '));
+  add(joinInfo(c,[['hearing','청력은'],['speak','의사표현은'],['callName','선호 호칭은']],'의사소통은 '));
+  add(joinInfo(c,[['mainCare','주수발자는'],['visitFreq','면회 예상은'],['decider','의사결정권자는']],'가족 사항은 '));
+  add(joinInfo(c,[['sleepTime','기상·취침은'],['religion','종교는'],['hobby','좋아하시는 활동은'],['dislike','피할 것은']],'생활습관과 선호는 '));
+  body.forEach(t=>ps.push(t));
+  const ls=ans(c,'lifeSustain');
+  if(ls&&ls!=='모름') ps.push('연명의료에 관하여는 '+ls+'으로 확인되었습니다.'+(memo(c,'lifeSustain')?' '+memo(c,'lifeSustain')+'라고 하셨습니다.':''));
+  const ew=memo(c,'elderWant'), fw=memo(c,'famWant'), wo=memo(c,'worry');
+  const reqs=[];
+  if(ew) reqs.push('어르신 본인은 '+ew+'라고 표현하셨습니다.');
+  if(fw) reqs.push('보호자께서는 '+fw+'를 요청하셨습니다.');
+  if(wo) reqs.push('걱정되는 점으로는 '+wo+'를 말씀하셨습니다.');
+  if(reqs.length) ps.push(reqs.join(' '));
+  const r=ans(c,'result');
+  if(r){
+    let t='상담 결과 '+r+'으로 확인되었습니다.';
+    if(ans(c,'wishDate')||memo(c,'wishDate')) t+=' 입소 희망 시기는 '+(memo(c,'wishDate')||ans(c,'wishDate'))+'입니다.';
+    if(r==='입소 안 함'){
+      if(ans(c,'noReason')) t+=' 사유는 '+ans(c,'noReason')+'입니다.';
+      if(ans(c,'recontact')) t+=' 재연락 희망 시기는 '+ans(c,'recontact')+'입니다.';
+    }
+    ps.push(t);
+  }
+  return ps.join('\n\n');
+}
+function joinInfo(c, pairs, lead){
+  const parts=[];
+  pairs.forEach(([k,label])=>{
+    const a=ans(c,k), m=memo(c,k);
+    if(!a&&!m) return;
+    if(a==='모름'||a==='확인 필요') return;
+    let v=a; if(m) v=(a?a+'('+m+')':m);
+    parts.push(label+' '+v);
+  });
+  if(!parts.length) return '';
+  return lead+parts.join(', ')+'입니다.';
+}
+function genPreText(c){
+  const f=c.fields||{};
+  const ps=[];
+  ps.push(cnsHeadSent(c)+' 입소가 확정되어 준비 사항과 어르신 정보를 상세히 확인하였습니다.');
+  const ad=memo(c,'admitDate')||ans(c,'admitDate'), at=memo(c,'admitTime')||ans(c,'admitTime'),
+        rm=memo(c,'roomNo')||ans(c,'roomNo'), tp=ans(c,'transport');
+  if(ad||rm) ps.push('입소 예정일은 '+(ad||'미정')+(at?' '+at:'')+'이며, '+(rm?rm+'에 배정될 예정입니다.':'호실은 추후 배정 예정입니다.')+(tp?' 당일에는 '+tp+'으로 오실 예정입니다.':''));
+  // 서류
+  const d=c.docs||{}, okDocs=[], noDocs=[];
+  ADMIT_DOCS.forEach((doc,i)=>{ if((d[i]||{}).ok) okDocs.push(doc.n); else noDocs.push(doc.n); });
+  let ds='제출 서류를 안내하였으며, ';
+  if(okDocs.length) ds+=okDocs.join(', ')+'은(는) 확인하였습니다.';
+  if(noDocs.length) ds+=' '+noDocs.slice(0,6).join(', ')+'은(는) 입소 당일 지참하기로 하였습니다.';
+  ps.push(ds);
+  ps.push('준비물에 대하여 안내드렸으며, 의복에는 이름을 표기해 주시고 귀중품은 보호자께서 보관해 주시도록 말씀드렸습니다.');
+  const gl=['gDaily','gVisit','gOut','gPt'].filter(k=>ans(c,k)); const gn={gDaily:'일과와 식사·목욕 일정',gVisit:'면회 방법과 시간',gOut:'외출·외박 절차',gPt:'물리치료와 프로그램 운영'};
+  if(gl.length) ps.push('시설 생활과 관련하여 '+gl.map(k=>gn[k]).join(', ')+'을 안내드렸습니다.');
+  const body=[];
+  body.push(joinInfo(c,[['dx','진단명은'],['meds','복용 중인 약은'],['hosp','다니는 병원은'],['nextVisit','다음 진료일은'],['sore','욕창은']],'어르신의 건강 상태에 대하여 구체적으로 확인하였습니다. '));
+  body.push(joinInfo(c,[['bodyState','상태는'],['move','이동은'],['standHelp','기립·앉기는'],['fall3m','최근 3개월 낙상은']],'신체·이동 기능은 '));
+  body.push(joinInfo(c,[['mealType','식사 형태는'],['mealTx','치료식이는'],['choke','사레는'],['avoid','기피식품은'],['allergy','알레르기는']],'식사와 관련하여, '));
+  body.push(joinInfo(c,[['urine','소변은'],['stool','대변은'],['diaperUse','기저귀는'],['diaperSize','기저귀 사이즈는']],'배설 상태는 '));
+  body.push(joinInfo(c,[['dementia','치매 진단은'],['demMed','치매약은'],['orient','지남력은'],['bpsd','행동증상은'],['calm','진정 방법은']],'인지·행동 상태는 '));
+  body.push(joinInfo(c,[['contract','관절구축은'],['paresis','운동장애는'],['prevRehab','이전 재활은']],'재활 관련하여, '));
+  body.push(joinInfo(c,[['sleepTime','기상·취침은'],['callName','선호 호칭은'],['religion','종교는'],['hobby','좋아하시는 활동은'],['dislike','피할 것은']],'생활습관과 선호는 '));
+  body.filter(Boolean).forEach(t=>ps.push(t));
+  const ls=ans(c,'lifeSustain');
+  if(ls){
+    let t='연명의료에 관하여는 '+ls+'으로 확인되었습니다.';
+    if(memo(c,'lifeSustain')) t+=' '+memo(c,'lifeSustain')+'라고 하셨습니다.';
+    if(memo(c,'erHosp')) t+=' 응급 시에는 '+memo(c,'erHosp')+'으로 이송을 희망하셨습니다.';
+    if(memo(c,'decider')) t+=' 의사결정권자는 '+memo(c,'decider')+'입니다.';
+    if(memo(c,'emergency')) t+=' 비상연락은 '+memo(c,'emergency')+'입니다.';
+    ps.push(t);
+  }
+  // 비용
+  const fg=ans(c,'feeGrade'), fb=ans(c,'feeBurden'), fd=parseInt(ans(c,'feeDays')||'31',10);
+  if(fg&&fb){
+    const calc=calcFee(fg,fb,fd), ft=feeTable();
+    ps.push('본인부담금과 비급여 항목에 대하여 안내드렸습니다. '+fg+' '+fb+' 기준으로 '+fd+'일 기준 본인부담 총액은 '+won(calc.sum)+
+      '(장기요양급여 본인부담금 '+won(calc.self)+', 식대·간식비 '+won(calc.meal)+')이며, 계약의사 진료비와 의료비는 별도로 부과됨을 설명드렸습니다.'+
+      (ans(c,'feeExplain')==='동의하심'?' 보호자께서 이해하시고 동의하셨습니다.':''));
+  }
+  const fr=memo(c,'famReq');
+  if(fr) ps.push('보호자께서는 '+fr+'를 요청하셨습니다.');
+  return ps.join('\n\n');
+}
+function genFreeText(c){
+  const ps=[];
+  ps.push(cnsHeadSent(c)+(c.div?' 상담구분은 '+c.div+'입니다.':''));
+  const lines=[];
+  Object.keys(c.fields||{}).forEach(k=>{
+    if(['actionTaken'].indexOf(k)>=0) return;
+    const a=ans(c,k), m=memo(c,k);
+    if(!a&&!m) return;
+    lines.push((a||'')+(m?(a?' — ':'')+m:''));
+  });
+  Object.keys(c.memos||{}).forEach(k=>{
+    if((c.fields||{})[k]) return;
+    if(k==='req') return;
+    const m=memo(c,k); if(m&&lines.indexOf(m)<0) lines.push(m);
+  });
+  if(lines.length) ps.push('상담 내용은 다음과 같습니다. '+lines.join('. ')+'.');
+  const rq=memo(c,'req');
+  if(rq) ps.push('요구·희망사항으로는 '+rq+'를 말씀하셨습니다.');
+  return ps.join('\n\n');
+}
+function genActionText(c){
+  const acts=[];
+  const at=(c.fields||{}).actionTaken;
+  const arr=Array.isArray(at)?at:(at?[at]:[]);
+  if(arr.indexOf('타 부서 전달')>=0) acts.push('확인된 내용을 관련 부서에 전달하였습니다.');
+  if(arr.indexOf('안내·설명')>=0) acts.push('관련 사항을 안내하고 설명드렸습니다.');
+  if(arr.indexOf('경과 관찰')>=0) acts.push('경과를 지속 관찰하기로 하였습니다.');
+  if(arr.indexOf('해결됨')>=0) acts.push('해당 사항은 조치 후 해결되었습니다.');
+  if(arr.indexOf('계획 반영 필요')>=0) acts.push('상담 내용을 급여제공계획서에 반영할 예정입니다.');
+  if(c.type==='week'){
+    const w=c.week||1;
+    const tr=memo(c,'trouble');
+    if(tr) acts.push('말씀하신 불편사항에 대하여 관련 부서와 공유하고 개선하기로 하였습니다.');
+    if(w===4&&ans(c,'planChange')==='필요') acts.push('면담에서 확인된 요구를 급여제공계획서에 반영하여 재작성할 예정이며, 수급자 의견의 급여 반영 기록으로 남깁니다.');
+    const nd=addDaysStr(c.date||today,7);
+    if(w<4) acts.push('다음 면담은 '+kdate(nd)+'로 예정하였습니다.');
+  }
+  if(c.type==='pre'){
+    const d=c.docs||{}, no=[];
+    ADMIT_DOCS.forEach((doc,i)=>{ if(!(d[i]||{}).ok) no.push(doc.n); });
+    if(no.length) acts.push('미제출 서류('+no.slice(0,5).join(', ')+')는 입소 당일까지 준비하시도록 안내하였습니다.');
+    acts.push('입소 당일 기초평가(낙상위험도·욕창위험도·인지기능)와 욕구사정을 실시하고, 급여제공계획서를 수립하여 공단에 통보할 예정입니다.');
+  }
+  if(c.type==='initial'){
+    const r=ans(c,'result');
+    if(r==='입소 결정') acts.push('입소가 결정되어 입소 전 상담 일정을 협의하기로 하였습니다.');
+    else if(r==='입소 안 함') acts.push('입소하지 않기로 하셨으며, 추후 필요 시 다시 연락 주시도록 안내하였습니다.');
+    else acts.push('검토 후 연락 주시기로 하였습니다.');
+  }
+  // 확인 필요 항목
+  const unk=[];
+  Object.keys(c.fields||{}).forEach(k=>{ if(ans(c,k)==='모름'||ans(c,k)==='확인 필요') unk.push(k); });
+  let s=acts.join(' ');
+  if(unk.length) s+='\n\n※ 확인 필요 항목이 '+unk.length+'건 있습니다. 다음 상담 또는 입소 시 확인이 필요합니다.';
+  return s;
+}
+function copyField(id, key, btn){
+  const c=counselById(id); if(!c) return;
+  const t=c[key]||'';
+  if(!t){ alert('먼저 문장을 만들어 주세요.'); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>{ btn.textContent='✓ 복사됨'; setTimeout(()=>btn.textContent='📋 복사',1500); });
+  } else alert(t);
+}
+
+// ===== 보호자 안내 자료 (상담 시 참고) =====
+var guideTab='docs';
+var guideOpen=false;
+const GUIDE_LIFE_DEFAULT={
+  daily:'',
+  visit:'',
+  bath:'',
+  out:'',
+  pt:'물리치료실은 주 5일(월~금) 운영합니다. 어르신 상태를 평가한 뒤 개별 치료계획을 세워 온열·전기치료, 관절가동운동, 근력운동, 보행훈련 등을 제공합니다.',
+  etc:''
+};
+function guideLife(){ return Object.assign({}, GUIDE_LIFE_DEFAULT, state.guideLife||{}); }
+function setGuideLife(k,v){ if(!state.guideLife) state.guideLife={}; state.guideLife[k]=v; save(); }
+function guideCardHtml(c){
+  const f=(c&&c.fields)||{};
+  const explained=(k)=>val1(f[k])==='안내함';
+  const chip=(k,label)=>'<button class="gd-done'+(explained(k)?' on':'')+'" onclick="cnsSetField('+c.id+',\''+k+'\',\'안내함\',false)">'+(explained(k)?'✓ ':'☐ ')+label+'</button>';
+  let body='';
+  if(guideTab==='docs'){
+    body='<div class="gd-note">건강보험공단 서류 3종(인정서·표준계획서·건강진단서 안내)과 어르신·보호자 주소를 미리 알려주시면 입소 과정이 원활합니다.</div>'+
+      '<table class="gd-table"><thead><tr><th>순서</th><th>서류</th><th>발급처</th><th>비고</th></tr></thead><tbody>'+
+      ADMIT_DOCS.map((d,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(d.n)+'</b>'+(d.note?'<div class="gd-sub">'+esc(d.note)+'</div>':'')+'</td><td>'+esc(d.from||'—')+'</td><td>'+esc(d.cond||'')+(d.expire?'<div class="gd-warn">입소 1개월 이내</div>':'')+'</td></tr>').join('')+
+      '</tbody></table>'+
+      '<div class="gd-tip">💡 3번 건강진단서는 <b>입소일 기준 1개월 이내</b> 발급분만 인정됩니다. 결핵·장티푸스·세균성이질·성병·B형간염·매독 등 전염병 유무 확인용입니다.</div>'+
+      '<div class="gd-tip">💡 5번 복용약은 <b>의사처방전</b>과 함께, <b>개별 봉투에 이름</b>을 표기해서 가져오시도록 안내해 주세요.</div>'+
+      '<div class="gd-tip">💡 치매약을 복용 중이면 6번 치매검사지(MMSE·CIST)가 필요합니다.</div>'+
+      chip('proc','서류 안내 설명드렸음');
+  } else if(guideTab==='items'){
+    body='<div class="gd-h">필요한 물품</div><ol class="gd-list">'+
+      '<li>어르신께서 편하게 입으실 수 있는 <b>평상복(상·하) 3벌 이상</b></li>'+
+      '<li><b>속옷 및 양말 3~5벌</b> — 기저귀 착용 시 속옷 상의 준비</li>'+
+      '<li>생활실에서 신을 수 있는 <b>실내화</b></li>'+
+      '<li>평소 쓰시던 물건 — <b>지팡이, 보행보조기, 안경, 틀니, 면도기, 화장품</b> 등</li></ol>'+
+      '<div class="gd-h">함께 말씀드릴 것</div><ul class="gd-list">'+
+      '<li>의복은 매일 세탁 시 훼손이 심하므로 <b>여유 있게</b> 준비해 주세요.</li>'+
+      '<li>옷에 <b>어르신 이름</b>을 새기거나 표기해 주세요.</li>'+
+      '<li>치약·칫솔·휴지 등 생활필수품은 <b>요양원에서 제공</b>합니다.</li>'+
+      '<li>입소 전 <b>기저귀 착용 여부</b>와 <b>식사 형태(일반식·반찬 다진식·죽식)</b>를 미리 알려주세요.</li>'+
+      '<li><b>알레르기 식품</b> 유무와 <b>기호식품</b>은 미리 말씀해 주세요.</li>'+
+      '<li>물병을 가져오시는 경우 <b>빨대는 실리콘</b> 재질로 부탁드립니다.</li>'+
+      '<li><b>귀중품(반지·목걸이 등)</b>은 보관이 어려우므로 보호자께서 꼭 가져가 주세요.</li>'+
+      '<li><b>틀니·보청기</b> 사용 어르신은 사전에 말씀해 주세요.</li></ul>'+
+      chip('items','준비물 안내 설명드렸음');
+  } else if(guideTab==='fee'){
+    const ft=feeTable();
+    body='<div class="gd-h">장기요양비용 수가표 ('+ft.year+')</div>'+
+      '<table class="gd-table"><thead><tr><th>등급</th><th>1일 수가</th><th>30일</th><th>31일</th></tr></thead><tbody>'+
+      ['1등급','2등급','3~5등급'].map(g=>'<tr><td>'+g+'</td><td>'+won(ft.daily[g])+'</td><td>'+won(ft.daily[g]*30)+'</td><td>'+won(ft.daily[g]*31)+'</td></tr>').join('')+
+      '</tbody></table>'+
+      '<div class="gd-h">본인부담금</div>'+
+      '<table class="gd-table"><thead><tr><th>구분</th><th>등급</th><th>30일</th><th>31일</th></tr></thead><tbody>'+
+      ['일반 20%','감경 12%','감경 8%'].map(b=>['1등급','2등급','3~5등급'].map((g,i)=>'<tr>'+(i===0?'<td rowspan="3">'+b+'</td>':'')+'<td>'+g+'</td><td>'+won(ft.self[b][g][0])+'</td><td>'+won(ft.self[b][g][1])+'</td></tr>').join('')).join('')+
+      '<tr><td>기초수급자</td><td colspan="3">100% 지원 (본인부담금 0원)</td></tr>'+
+      '</tbody></table>'+
+      '<div class="gd-h">본인부담 총액 (식대 포함)</div>'+
+      '<table class="gd-table"><thead><tr><th>구분</th><th>등급</th><th>30일</th><th>31일</th></tr></thead><tbody>'+
+      ['일반 20%','감경 12%','감경 8%'].map(b=>['1등급','2등급','3~5등급'].map((g,i)=>'<tr>'+(i===0?'<td rowspan="3">'+b+'</td>':'')+'<td>'+g+'</td><td><b>'+won(ft.self[b][g][0]+ft.meal[30])+'</b></td><td><b>'+won(ft.self[b][g][1]+ft.meal[31])+'</b></td></tr>').join('')).join('')+
+      '</tbody></table>'+
+      '<div class="gd-h">비급여 항목</div><ul class="gd-list">'+
+      '<li><b>식대</b> 3식 3,800원 + 간식 2식 1,000원 = <b>1일 12,400원</b> (30일 372,000원 / 31일 384,400원)</li>'+
+      '<li><b>계약의사 진료</b> 초진 18,840원 · 재진 13,370원 (본인부담: 일반 20% 초진 3,760·재진 2,670 / 감경 12% 2,260·1,600 / 감경 8% 1,500·1,060)</li>'+
+      '<li><b>의료비(약제비·개인 의료비)</b>는 추가됩니다.</li></ul>'+
+      '<div class="gd-tip">💡 기초수급자 식대 지원 여부는 확인 후 설정에서 입력해 주세요.</div>'+
+      chip('fee','본인부담금·비급여 설명드렸음');
+  } else {
+    const L=guideLife();
+    const row=(k,label,ph)=>'<div class="gd-life"><div class="gd-life-h">'+label+'</div><textarea rows="3" placeholder="'+ph+'" onchange="setGuideLife(\''+k+'\',this.value)">'+esc(L[k]||'')+'</textarea></div>';
+    body='<div class="gd-note">시설 규정은 직접 적어두시면 계속 유지됩니다. 상담할 때 이걸 보면서 설명하세요.</div>'+
+      row('daily','일과·식사 시간','예: 아침 7:30 / 점심 12:00 / 저녁 17:30, 간식 오전·오후')+
+      row('bath','목욕','예: 주 2회 (월·목), 오전')+
+      row('visit','면회 방법·시간','예: 평일 14:00~17:00, 사전 연락, 면회실 이용')+
+      row('out','외출·외박 절차','예: 하루 전 신청, 귀원 시 건강상태 확인')+
+      row('pt','물리치료·프로그램 운영','')+
+      row('etc','기타 안내','예: 미용, 종교활동, 생일잔치 등')+
+      '<div class="cq-opts" style="margin-top:8px;">'+chip('daily','일과·식사 설명드렸음')+chip('visitRule','면회 안내 설명드렸음')+chip('ptInfo','물리치료·프로그램 설명드렸음')+'</div>';
+  }
+  const tabs=[['docs','📄 서류'],['items','🧳 준비물'],['fee','💰 비용'],['life','🏡 생활 안내']];
+  return '<div class="gd-tabs">'+tabs.map(t=>'<button class="gd-tab'+(guideTab===t[0]?' on':'')+'" onclick="guideTab=\''+t[0]+'\';renderCounsel();renderGuideDrawer();">'+t[1]+'</button>').join('')+'</div>'+
+    '<div class="gd-body">'+body+'</div>';
+}
+function toggleGuideDrawer(){ guideOpen=!guideOpen; renderGuideDrawer(); }
+function renderGuideDrawer(){
+  let dr=document.getElementById('guide-drawer');
+  if(!guideOpen){ if(dr) dr.remove(); return; }
+  const c=counselEditId?counselById(counselEditId):null;
+  if(!c){ guideOpen=false; return; }
+  if(!dr){ dr=document.createElement('div'); dr.id='guide-drawer'; dr.className='gd-drawer'; document.body.appendChild(dr); }
+  dr.innerHTML='<div class="gd-drawer-head"><b>📖 보호자 안내 자료</b><button onclick="toggleGuideDrawer()">✕ 닫기</button></div>'+
+    '<div class="gd-drawer-body">'+guideCardHtml(c)+'</div>';
+}
+
 let editingElderId = null;
 
 function calcAge(birth){
@@ -8241,7 +9237,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-17-05';
+const APP_VERSION = '2026-09-27-02';
 function checkForUpdate(){
   try{
     const base=location.pathname;
