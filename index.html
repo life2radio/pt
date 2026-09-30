@@ -423,6 +423,16 @@
   .modal-head button { background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 8px; width: 30px; height: 30px; font-size: 14px; cursor: pointer; }
   .modal-body { padding: 16px 18px; overflow-y: auto; }
 
+  .ltc-top { border: 2px solid var(--teal); background: linear-gradient(135deg,#F2FAF7,#fff); }
+  .ltc-top-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .ltc-top-btn { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--teal); color: #fff; border: none; border-radius: 14px; cursor: pointer; font-family: inherit; text-align: left; box-shadow: 0 3px 10px rgba(30,120,100,.25); }
+  .ltc-top-btn:active { transform: scale(.98); }
+  .ltc-top-btn b { display: block; font-size: 17px; }
+  .ltc-top-btn small { display: block; font-size: 11.5px; opacity: .92; margin-top: 2px; }
+  .ltc-top-ic { font-size: 26px; }
+  .ltc-top-help { flex: 1; min-width: 220px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+
   .cmp-card { border-left: 3px solid #E53935; }
   .cmp-sum { margin: 4px 0 8px; display: flex; gap: 6px; flex-wrap: wrap; }
   .cmp-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
@@ -1519,12 +1529,12 @@
     </div>
     <button class="lock-now-btn" onclick="lockNow()" title="잠그기">🔒 잠그기</button>
     <nav class="tabs">
-      <button class="active" data-tab="dash" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>오늘</button>
+      <button class="active" data-tab="elders" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>어르신</button>
+      <button data-tab="dash" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>오늘</button>
       <button data-tab="briefing" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v14H7l-4 4z"/><path d="M8 8h8M8 12h5"/></svg>조회·석회</button>
       <button data-tab="counsel" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>상담</button>
       <button data-tab="needs" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>욕구사정</button>
       <button data-tab="plan" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>계획·평가</button>
-      <button data-tab="elders" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>어르신</button>
       <button data-tab="sched" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>스케줄</button>
       <button data-tab="record" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>치료기록</button>
       <button data-tab="eval" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>평가</button>
@@ -1542,7 +1552,7 @@
 <div class="wrap">
 
   <!-- 오늘 -->
-  <section id="dash" class="panel active">
+  <section id="dash" class="panel">
     <div class="dash-greet">
       <div>
         <div class="dash-hello" id="ds-hello">좋은 아침이에요 ☀</div>
@@ -1603,7 +1613,13 @@
   </section>
 
   <!-- 어르신 -->
-  <section id="elders" class="panel">
+  <section id="elders" class="panel active">
+    <div class="card ltc-top no-print">
+      <div class="ltc-top-row">
+        <button class="ltc-top-btn" onclick="openLtcImport()"><span class="ltc-top-ic">📑</span><span><b>개장 등록</b><small>붙여넣기 → 어르신 자동 등록 + 개장 저장</small></span></button>
+        <div class="ltc-top-help">클로드에 개장 사진을 올려 <b>정리된 텍스트</b>를 받아 붙여넣으세요. 여러 명도 한 번에 돼요. 같은 이름이면 개장만 갱신됩니다.</div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title" id="e-form-title">어르신 등록</div>
       <div class="row" style="margin-bottom:12px;">
@@ -1669,7 +1685,6 @@
     </div>
     <div class="card">
       <div class="card-title">등록된 어르신 <span class="count" id="e-count"></span></div>
-      <div class="row no-print" style="margin-bottom:8px;"><button class="btn teal" onclick="openLtcImport()">📑 개장 붙여넣기 → 자동 등록</button><span class="hint" style="align-self:center;">개장 사진을 채팅에 올려 정리된 텍스트를 받아 붙여넣으면 어르신이 등록되고 개장이 저장돼요</span></div>
       <input id="e-search" class="e-search" placeholder="🔍 이름·호실로 검색하면 그 어르신 전체 정보를 볼 수 있어요" oninput="renderElders()">
       <button class="btn no-print" style="margin-bottom:10px;" onclick="printSummaryCards()">🖨 물리치료 요약 카드 인쇄 (전 어르신 · 부재 시 확인용)</button>
       <div id="aicog-summary"></div>
@@ -3959,7 +3974,7 @@ function renderGuideDrawer(){
 
 // ===== 개인별장기요양이용계획서(개장) =====
 // 공단 표준 욕구 항목 (개장에 실제 나오는 문구 기준). 목표·필요내용은 사진에서 확인된 표준 문구.
-const LTC_DOMAINS=['신체활동지원','정서지원','건강관리','기능회복훈련','응급지원','생활 및 환경관리','인지관리','일상생활지원'];
+const LTC_DOMAINS=['신체활동지원','정서지원','건강관리','기능회복훈련','응급지원','생활 및 환경관리','인지관리','인지활동지원','인지관리지원','일상생활지원','개인활동지원','지역자원연계','간호처치'];
 const LTC_STD_ITEMS=[
   {d:'신체활동지원', need:'개인위생관리', goal:'개인위생관리 잔존기능 향상, 청결상태유지를 통한 자존감 향상', content:'옷갈아입기 지시 및 지켜보기 도움, 옷갈아입기 도움, 옷 입고 뒷정리 하기, 몸씻기 도움, 머리감기 도움, 손발톱깎기'},
   {d:'신체활동지원', need:'안전한 이동도움', goal:'이동능력의 유지 및 악화예방, 낙상발생 및 합병증 최소화', content:'이동 지시 및 지켜보기, 이동 시 부축 도움, 이동 시 적절한 보조기구 사용 도움, 위험요소 최소화 및 안전관리로 낙상예방'},
@@ -4023,7 +4038,14 @@ function parseLtcText(txt){
   return p;
 }
 // ---- 자유 형식(OCR 추출 텍스트) 개장 파서 ----
-function normDate(s){ if(!s) return ''; const m=String(s).match(/((?:19|20)\d{2})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/); if(!m) return ''; return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0'); }
+function ltcPreclean(raw){
+  let t=String(raw||'');
+  const typo=[[/자촌감/g,'자존감'],[/춘련/g,'훈련'],[/중진/g,'증진'],[/치원/g,'지원'],[/수혈/g,'수행'],[/손발톨/g,'손발톱'],[/초성/g,'조성'],[/인치활동/g,'인지활동'],[/차원 연계/g,'자원 연계'],[/사회척/g,'사회적'],[/약률/g,'약물'],[/불인지/g,'인지'],[/빼일방적/g,'일방적'],[/약물복용0/g,'약물복용이'],[/한진한/g,'안전한'],[/종영관리/g,'송영관리'],[/1개인위생관리/g,'개인위생관리']];
+  typo.forEach(([a,b])=>{ t=t.replace(a,b); });
+  t=t.split('\n').map(l=>l.replace(/^[\s|\[\]1]+(?=[가-힣])/,'').trim()).join('\n');
+  return t;
+}
+function normDate(s){ if(!s) return ''; const m=String(s).match(/((?:19|20)\d{2})\s*[.,\-\/년]\s*(\d{1,2})\s*[.,\-\/월]\s*(\d{1,2})/); if(!m) return ''; return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0'); }
 function parseLtcLoose(raw){
   const t=String(raw||'').replace(/\r/g,'');
   const flat=t.replace(/\s+/g,' ');
@@ -4033,9 +4055,9 @@ function parseLtcLoose(raw){
   if(!p.name){ m=flat.match(/([가-힣]{2,4})\s*(?:장기요양)?등급/); if(m&&!/등급|요양|시설|재가|일반|치매|본인/.test(m[1])) p.name=m[1]; }
   m=flat.match(/(\d)\s*등급/); if(m) p.grade=m[1]+'등급';
   // 날짜들: 첫 번째 = 생년월일, 이후 "~"로 이어진 두 개 = 인정기간
-  const rng=flat.match(/((?:19|20)\d{2}\s*[.\-\/]\s*\d{1,2}\s*[.\-\/]\s*\d{1,2})\s*[~∼-]\s*((?:19|20)\d{2}\s*[.\-\/]\s*\d{1,2}\s*[.\-\/]\s*\d{1,2})/);
+  const rng=flat.match(/((?:19|20)\d{2}\s*[.,\-\/]\s*\d{1,2}\s*[.,\-\/]\s*\d{1,2})\s*[~∼-]?\s*((?:19|20)\d{2}\s*[.,\-\/]\s*\d{1,2}\s*[.,\-\/]\s*\d{1,2})/);
   if(rng){ p.validFrom=normDate(rng[1]); p.validTo=normDate(rng[2]); }
-  const dates=[...flat.matchAll(/(?:19|20)\d{2}\s*[.\-\/]\s*\d{1,2}\s*[.\-\/]\s*\d{1,2}/g)].map(x=>normDate(x[0]));
+  const dates=[...flat.matchAll(/(?:19|20)\d{2}\s*[.,\-\/]\s*\d{1,2}\s*[.,\-\/]\s*\d{1,2}/g)].map(x=>normDate(x[0]));
   const birth=dates.find(d=>d!==p.validFrom&&d!==p.validTo&&d<'2010-01-01'); if(birth) p.birth=birth;
   // 본인부담율
   m=flat.match(/시\s*설\s*[:：]?\s*(\d{1,2})\s*(\(\s*[가-힣]+\s*\))?\s*%?/); if(m) p.burdenFac=m[1]+(m[2]?' '+m[2].replace(/\s/g,''):'');
@@ -4069,19 +4091,22 @@ function parseLtcLoose(raw){
 }
 function parseLtcAny(txt){
   if(/(^|\n)\s*(성명|이름)\s*[:：]/.test(txt)&&/(^|\n)\s*항목\s*[:：]/.test(txt)) return parseLtcText(txt);
+  txt=ltcPreclean(txt);
   const st=parseLtcStructured(txt);
   if(st.items.length>=1&&st.name) return st;
   const lo=parseLtcLoose(txt);
-  // 구조화에서 기본정보만 잡혔으면 합치기
   ['name','grade','birth','validFrom','validTo','burdenFac','burdenHome','hope','limitHome'].forEach(k=>{ if(!lo[k]&&st[k]) lo[k]=st[k]; });
   if(!lo.notes.length&&st.notes.length) lo.notes=st.notes;
+  // 품질 판정: 내용 없는 항목 비율·핵심정보 누락
+  const noC=lo.items.filter(i=>!i.content).length; const ratio=lo.items.length?noC/lo.items.length:1;
+  lo.quality=(ratio>0.3||!lo.birth||!lo.validFrom||lo.items.length<3)?'low':'ok';
   return lo;
 }
 
 // ---- 구조화 텍스트(줄 단위 표) 파서 ----
-const LTC_NEED_WORDS=['개인위생관리','화장실 이용하기·배뇨관리','화장실 이용하기','배뇨관리','배설도움','식사도움','목욕도움','체위변경','구강관리','안전한 이동도움','약챙겨먹기','관절움직임 관리','정서관리','약물관리','관절구축관리','기초 건강관리','기초건강관리','욕창관리','통증관리','기능회복훈련','응급상황관리','생활환경관리','인지관리','인지자극','간호처치','치매관리'];
+const LTC_NEED_WORDS=['개인위생관리','화장실 이용하기·배뇨관리','화장실 이용하기','배뇨관리','배설도움','식사도움','목욕도움','체위변경','구강관리','안전한 이동도움','약챙겨먹기','관절움직임 관리','정서관리','약물관리','관절구축관리','기초 건강관리','기초건강관리','욕창관리','통증관리','기능회복훈련','기능회복 훈련','응급상황관리','생활환경관리','송영관리','인지관리','인지자극','인지지원','행동변화관리','일상생활수행','개인활동수행','사회적 도움','간호처치','치매관리'];
 // 개장 필요내용에 나오는 표준 어휘 (OCR 텍스트에서 내용 복원용)
-const LTC_CONTENT_VOCAB=['옷갈아입기 지시 및 지켜보기 도움','옷갈아입기 도움','옷 입고 뒷정리 하기','몸씻기 도움','머리감기 도움','몸단장 물품 준비와 지켜보기','손발톱깎기','화장 등 외모관리','머리단장','세면 도움','양치질 도움','화장실 이용 도움','배뇨문제 관리','배변문제 관리','기저귀 교환 도움','식사 도움','식사 준비','체위변경 도움','이동 지시 및 지켜보기','이동 시 부축 도움','이동 시 적절한 보조기구 사용 도움','위험요소 최소화 및 안전관리로 낙상예방','정확한 복약도움(시간, 용량, 용법 등)','관절운동지원','다양한 방법으로 의사소통 도움','욕구파악을 위한 관찰(행동, 소리, 동작 등)','비상연락망 준비','말벗 및 위로 등 정서적 지원','투약관리 지도','약 복용 및 인슐린 주사','관절구축예방간호','건강상태 관찰 및 측정','건강교육 및 상담','감염간호','의사진료 지원','치매간호','의료기관 의뢰','욕창예방간호','통증간호','구강간호','신체 인지기능 향상프로그램','신체·인지기능 향상프로그램','신체기능의 훈련','기본동작 훈련','일상생활동작 훈련','인지기능프로그램','여가·정서 프로그램','여가 · 정서 프로그램','사회적응훈련','가족대상 프로그램','물리치료','작업치료','응급서비스','침구린넨 교환 및 정리','환경관리','물품관리','세탁물관리'];
+const LTC_CONTENT_VOCAB=['옷갈아입기 지시 및 지켜보기 도움','옷갈아입기 도움','옷 입고 뒷정리 하기','몸씻기 도움','머리감기 도움','몸단장 물품 준비와 지켜보기','손발톱깎기','화장 등 외모관리','머리단장','세면 도움','양치질 도움','화장실 이용 도움','배뇨문제 관리','배변문제 관리','기저귀 교환 도움','식사 도움','식사 준비','체위변경 도움','이동 지시 및 지켜보기','이동 시 부축 도움','이동 시 적절한 보조기구 사용 도움','위험요소 최소화 및 안전관리로 낙상예방','정확한 복약도움(시간, 용량, 용법 등)','관절운동지원','다양한 방법으로 의사소통 도움','욕구파악을 위한 관찰(행동, 소리, 동작 등)','비상연락망 준비','말벗 및 위로 등 정서적 지원','투약관리 지도','약 복용 및 인슐린 주사','관절구축예방간호','건강상태 관찰 및 측정','건강교육 및 상담','감염간호','의사진료 지원','치매간호','의료기관 의뢰','욕창예방간호','통증간호','구강간호','신체 인지기능 향상프로그램','신체·인지기능 향상프로그램','신체기능의 훈련','기본동작 훈련','일상생활동작 훈련','인지기능프로그램','여가·정서 프로그램','여가 · 정서 프로그램','사회적응훈련','가족대상 프로그램','물리치료','작업치료','응급서비스','침구린넨 교환 및 정리','환경관리','물품관리','세탁물관리','인지활동형 프로그램 실시(인지자극활동, 일상생활 함께하기)','정서적 안정된 환경조성','행동변화와 관련된 영양 문제 관리','취사, 세탁, 청소 및 주변 정돈, 장보기, 생활환경 관리(위생적 환경조성, 위험요인 제거 등)','병원동행','지역사회의 다양한 자원 연계','송영서비스'];
 function isDomainLine(l){ const t=l.replace(/\s/g,''); return LTC_DOMAINS.some(d=>t===d.replace(/\s/g,''))||/^(신체활동지원|정서지원|건강관리|기능회복훈련|응급지원|생활및환경관리|인지관리|일상생활지원|간호처치)$/.test(t); }
 function normDomain(l){ const t=l.replace(/\s/g,''); return LTC_DOMAINS.find(d=>d.replace(/\s/g,'')===t)||l.trim(); }
 function parseLtcStructured(raw){
@@ -4153,7 +4178,8 @@ function openLtcImport(){
   mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>📑 개장 붙여넣기 → 어르신 등록</b><button onclick="closeLtcImport()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;">✕</button></div>'+
     '<div class="modal-body" style="'+modalBodyStyle()+'">'+
     '<p class="hint"><b>두 가지 모두 돼요.</b> ① 갤럭시 갤러리 → 개장 사진 → <b>텍스트 추출</b> → 전체 복사 → 여기 붙여넣기 (형식 상관없음) &nbsp;② 정리된 형식 텍스트 붙여넣기. 같은 이름의 어르신이 있으면 개장만 갱신하고, 없으면 새로 등록합니다.</p>'+
-    '<div class="cns-guide">사진에서 추출한 텍스트는 등록 전에 <b>읽은 내용을 확인창으로</b> 보여드려요. 성명·등급·생년월일·인정기간·본인부담율은 반드시 원본과 대조하세요.</div>'+
+    '<div class="cns-guide">사진 추출 텍스트가 <b>표 순서가 뒤섞여 있으면 등록을 막아요</b>(잘못 들어가는 것 방지). 그럴 땐 사진을 채팅에 올려 정리된 텍스트를 받아 붙여넣으세요 — 그건 항상 정확히 들어가요. 등록 전에는 읽은 내용을 확인창으로 보여드려요.</div>'+
+    '<div class="hint">여러 명을 한꺼번에 붙여넣어도 <b>성명:</b> 줄마다 나눠 각각 등록돼요.</div>'+
     '<details class="ltc-fmt"><summary>입력 형식 보기</summary><pre>성명: 유옥순\n등급: 4등급\n생년월일: 1934-03-28\n인정기간: 2023-12-03 ~ 2027-12-02\n본인부담율 시설: 8 (감경)\n본인부담율 재가: 6 (감경)\n항목: 신체활동지원 | 개인위생관리 | 목표 | 필요내용\n항목: 건강관리 | 약물관리 | 목표 | 필요내용\n희망급여: 노인요양시설\n유의사항: 부드럽고 여유 있는 어조로…\n유의사항: 인지기능저하 예방을 위해…</pre></details>'+
     '<textarea id="ltc-import-ta" class="note-ta" rows="12" placeholder="여기에 붙여넣기"></textarea>'+
     '<div class="sp-foot"><button class="btn" onclick="closeLtcImport()">취소</button><button class="btn teal" onclick="doLtcImport()">확인 → 등록</button></div>'+
@@ -4162,10 +4188,39 @@ function openLtcImport(){
 }
 function closeLtcImport(){ const mo=document.getElementById('ltc-import-modal'); if(mo) mo.remove(); }
 function ageFromBirth(b){ if(!b||!/^\d{4}/.test(b)) return ''; const y=parseInt(b.slice(0,4),10); const now=new Date(); let a=now.getFullYear()-y; const mm=parseInt((b.slice(5,7)||'1'),10), dd=parseInt((b.slice(8,10)||'1'),10); if(now.getMonth()+1<mm||(now.getMonth()+1===mm&&now.getDate()<dd)) a--; return String(a); }
+// 여러 어르신 한 번에: "성명:" 줄마다 블록을 나눠 각각 등록
+function doLtcImportBatch(text){
+  const blocks=text.split(/\n(?=\s*성명\s*[:：])/).map(x=>x.trim()).filter(x=>/^\s*성명\s*[:：]/.test(x));
+  const res=[];
+  blocks.forEach(b=>{
+    const p=parseLtcText(b);
+    if(!p.name){ res.push({name:'(이름없음)',err:'성명 못 읽음'}); return; }
+    if(!p.items.length){ res.push({name:p.name,err:'항목 줄이 없음'}); return; }
+    let e=state.elders.find(x=>x.name===p.name); let created=false;
+    if(!e){ e={id:Date.now()+res.length, name:p.name, room:'', status:'치료중', gender:'', age:ageFromBirth(p.birth), grade:p.grade||'', diag:'', admit:today, visit:'치료실', plan:[], risks:[], days:[], slots:{}}; state.elders.push(e); created=true; }
+    else { if(p.grade) e.grade=p.grade; if(p.birth&&!e.age) e.age=ageFromBirth(p.birth); }
+    const L=ensureLtc(e);
+    Object.assign(L,{name:p.name,grade:p.grade||L.grade,birth:p.birth||L.birth,validFrom:p.validFrom||L.validFrom,validTo:p.validTo||L.validTo,burdenHome:p.burdenHome||L.burdenHome,burdenFac:p.burdenFac||L.burdenFac,limitHome:p.limitHome||L.limitHome,hope:p.hope||L.hope,issued:p.issued||L.issued});
+    L.items=p.items.map(i=>({d:i.d,need:i.need,goal:i.goal||'',content:i.content||'',review:false})); L.needsReview=false;
+    if(p.notes.length) L.notes=p.notes; L.updatedAt=today;
+    const warn=[]; if(!p.birth) warn.push('생년월일'); if(!p.validFrom) warn.push('인정기간'); if(!p.grade) warn.push('등급'); if(p.items.some(i=>!i.content)) warn.push('필요내용 빈 항목');
+    res.push({name:p.name,created,items:L.items.length,notes:L.notes.length,warn});
+  });
+  save(); closeLtcImport(); renderElders();
+  alert('개장 '+res.length+'명 처리\n\n'+res.map(r=>r.err?('✗ '+r.name+' — '+r.err):((r.created?'＋ 새로 등록 ':'↻ 갱신 ')+r.name+' (항목 '+r.items+', 유의 '+r.notes+')'+(r.warn.length?' ⚠ '+r.warn.join('·')+' 확인':''))).join('\n'));
+}
 function doLtcImport(){
+  const ta0=document.getElementById('ltc-import-ta'); if(!ta0) return;
+  const multi=(ta0.value.match(/(^|\n)\s*성명\s*[:：]/g)||[]).length;
+  if(multi>1&&/(^|\n)\s*항목\s*[:：]/.test(ta0.value)){ return doLtcImportBatch(ta0.value); }
   const ta=document.getElementById('ltc-import-ta'); if(!ta) return;
   const p=parseLtcAny(ta.value);
   if(!p.name){ alert('어르신 성명을 찾지 못했어요.\n텍스트 맨 위에 "성명: 이름" 한 줄을 추가해 주세요.'); return; }
+  if(p.quality==='low'){
+    const noC=p.items.filter(i=>!i.content).length;
+    alert('⛔ 이 텍스트는 표가 심하게 섞여 있어 정확히 읽을 수 없어요.\n\n· 읽은 항목 '+p.items.length+'개 중 필요내용 없음 '+noC+'개'+(!p.birth?'\n· 생년월일 못 읽음':'')+(!p.validFrom?'\n· 인정기간 못 읽음':'')+'\n\n잘못 등록되는 것을 막기 위해 등록하지 않았어요.\n\n👉 개장 사진을 채팅(클로드)에 올려 "앱 형식으로 정리"를 요청하시면, 그 텍스트는 100% 정확히 들어가요.');
+    return;
+  }
   if(p.loose||p.structured){
     const pv=['성명: '+p.name,'등급: '+(p.grade||'?'),'생년월일: '+(p.birth||'?'),'인정기간: '+(p.validFrom||'?')+' ~ '+(p.validTo||'?'),'본인부담율 시설: '+(p.burdenFac||'?')+' / 재가: '+(p.burdenHome||'?'),'희망급여: '+(p.hope||'?'),'유의사항 '+p.notes.length+'개','',
       '욕구 항목 '+p.items.length+'개:'].concat(p.items.map(i=>' · ['+(i.d||'?')+'] '+i.need+' → '+(i.content||'(필요내용 못 읽음 — 등록 후 직접 입력)'))).join('\n');
@@ -11384,7 +11439,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-30-06';
+const APP_VERSION = '2026-09-30-09';
 function checkForUpdate(){
   try{
     const base=location.pathname;
