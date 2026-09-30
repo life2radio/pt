@@ -441,6 +441,9 @@
 
 
   .rd-wrap { overflow-x: auto; }
+  .rd-cell.clickable, .rd-name.clickable { cursor: pointer; }
+  .rd-cell.clickable:hover, .rd-name.clickable:hover { outline: 2px solid var(--teal); outline-offset: -2px; }
+
   .rd-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 760px; }
   .rd-table th { background: #E3EEF7; color: var(--navy); padding: 6px 4px; border: 1px solid #C9DAE8; font-size: 11.5px; line-height: 1.3; }
   .rd-table th small { font-weight: 400; color: var(--muted); font-size: 10px; }
@@ -4039,7 +4042,7 @@ function parseLtcLoose(raw){
   m=flat.match(/재\s*가\s*[:：]?\s*(\d{1,2})\s*(\(\s*[가-힣]+\s*\))?\s*%?/); if(m) p.burdenHome=m[1]+(m[2]?' '+m[2].replace(/\s/g,''):'');
   m=flat.match(/1개월당\s*([\d,]+)\s*원/); if(m) p.limitHome=m[1];
   // 희망급여
-  m=flat.match(/희망급여\s*[:：]?\s*([가-힣]+(?:요양)?(?:시설|공동생활가정|주야간보호|방문요양)?)/); if(m) p.hope=m[1];
+  m=flat.match(/희망급여\s*[:：]?\s*((?:(?:방문요양|방문목욕|방문간호|주야간보호|단기보호|노인요양시설|노인요양공동생활가정|치매전담형|재가급여|시설급여)[,\s]*)+)/); if(m) p.hope=m[1].trim().replace(/\s+/g,', ').replace(/,\s*,/g,',');
   // 유의사항: ■ ▪ ● - 로 시작하는 줄
   const lines=t.split('\n').map(x=>x.trim()).filter(Boolean);
   let inNote=false;
@@ -4050,13 +4053,100 @@ function parseLtcLoose(raw){
   let tableTxt=flat; const ts=flat.search(/장기요양욕구|장기요양필요영역/); if(ts>=0) tableTxt=flat.slice(ts);
   const te=tableTxt.search(/희망급여|유\s*의\s*사\s*항|■|▪/); if(te>0) tableTxt=tableTxt.slice(0,te);
   const compact=tableTxt.replace(/\s/g,'');
-  LTC_STD_ITEMS.forEach(st=>{ const key=st.need.replace(/\s/g,''); if(compact.indexOf(key)>=0) p.items.push({d:st.d,need:st.need,goal:st.goal,content:st.content,std:true}); });
+  const compact2=compact.replace(/화장실이용하기배뇨관리|화장실이용하기·배뇨관리/g,'화장실이용하기·배뇨관리');
+  const wordsSorted=LTC_NEED_WORDS.slice().sort((a,b)=>b.length-a.length);
+  wordsSorted.forEach(nw=>{ const key=nw.replace(/\s/g,''); if(compact2.indexOf(key)<0) return; if(p.items.some(i=>i.need.replace(/\s/g,'')===key||i.need.replace(/\s/g,'').indexOf(key)>=0)) return;
+    const st=LTC_STD_ITEMS.find(x=>x.need===nw); const content=looseContentFor(nw, tableTxt.replace(/화장실 이용하기 배뇨관리/g,'화장실 이용하기·배뇨관리'));
+    p.items.push({d:st?st.d:(/위생|화장실|배뇨|배설|식사|목욕|체위|구강|이동|약챙/.test(nw)?'신체활동지원':/정서/.test(nw)?'정서지원':/약물|건강|욕창|통증|관절구축/.test(nw)?'건강관리':/기능회복/.test(nw)?'기능회복훈련':/응급/.test(nw)?'응급지원':/환경/.test(nw)?'생활 및 환경관리':/인지/.test(nw)?'인지관리':''), need:nw, goal:'', content:content, review:!content}); });
   // 유옥순형 "관절움직임 관리" vs OCR 오류 대비: 부분 키워드
   const alias={'개인위생':'개인위생관리','이동도움':'안전한 이동도움','약챙겨':'약챙겨먹기','관절움직임':'관절움직임 관리','기초건강':'기초 건강관리','생활환경':'생활환경관리','응급상황':'응급상황관리'};
-  Object.keys(alias).forEach(k=>{ if(compact.indexOf(k)>=0&&!p.items.some(i=>i.need===alias[k])){ const st=LTC_STD_ITEMS.find(x=>x.need===alias[k]); if(st) p.items.push({d:st.d,need:st.need,goal:st.goal,content:st.content,std:true}); } });
+  Object.keys(alias).forEach(k=>{ if(compact.indexOf(k)>=0&&!p.items.some(i=>i.need===alias[k]||i.need.indexOf(alias[k])>=0)){ const st=LTC_STD_ITEMS.find(x=>x.need===alias[k]); const content=looseContentFor(k, tableTxt); if(st) p.items.push({d:st.d,need:st.need,goal:'',content:content,review:!content}); } });
+  // 원본 표 순서대로 정렬
+  const c2=tableTxt.replace(/\s/g,'').replace(/화장실이용하기배뇨관리/g,'화장실이용하기·배뇨관리');
+  p.items.sort((a,b)=>c2.indexOf(a.need.replace(/\s/g,''))-c2.indexOf(b.need.replace(/\s/g,'')));
+  p.loose=true;
   return p;
 }
-function parseLtcAny(txt){ return /(^|\n)\s*(성명|이름)\s*[:：]/.test(txt)&&/(^|\n)\s*항목\s*[:：]/.test(txt) ? parseLtcText(txt) : (/(^|\n)\s*(성명|이름)\s*[:：]/.test(txt)&&!/유의|본인부담|인정기간/.test(txt.replace(/(성명|이름)\s*[:：][^\n]*/,''))?parseLtcText(txt):parseLtcLoose(txt)); }
+function parseLtcAny(txt){
+  if(/(^|\n)\s*(성명|이름)\s*[:：]/.test(txt)&&/(^|\n)\s*항목\s*[:：]/.test(txt)) return parseLtcText(txt);
+  const st=parseLtcStructured(txt);
+  if(st.items.length>=1&&st.name) return st;
+  const lo=parseLtcLoose(txt);
+  // 구조화에서 기본정보만 잡혔으면 합치기
+  ['name','grade','birth','validFrom','validTo','burdenFac','burdenHome','hope','limitHome'].forEach(k=>{ if(!lo[k]&&st[k]) lo[k]=st[k]; });
+  if(!lo.notes.length&&st.notes.length) lo.notes=st.notes;
+  return lo;
+}
+
+// ---- 구조화 텍스트(줄 단위 표) 파서 ----
+const LTC_NEED_WORDS=['개인위생관리','화장실 이용하기·배뇨관리','화장실 이용하기','배뇨관리','배설도움','식사도움','목욕도움','체위변경','구강관리','안전한 이동도움','약챙겨먹기','관절움직임 관리','정서관리','약물관리','관절구축관리','기초 건강관리','기초건강관리','욕창관리','통증관리','기능회복훈련','응급상황관리','생활환경관리','인지관리','인지자극','간호처치','치매관리'];
+// 개장 필요내용에 나오는 표준 어휘 (OCR 텍스트에서 내용 복원용)
+const LTC_CONTENT_VOCAB=['옷갈아입기 지시 및 지켜보기 도움','옷갈아입기 도움','옷 입고 뒷정리 하기','몸씻기 도움','머리감기 도움','몸단장 물품 준비와 지켜보기','손발톱깎기','화장 등 외모관리','머리단장','세면 도움','양치질 도움','화장실 이용 도움','배뇨문제 관리','배변문제 관리','기저귀 교환 도움','식사 도움','식사 준비','체위변경 도움','이동 지시 및 지켜보기','이동 시 부축 도움','이동 시 적절한 보조기구 사용 도움','위험요소 최소화 및 안전관리로 낙상예방','정확한 복약도움(시간, 용량, 용법 등)','관절운동지원','다양한 방법으로 의사소통 도움','욕구파악을 위한 관찰(행동, 소리, 동작 등)','비상연락망 준비','말벗 및 위로 등 정서적 지원','투약관리 지도','약 복용 및 인슐린 주사','관절구축예방간호','건강상태 관찰 및 측정','건강교육 및 상담','감염간호','의사진료 지원','치매간호','의료기관 의뢰','욕창예방간호','통증간호','구강간호','신체 인지기능 향상프로그램','신체·인지기능 향상프로그램','신체기능의 훈련','기본동작 훈련','일상생활동작 훈련','인지기능프로그램','여가·정서 프로그램','여가 · 정서 프로그램','사회적응훈련','가족대상 프로그램','물리치료','작업치료','응급서비스','침구린넨 교환 및 정리','환경관리','물품관리','세탁물관리'];
+function isDomainLine(l){ const t=l.replace(/\s/g,''); return LTC_DOMAINS.some(d=>t===d.replace(/\s/g,''))||/^(신체활동지원|정서지원|건강관리|기능회복훈련|응급지원|생활및환경관리|인지관리|일상생활지원|간호처치)$/.test(t); }
+function normDomain(l){ const t=l.replace(/\s/g,''); return LTC_DOMAINS.find(d=>d.replace(/\s/g,'')===t)||l.trim(); }
+function parseLtcStructured(raw){
+  const lines=String(raw||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const p={items:[],notes:[],structured:true};
+  // key: value (한 줄에 " / "로 여러 개)
+  lines.forEach(l=>{
+    if(/본인부담/.test(l)){ const f=l.match(/시설\s*[:：]?\s*(\d{1,2})\s*(\([^)]*\))?\s*%?/); if(f) p.burdenFac=f[1]+(f[2]?' '+f[2]:''); const h=l.match(/재가\s*[:：]?\s*(\d{1,2})\s*(\([^)]*\))?\s*%?/); if(h) p.burdenHome=h[1]+(h[2]?' '+h[2]:''); return; }
+    if(/[:：]/.test(l)&&!/^https?:/.test(l)){
+      l.split(/\s\/\s/).forEach(seg=>{ const m=seg.match(/^([^:：]{1,20})[:：]\s*(.+)$/); if(!m) return; const k=m[1].replace(/\s/g,''), v=m[2].trim();
+        if(/^성명|^이름/.test(k)) p.name=v.replace(/\s.*$/,'');
+        else if(/등급/.test(k)&&!/재가|시설/.test(k)) { const g=v.match(/(\d)\s*등급|인지지원/); if(g) p.grade=g[0].replace(/\s/g,''); }
+        else if(/생년월일|생일/.test(k)) p.birth=normDate(v);
+        else if(/인정(유효)?기간|유효기간/.test(k)) { const d=v.match(/((?:19|20)\d{2}[.\-\/]\s*\d{1,2}[.\-\/]\s*\d{1,2})\s*[~∼-]\s*((?:19|20)\d{2}[.\-\/]\s*\d{1,2}[.\-\/]\s*\d{1,2})/); if(d){ p.validFrom=normDate(d[1]); p.validTo=normDate(d[2]); } }
+        else if(/본인부담/.test(k)) { const f=v.match(/시설\s*[:：]?\s*(\d{1,2})\s*(\([^)]*\))?\s*%?/); if(f) p.burdenFac=f[1]+(f[2]?' '+f[2]:''); const h=v.match(/재가\s*[:：]?\s*(\d{1,2})\s*(\([^)]*\))?\s*%?/); if(h) p.burdenHome=h[1]+(h[2]?' '+h[2]:''); }
+        else if(/^시설$/.test(k)) { const f=v.match(/(\d{1,2})\s*(\([^)]*\))?\s*%?/); if(f) p.burdenFac=f[1]+(f[2]?' '+f[2]:''); }
+        else if(/^재가$/.test(k)) { const h=v.match(/(\d{1,2})\s*(\([^)]*\))?\s*%?/); if(h) p.burdenHome=h[1]+(h[2]?' '+h[2]:''); }
+        else if(/월한도|한도액/.test(k)) { const m2=v.match(/([\d,]{5,})/); if(m2) p.limitHome=m2[1]; }
+        else if(/희망급여/.test(k)) p.hope=v;
+        else if(/유의사항/.test(k)&&v.length>5) p.notes.push(v);
+        else if(/발급일|기준일/.test(k)) p.issued=normDate(v);
+      });
+    }
+  });
+  // 표: 도메인 줄 → 욕구 → 목표 → 필요내용
+  const stopRe=/^(수급자\s*)?희망급여|^유\s*의\s*사\s*항|이용계획\s*및\s*비용|^급여종류/;
+  let i=0; let inTable=false;
+  for(;i<lines.length;i++){
+    const l=lines[i];
+    if(/^(장기요양)?필요영역/.test(l)) { inTable=true; continue; }
+    if(stopRe.test(l)) { if(inTable) break; else continue; }
+    if(!isDomainLine(l)) continue;
+    const n1=lines[i+1]||'', n2=lines[i+2]||'', n3=lines[i+3]||'';
+    if(/^장기요양(욕구|목표|필요내용)$/.test(n1)) continue; // 헤더
+    if(!n1||stopRe.test(n1)) continue;
+    if(isDomainLine(n1)&&normDomain(n1)!==normDomain(l)) continue;   // 다음 줄이 다른 영역명이면 이 줄은 빈 행
+    const row={d:normDomain(l), need:n1, goal:'', content:''};
+    // 목표·필요내용: 다음 도메인/정지 전까지 최대 3줄. 필요내용은 어휘 매칭 비율로 판별
+    const rest=[n2,n3,lines[i+4]||''].filter(x=>x&&!isDomainLine(x)&&!stopRe.test(x));
+    const isContent=(t)=>{ const c=t.replace(/\s/g,''); const hits=LTC_CONTENT_VOCAB.filter(v=>c.indexOf(v.replace(/\s/g,''))>=0).length; return hits>=1&&(/,|，/.test(t)||hits>=1); };
+    if(rest.length>=2){ row.goal=rest[0]; row.content=rest[1]; if(rest[2]&&!isContent(rest[1])&&isContent(rest[2])){ row.goal=rest[0]+' '+rest[1]; row.content=rest[2]; } }
+    else if(rest.length===1){ if(isContent(rest[0])) row.content=rest[0]; else row.goal=rest[0]; }
+    if(row.need&&(row.goal||row.content)){ p.items.push(row); i+=1+(row.goal?1:0)+(row.content?1:0); if(rest[2]&&row.goal.indexOf(rest[1])>=0) i++; }
+  }
+  // 유의사항 블록 (키 없는 줄)
+  let inNote=false;
+  lines.forEach(l=>{ if(/^유\s*의\s*사\s*항\s*[:：]?$/.test(l)){ inNote=true; return; } if(inNote){ if(/이용계획\s*및\s*비용|^급여종류|^합계|^장기요양\s*이용계획/.test(l)) { inNote=false; return; } if(l.length>5&&!/[:：]/.test(l)) p.notes.push(l.replace(/^[■▪●•\-]\s*/,'')); } });
+  lines.forEach(l=>{ if(/^[■▪●•]/.test(l)) { const t=l.replace(/^[■▪●•]\s*/,'').trim(); if(!p.notes.includes(t)) p.notes.push(t); } });
+  // 희망급여가 키 없이 다음 줄에 있는 경우
+  if(!p.hope){ const hi=lines.findIndex(l=>/희망급여\s*$/.test(l)); if(hi>=0&&lines[hi+1]) p.hope=lines[hi+1]; }
+  // 본인부담 "재가 : 15 %" / "시설 : 20 %" 줄 (표 형식)
+  if(!p.burdenFac){ const f=String(raw).match(/시\s*설\s*[:：]\s*(\d{1,2})\s*(\([^)]*\))?\s*%/); if(f) p.burdenFac=f[1]+(f[2]?' '+f[2]:''); }
+  if(!p.burdenHome){ const h=String(raw).match(/재\s*가\s*[:：]\s*(\d{1,2})\s*(\([^)]*\))?\s*%/); if(h) p.burdenHome=h[1]+(h[2]?' '+h[2]:''); }
+  return p;
+}
+// OCR 텍스트: 욕구명 사이 구간에서 표준 어휘로 필요내용 복원
+function looseContentFor(needName, flat){
+  const c=flat.replace(/\s/g,''); const key=needName.replace(/\s/g,'');
+  const idx=c.indexOf(key); if(idx<0) return '';
+  let end=c.length; LTC_NEED_WORDS.concat(LTC_DOMAINS).concat(['희망급여','유의사항']).forEach(w=>{ const k=w.replace(/\s/g,''); if(k===key||key.indexOf(k)>=0) return; const j=c.indexOf(k, idx+key.length); if(j>=0&&j<end) end=j; });
+  const seg=c.slice(idx+key.length, end);
+  const found=LTC_CONTENT_VOCAB.filter(v=>seg.indexOf(v.replace(/\s/g,''))>=0);
+  // 부분 문구(중복 포함) 제거: '신체 인지기능…' vs '신체·인지기능…'
+  return found.filter(v=>!found.some(o=>o!==v&&o.replace(/\s/g,'').indexOf(v.replace(/\s/g,''))>=0&&o.length>v.length)).join(', ');
+}
 
 function openLtcImport(){
   const mo=ensureModal('ltc-import-modal');
@@ -4076,9 +4166,11 @@ function doLtcImport(){
   const ta=document.getElementById('ltc-import-ta'); if(!ta) return;
   const p=parseLtcAny(ta.value);
   if(!p.name){ alert('어르신 성명을 찾지 못했어요.\n텍스트 맨 위에 "성명: 이름" 한 줄을 추가해 주세요.'); return; }
-  if(p.loose){
-    const pv=['성명: '+p.name,'등급: '+(p.grade||'?'),'생년월일: '+(p.birth||'?'),'인정기간: '+(p.validFrom||'?')+' ~ '+(p.validTo||'?'),'본인부담율 시설: '+(p.burdenFac||'?')+' / 재가: '+(p.burdenHome||'?'),'희망급여: '+(p.hope||'?'),'욕구 항목 '+p.items.length+'개: '+p.items.map(i=>i.need).join(', '),'유의사항 '+p.notes.length+'개'].join('\n');
-    if(!confirm('사진 추출 텍스트에서 읽은 내용이에요. 원본과 맞는지 확인하세요.\n\n'+pv+'\n\n※ 항목의 목표·필요내용은 공단 표준 문구로 채워져요. 등록 후 프로필에서 원본과 대조해 고칠 수 있어요.\n\n이대로 등록할까요?')) return;
+  if(p.loose||p.structured){
+    const pv=['성명: '+p.name,'등급: '+(p.grade||'?'),'생년월일: '+(p.birth||'?'),'인정기간: '+(p.validFrom||'?')+' ~ '+(p.validTo||'?'),'본인부담율 시설: '+(p.burdenFac||'?')+' / 재가: '+(p.burdenHome||'?'),'희망급여: '+(p.hope||'?'),'유의사항 '+p.notes.length+'개','',
+      '욕구 항목 '+p.items.length+'개:'].concat(p.items.map(i=>' · ['+(i.d||'?')+'] '+i.need+' → '+(i.content||'(필요내용 못 읽음 — 등록 후 직접 입력)'))).join('\n');
+    const miss=p.items.filter(i=>!i.content).length;
+    if(!confirm('텍스트에서 읽은 내용이에요. 원본과 다르면 "취소"하고 텍스트를 확인하세요.\n\n'+pv+(miss?'\n\n⚠ 필요내용을 못 읽은 항목 '+miss+'개는 등록 후 프로필에서 직접 입력해야 해요.':'')+'\n\n이대로 등록할까요?')) return;
   }
   let e=state.elders.find(x=>x.name===p.name);
   let created=false;
@@ -4094,7 +4186,8 @@ function doLtcImport(){
   const L=ensureLtc(e);
   Object.assign(L,{name:p.name,grade:p.grade||L.grade,birth:p.birth||L.birth,validFrom:p.validFrom||L.validFrom,validTo:p.validTo||L.validTo,
     burdenHome:p.burdenHome||L.burdenHome,burdenFac:p.burdenFac||L.burdenFac,limitHome:p.limitHome||L.limitHome,hope:p.hope||L.hope,issued:p.issued||L.issued});
-  if(p.items.length) L.items=p.items;
+  if(p.items.length) L.items=p.items.map(i=>({d:i.d,need:i.need,goal:i.goal||'',content:i.content||'',review:!!i.review}));
+  L.needsReview=(p.loose||p.structured)?true:false;
   if(p.notes.length) L.notes=p.notes;
   L.updatedAt=today;
   save(); closeLtcImport(); renderElders();
@@ -4173,6 +4266,7 @@ function ltcSectionHtml(e){
     h+='<div class="ltc-h">유의사항 <button class="brief-collapse no-print" onclick="ltcAddNote('+e.id+')">＋ 추가</button></div>';
     (P.notes||[]).forEach((n,i)=>{ h+='<div class="ltc-note-edit"><input type="text" value="'+esc(n)+'" onchange="ltcSetNote('+e.id+','+i+',this.value)"><button class="hl-del" onclick="ltcDelNote('+e.id+','+i+')">✕</button></div>'; });
   } else {
+    if(P.needsReview) h+='<div class="cns-guide">📥 텍스트에서 가져온 개장이에요. <b>원본 사진과 항목·필요내용을 대조</b>한 뒤 ✎ 편집에서 "검토 완료"를 눌러주세요. <button class="brief-collapse" onclick="ltcReviewDone('+e.id+')">✓ 검토 완료</button></div>';
     const meta=[];
     if(P.grade) meta.push('등급 <b>'+esc(P.grade)+'</b>');
     if(P.validFrom||P.validTo) meta.push('인정기간 <b>'+esc(P.validFrom||'')+' ~ '+esc(P.validTo||'')+'</b>'+ltcValidBadge(P.validTo));
@@ -4181,7 +4275,7 @@ function ltcSectionHtml(e){
     if(meta.length) h+='<div class="ltc-meta">'+meta.join(' · ')+'</div>';
     if(P.items.length){
       h+='<table class="ltc-table"><thead><tr><th>필요영역</th><th>욕구</th><th>목표</th><th>필요내용</th></tr></thead><tbody>'+
-        P.items.map(it=>'<tr><td>'+esc(it.d)+'</td><td><b>'+esc(it.need)+'</b></td><td>'+esc(it.goal||'')+'</td><td>'+esc(it.content||'')+'</td></tr>').join('')+'</tbody></table>';
+        P.items.map(it=>'<tr'+(it.review||!it.content?' style="background:#FFF3C4"':'')+'><td>'+esc(it.d)+'</td><td><b>'+esc(it.need)+'</b></td><td>'+esc(it.goal||'')+'</td><td>'+(it.content?esc(it.content):'<span class="fr-need">필요내용 없음 — 편집에서 입력</span>')+'</td></tr>').join('')+'</tbody></table>';
     }
     if(P.notes&&P.notes.length){
       h+='<div class="ltc-notes"><b>유의사항</b><ul>'+P.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul></div>';
@@ -4198,6 +4292,7 @@ function ltcValidBadge(to){
   if(diff<=60) return ' <span class="ltc-warn">⚠ '+diff+'일 남음 — 갱신 준비</span>';
   return '';
 }
+function ltcReviewDone(id){ const e=state.elders.find(x=>x.id==id); if(!e||!e.ltcPlan) return; e.ltcPlan.needsReview=false; (e.ltcPlan.items||[]).forEach(i=>delete i.review); save(); openElderProfile(id); }
 function ltcToggleEdit(id){ const e=state.elders.find(x=>x.id==id); if(!e) return; if(!e.ltcPlan) ensureLtc(e); e._ltcEdit=!e._ltcEdit; if(!e._ltcEdit) delete e._ltcEdit; save(); openElderProfile(id); }
 function ltcSet(id,k,v){ const e=state.elders.find(x=>x.id==id); if(!e) return; const L=ensureLtc(e); L[k]=v; L.updatedAt=today; if(k==='grade'&&v) e.grade=v; save(); }
 function ltcToggleItem(id,need){
@@ -5565,7 +5660,21 @@ function halfRange(hk){ const y=hk.slice(0,4); return hk.endsWith('H1')?[y+'-01-
 function inHalf(d,hk){ if(!d) return false; const [a,b]=halfRange(hk); return d>=a&&d<=b; }
 function evalInHalf(elderId, key, hk){ const arr=(state.evals&&state.evals[elderId])||[]; return arr.filter(en=>inHalf(en.date,hk)&&en[key]!=null).sort((a,b)=>b.date.localeCompare(a.date))[0]||null; }
 function cistExempt(elderId){ const nd=latestNeedsOf(elderId); return nd&&nA(nd,'cog','demMed')==='복용'; }
-function roundCell(ok, main, sub, cls){ return '<td class="rd-cell '+(cls||(ok?'ok':'no'))+'"><div class="rd-main">'+main+'</div>'+(sub?'<div class="rd-sub">'+sub+'</div>':'')+'</td>'; }
+
+// 현황표 칸 클릭 → 해당 화면으로 이동
+function rdGo(kind, elderId, recId){
+  const tabBtn=(t)=>document.querySelector('nav.tabs button[data-tab="'+t+'"]');
+  if(kind==='elder'){ openElderProfile(elderId); return; }
+  if(kind==='fall'||kind==='braden'||kind==='cist'){
+    go(tabBtn('eval'));
+    const sel=document.getElementById('ev-elder'); if(sel){ sel.value=String(elderId); if(typeof renderEvalHistory==='function'){ editingEval=null; renderEvalHistory(); } }
+    setTimeout(()=>openAssess(kind),50); return;
+  }
+  if(kind==='needs'){ go(tabBtn('needs')); if(recId) openNeeds(recId); else startNeeds(elderId); return; }
+  if(kind==='result'){ go(tabBtn('plan')); planView='result'; renderPlanTab(); if(recId) openRes(recId); else startRes(elderId); return; }
+  if(kind==='plan'||kind==='send'){ go(tabBtn('plan')); planView='plan'; renderPlanTab(); if(recId) openCP(recId); else startCP(elderId); return; }
+}
+function roundCell(ok, main, sub, cls, onclick){ return '<td class="rd-cell '+(cls||(ok?'ok':'no'))+(onclick?' clickable':'')+'"'+(onclick?' onclick="'+onclick+'" title="열기"':'')+'><div class="rd-main">'+main+'</div>'+(sub?'<div class="rd-sub">'+sub+'</div>':'')+'</td>'; }
 function roundTableHtml(){
   const hk=roundHalf; const [ha,hb]=halfRange(hk);
   const elders=state.elders.filter(e=>e.status==='치료중').sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
@@ -5588,25 +5697,26 @@ function renderRoundBody(){
     const nd=(state.needs||[]).filter(n=>n.elderId===e.id&&inHalf(n.date,hk)).sort((a,b)=>b.date.localeCompare(a.date))[0];
     const rs=(state.evalResults||[]).filter(r=>r.elderId===e.id&&inHalf(r.date,hk)).sort((a,b)=>b.date.localeCompare(a.date))[0];
     const cp=(state.carePlans||[]).filter(p=>p.elderId===e.id&&inHalf(p.date,hk)).sort((a,b)=>b.date.localeCompare(a.date))[0];
-    h+='<tr><td class="rd-name">'+(e.room?'<b>'+esc(e.room)+'</b> ':'')+esc(e.name)+(newHalf?'<br><span class="rd-new">신규 '+esc(e.admit.slice(5))+'</span>':'')+'</td>';
+    h+='<tr><td class="rd-name clickable" onclick="rdGo(\'elder\','+e.id+')" title="프로필 열기">'+(e.room?'<b>'+esc(e.room)+'</b> ':'')+esc(e.name)+(newHalf?'<br><span class="rd-new">신규 '+esc(e.admit.slice(5))+'</span>':'')+'</td>';
     // 낙상
-    if(f){ const j=(f.detail&&f.detail.fall&&f.detail.fall.judge)||''; h+=roundCell(true, f.fall+'점 <span class="rd-tag '+(f.fall>=11?'red':f.fall>=5?'amber':'')+'">'+(j.replace('낙상위험 ','')||'—')+'</span>', f.date.slice(5)); } else h+=roundCell(false,'미평가','');
+    const gc=(k)=>"rdGo('"+k+"',"+e.id+")";
+    if(f){ const j=(f.detail&&f.detail.fall&&f.detail.fall.judge)||''; h+=roundCell(true, f.fall+'점 <span class="rd-tag '+(f.fall>=11?'red':f.fall>=5?'amber':'')+'">'+(j.replace('낙상위험 ','')||'—')+'</span>', f.date.slice(5), null, gc('fall')); } else h+=roundCell(false,'미평가','', null, gc('fall'));
     // 욕창 (위험군은 분기 재평가)
     if(b){ const lv=b.braden<=12?'고위험':b.braden<=18?'위험':'낮음'; let sub=b.date.slice(5); let cls='ok';
       if(b.braden<=18){ const q2=new Date(b.date+'T00:00:00'); q2.setMonth(q2.getMonth()+3); const due=q2.toISOString().slice(0,10); if(today>due) { sub+=' · <span class="rd-due">분기 재평가 지연</span>'; cls='warn'; } else sub+=' · 재평가 '+due.slice(5); }
-      h+=roundCell(true, b.braden+'점 <span class="rd-tag '+(b.braden<=12?'red':b.braden<=18?'purple':'')+'">'+lv+'</span>', sub, cls); } else h+=roundCell(false,'미평가','');
+      h+=roundCell(true, b.braden+'점 <span class="rd-tag '+(b.braden<=12?'red':b.braden<=18?'purple':'')+'">'+lv+'</span>', sub, cls, gc('braden')); } else h+=roundCell(false,'미평가','', null, gc('braden'));
     // 인지
-    if(c) h+=roundCell(true, c.cist+'점', c.date.slice(5)); else if(cistExempt(e.id)) h+=roundCell(true,'<span class="rd-tag red">치매진단</span>','검사 제외','warn'); else h+=roundCell(false,'미평가','');
+    if(c) h+=roundCell(true, c.cist+'점', c.date.slice(5), null, gc('cist')); else if(cistExempt(e.id)) h+=roundCell(true,'<span class="rd-tag red">치매진단</span>','검사 제외','warn', gc('cist')); else h+=roundCell(false,'미평가','', null, gc('cist'));
     // 욕구사정
-    if(nd){ const done=needsDoneCount(nd); h+=roundCell(done===11, (done===11?'작성완료':'작성 중')+' ('+done+'/11)', nd.date.slice(5)+(nd.carepoDone?' · 케어포✓':''), done===11?'ok':'warn'); } else h+=roundCell(false,'미작성','');
+    if(nd){ const done=needsDoneCount(nd); h+=roundCell(done===11, (done===11?'작성완료':'작성 중')+' ('+done+'/11)', nd.date.slice(5)+(nd.carepoDone?' · 케어포✓':''), done===11?'ok':'warn', "rdGo('needs',"+e.id+","+nd.id+")"); } else h+=roundCell(false,'미작성','', null, "rdGo('needs',"+e.id+")");
     // 결과평가
-    if(newHalf&&!rs) h+=roundCell(true,'대상 제외','입소 반기','warn'); else if(rs) h+=roundCell(true,'작성완료', rs.date.slice(5)+(rs.rewrite==='30일 이내 재작성'?' · 재작성 '+(rs.rewriteDue||'').slice(5):'')); else h+=roundCell(false,'미작성','');
+    if(newHalf&&!rs) h+=roundCell(true,'대상 제외','입소 반기','warn', "rdGo('result',"+e.id+")"); else if(rs) h+=roundCell(true,'작성완료', rs.date.slice(5)+(rs.rewrite==='30일 이내 재작성'?' · 재작성 '+(rs.rewriteDue||'').slice(5):''), null, "rdGo('result',"+e.id+","+rs.id+")"); else h+=roundCell(false,'미작성','', null, "rdGo('result',"+e.id+")");
     // 계획
     if(cp){ const rowsC=(e.ltcPlan&&e.ltcPlan.items&&e.ltcPlan.items.length)?ltcCompare(cp,e,latestNeedsOf(e.id),(typeof latestEvalData==='function')?latestEvalData(e.id):null):[]; const pendC=rowsC.filter(r=>(r.kind==='mismatch'||r.kind==='noitem')&&!((cp.ltcCmp||{})[r.ph])).length;
-      const end=cp.endDate||(cp.startDate?(()=>{const d=new Date(cp.startDate+'T00:00:00'); d.setFullYear(d.getFullYear()+1); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10);})():''); h+=roundCell(true, (cp.startDate||cp.date).slice(2).replace(/-/g,'.')+(end?'~'+end.slice(2).replace(/-/g,'.'):''), (cp.nhisDate?'공단('+cp.nhisDate.slice(5)+')':'<span class="rd-due">공단 미통보</span>')+(pendC?'<br><span class="rd-due">개장 불일치 '+pendC+'건</span>':''), (cp.nhisDate&&!pendC)?'ok':'warn'); } else h+=roundCell(false,'미작성','');
+      const end=cp.endDate||(cp.startDate?(()=>{const d=new Date(cp.startDate+'T00:00:00'); d.setFullYear(d.getFullYear()+1); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10);})():''); h+=roundCell(true, (cp.startDate||cp.date).slice(2).replace(/-/g,'.')+(end?'~'+end.slice(2).replace(/-/g,'.'):''), (cp.nhisDate?'공단('+cp.nhisDate.slice(5)+')':'<span class="rd-due">공단 미통보</span>')+(pendC?'<br><span class="rd-due">개장 불일치 '+pendC+'건</span>':''), (cp.nhisDate&&!pendC)?'ok':'warn', "rdGo('plan',"+e.id+","+cp.id+")"); } else h+=roundCell(false,'미작성','', null, "rdGo('plan',"+e.id+")");
     // 안내·발송
     if(cp){ const sent=!!cp.nhisDate, sign=!!cp.signDone; const late=cp.nhisDate&&cp.startDate&&cp.nhisDate>cp.startDate;
-      h+=roundCell(sent&&sign, (sent?'<span class="rd-tag green">발송완료</span>':'<span class="rd-tag red">발송 필요</span>')+(sign?'':'<br><span class="rd-tag red">우선안내 필요</span>')+(late?'<br><span class="rd-due">통보 지연</span>':''), '', sent&&sign?'ok':'warn'); } else h+=roundCell(false,'—','','no');
+      h+=roundCell(sent&&sign, (sent?'<span class="rd-tag green">발송완료</span>':'<span class="rd-tag red">발송 필요</span>')+(sign?'':'<br><span class="rd-tag red">우선안내 필요</span>')+(late?'<br><span class="rd-due">통보 지연</span>':''), '', sent&&sign?'ok':'warn', "rdGo('send',"+e.id+","+cp.id+")"); } else h+=roundCell(false,'—','','no');
     h+='</tr>';
   });
   tb.innerHTML=h||'<tr><td colspan="8" class="empty">어르신이 없어요.</td></tr>';
@@ -11274,7 +11384,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-30-04';
+const APP_VERSION = '2026-09-30-06';
 function checkForUpdate(){
   try{
     const base=location.pathname;
