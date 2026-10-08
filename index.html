@@ -2004,6 +2004,7 @@
 
   <!-- 백업 -->
   <section id="data" class="panel">
+    <div class="card" id="safe-card"></div>
     <div class="card">
       <div class="card-title">☁️ 클라우드 자동 동기화</div>
       <p class="hint" style="line-height:1.7;">컴퓨터와 휴대폰이 <b>같은 구글 시트</b>에 자동으로 저장·연동돼요. 한 기기에서 입력하면 다른 기기에서 열 때 불러올지 물어봐요. <b>덮어쓰기 전 항상 되돌림용 백업</b>을 만들어 안전해요.</p>
@@ -2193,7 +2194,101 @@ if(state.moveSlots && state.moveSlots.length && !state.moveSlotsByDay){
 refreshSlots();
 
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } }
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); if(typeof scheduleSync==='function') scheduleSync(); }
+// ===== 저장 안전장치 (자동저장 충돌·용량·업데이트 되돌림 방지) =====
+var REV_KEY='pt_clinic_rev', SAVED_AT_KEY='pt_clinic_saved_at';
+function verParts(v){ return String(v||'').split(/[-.]/).map(function(x){return parseInt(x,10)||0;}); }
+function verNewer(a,b){ var A=verParts(a),B=verParts(b); for(var i=0;i<Math.max(A.length,B.length);i++){ var x=A[i]||0,y=B[i]||0; if(x!==y) return x>y; } return false; }
+function ensureBanner(id,bg){ var b=document.getElementById(id); if(!b){ b=document.createElement('div'); b.id=id; b.className='no-print'; b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:10060;padding:10px 14px;color:#fff;font-size:13.5px;line-height:1.5;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.3);background:'+bg+';'; document.body.appendChild(b);} return b; }
+var _bbtn='background:#fff;color:#222;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;font-weight:700;';
+function showSaveError(){ var b=ensureBanner('save-banner','#B4452F'); b.style.display='flex'; b.innerHTML='<b>⛔ 저장되지 않았어요!</b><span>저장 공간이 가득 찼거나 브라우저가 저장을 막았어요. 지금 입력한 내용이 사라질 수 있어요.</span><button style="'+_bbtn+'" onclick="exportData()">백업 파일 받기</button><button style="'+_bbtn+'" onclick="compressAllPhotos()">사진 용량 줄이기</button>'; }
+function hideSaveError(){ var b=document.getElementById('save-banner'); if(b) b.style.display='none'; }
+function showConflictBanner(){ var b=ensureBanner('conflict-banner','#8A5A00'); b.style.display='flex'; b.innerHTML='<b>⚠️ 다른 화면에서 더 최신 내용이 저장됐어요.</b><span>이 화면은 옛날 내용이라, 여기서 저장하면 최신 내용을 덮어쓰게 돼서 <b>저장을 막았어요</b>.</span><button style="'+_bbtn+'" onclick="location.reload()">새로고침해서 최신 내용 보기</button>'; }
+function save(){
+  try{
+    var stored=parseInt(localStorage.getItem(REV_KEY)||'0',10);
+    if(stored>(state._rev||0)){ showConflictBanner(); return false; }   // 다른 탭/화면이 더 나중에 저장함 → 옛 화면이 덮어쓰지 않게 차단
+    var next=(state._rev||0)+1; state._rev=next;
+    var str=JSON.stringify(state);
+    localStorage.setItem(KEY,str);
+    localStorage.setItem(REV_KEY,String(next));
+    localStorage.setItem(SAVED_AT_KEY,new Date().toISOString());
+    hideSaveError();
+  }catch(e){ state._rev=Math.max(0,(state._rev||1)-1); showSaveError(); return false; }
+  if(typeof scheduleSync==='function') scheduleSync();
+  return true;
+}
+window.addEventListener('storage',function(ev){ if(ev.key===REV_KEY||ev.key===KEY) showConflictBanner(); });
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+// ---- 데이터 개수 비교 ----
+function stateCounts(x){
+  var o=x; if(typeof x==='string'){ try{ o=JSON.parse(x); }catch(e){ return null; } }
+  if(!o||typeof o!=='object') return null;
+  var len=function(a){ return Array.isArray(a)?a.length:0; };
+  var sumObj=function(ob){ return Object.keys(ob||{}).reduce(function(t,k){ var v=ob[k]; return t+(Array.isArray(v)?v.length:(v&&typeof v==='object'?Object.keys(v).length:0)); },0); };
+  return {'어르신':len(o.elders),'개장':(o.elders||[]).filter(function(e){return e&&e.ltcPlan&&e.ltcPlan.items&&e.ltcPlan.items.length;}).length,'상담':len(o.counsels),'욕구사정':len(o.needs),'계획서':len(o.carePlans),'결과평가':len(o.evalResults),'평가기록':sumObj(o.evals),'치료기록':sumObj(o.records)};
+}
+function compareCounts(l,r){ var more=0,less=0; Object.keys(l).forEach(function(k){ if(l[k]>(r[k]||0)) more++; else if(l[k]<(r[k]||0)) less++; }); return {localAhead:more>0&&less===0, cloudAhead:less>0&&more===0, same:more===0&&less===0, mixed:more>0&&less>0}; }
+// ---- 충돌 선택 창 ----
+var _syncCtx=null;
+function showSyncChoice(remote,savedAt,lc,rc,cmp,forced){
+  _syncCtx={remote:remote,savedAt:savedAt,cmp:cmp};
+  var mo=ensureModal('sync-choice-modal');
+  var rows=Object.keys(lc).filter(function(k){return lc[k]||rc[k];}).map(function(k){ var a=lc[k],b=rc[k]||0; return '<tr><td>'+k+'</td><td style="'+(a>b?'font-weight:800;color:#1d7a5f;':'')+'">'+a+'</td><td style="'+(b>a?'font-weight:800;color:#1d7a5f;':'')+'">'+b+'</td></tr>'; }).join('');
+  var rec=cmp.cloudAhead?'☁️ 클라우드 쪽이 더 많아요 → <b>클라우드 불러오기</b>를 권장해요.':cmp.localAhead?'📱 이 기기 쪽이 더 많아요 → <b>이 기기 내용 유지</b>를 권장해요.':cmp.mixed?'서로 더 많은 항목이 달라요. <b>어느 쪽에 최근 작업이 있는지</b> 표를 보고 판단하세요.':'개수는 같고 내용만 달라요. 최근에 작업한 쪽을 고르세요.';
+  mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>☁️ 이 기기와 클라우드 백업이 달라요</b></div><div class="modal-body" style="'+modalBodyStyle()+'">'+
+    '<p style="font-size:13px;line-height:1.6;margin:0 0 8px;">클라우드에 저장된 시각: <b>'+fmtTime(savedAt)+'</b><br><span style="color:#8a5a00;">※ 시각이 달라도 "더 최신"이라는 뜻은 아니에요. 아래 개수로 확인하세요.</span></p>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;"><thead><tr style="background:#eef2f6;"><th style="text-align:left;padding:5px 8px;">항목</th><th style="padding:5px 8px;">이 기기</th><th style="padding:5px 8px;">클라우드</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div style="font-size:13px;background:#FFF8E1;border:1px solid #F5C518;border-radius:8px;padding:8px 10px;margin-bottom:10px;">'+rec+'</div>'+
+    '<div style="display:flex;flex-direction:column;gap:8px;">'+
+    '<button class="btn teal" style="padding:12px;" onclick="syncKeepLocal()">✓ 이 기기 내용 유지 (클라우드를 이 기기 것으로 덮어쓰기)</button>'+
+    '<button class="btn" style="padding:12px;" onclick="syncTakeCloud()">⬇ 클라우드 것으로 바꾸기 <small>(이 기기 내용은 되돌리기용으로 보관)</small></button>'+
+    (forced?'<button class="btn" onclick="syncCloseChoice()">닫기</button>':'<button class="btn" onclick="syncLater()">나중에 (자동 클라우드 저장을 잠시 멈춰요)</button>')+
+    '</div></div></div>';
+}
+function syncCloseChoice(){ var m=document.getElementById('sync-choice-modal'); if(m) m.remove(); updateSyncUI('ok'); }
+function syncKeepLocal(){ syncCloseChoice(); _pausePush=false; pushSync(true); }
+function syncTakeCloud(){
+  if(!_syncCtx) return;
+  var lc=stateCounts(state), rc=stateCounts(_syncCtx.remote);
+  if(!_syncCtx.cmp.cloudAhead&&!confirm('클라우드에는 이 기기보다 적거나 다른 내용이 있어요.\n\n이 기기: '+JSON.stringify(lc)+'\n클라우드: '+JSON.stringify(rc)+'\n\n정말 클라우드 것으로 바꿀까요? (되돌리기는 백업 탭에서 가능)')) return;
+  var m=document.getElementById('sync-choice-modal'); if(m) m.remove(); _pausePush=false;
+  doRestore(_syncCtx.remote,_syncCtx.savedAt);
+}
+function syncLater(){ if(_syncCtx){ setSyncMeta(Object.assign({},getSyncMeta(),{dismissed:_syncCtx.savedAt})); } _pausePush=true; syncCloseChoice(); updateSyncUI('paused'); }
+// ---- 저장 상태 카드 (백업 탭) ----
+function storageUsedKB(){ var t=0; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); t+=(k.length+(localStorage.getItem(k)||'').length); } }catch(e){} return Math.round(t/1024); }
+function renderSafeCard(){
+  var box=document.getElementById('safe-card'); if(!box) return;
+  var used=storageUsedKB(), pct=Math.min(100,Math.round(used/5000*100)); var c=stateCounts(state)||{}; var meta=getSyncMeta();
+  var photos=0; (state.elders||[]).forEach(function(e){ if(e.ltcPlan&&e.ltcPlan.photos) photos+=e.ltcPlan.photos.length; });
+  box.innerHTML='<div class="card-title">🛡 저장 안전 상태</div>'+
+    '<div style="font-size:13px;margin-bottom:6px;">이 기기 저장 용량 <b>'+used.toLocaleString()+' KB</b> / 약 5,000 KB ('+pct+'%)'+(pct>=80?' <span style="color:#B4452F;font-weight:700;">⚠ 거의 찼어요 — 사진 용량을 줄이세요</span>':'')+'</div>'+
+    '<div style="height:8px;background:#e6ebef;border-radius:6px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:'+pct+'%;background:'+(pct>=80?'#B4452F':'#2E7D6B')+';"></div></div>'+
+    '<div style="font-size:12.5px;color:#555;line-height:1.7;">마지막 저장(이 기기): <b>'+fmtTime(localStorage.getItem(SAVED_AT_KEY))+'</b> · 클라우드 마지막 동기화: <b>'+fmtTime(meta.lastSync)+'</b><br>'+Object.keys(c).map(function(k){return k+' '+c[k];}).join(' · ')+' · 개장 사진 '+photos+'장</div>'+
+    cloudStatusHtml()+
+    '<div class="row" style="margin-top:8px;"><button class="btn" onclick="compressAllPhotos()">🗜 개장 사진 용량 줄이기</button><button class="btn" onclick="exportData()">💾 백업 파일 받기</button><button class="btn" onclick="pullSync(true)">☁️ 클라우드와 개수 비교</button><button class="btn teal" onclick="manualPush()">☁️ 지금 클라우드에 올리기</button></div>'+
+    '<p class="hint" style="margin-top:6px;font-size:12px;">저장이 안 되면 화면 위쪽에 <b>빨간 경고</b>가 떠요. 정기적으로 "백업 파일 받기"를 해 두면 가장 안전해요.</p>';
+}
+function cloudStatusHtml(){
+  const m=getSyncMeta(); const size=payloadStr().length; const over=size>CLOUD_LIMIT&&!m.bigOk;
+  let h='<div style="margin:10px 0 6px;padding:9px 11px;border-radius:9px;font-size:12.5px;line-height:1.7;background:'+(over||m.failCount?'#FDE2E2':'#E6F6E6')+';">';
+  h+='<b>☁️ 클라우드 저장 상태</b><br>마지막 성공: <b>'+fmtTime(m.lastPushOk||m.lastSync)+'</b> · 보낼 크기 <b>'+Math.round(size/1000)+'천 자</b> (사진 제외)'+(m.failCount?'<br><span style="color:#B4452F;font-weight:700;">⚠ 최근 실패 '+m.failCount+'회 — '+esc(m.lastFailReason||'')+'</span>':'');
+  if(over) h+='<br><span style="color:#B4452F;font-weight:700;">⚠ 구글 시트 한 칸 한도(50천 자)를 넘어 클라우드 저장이 멈춰요.</span>';
+  h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (한도 없음, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 기존 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기<br>2) 배포 → 배포 관리 → 연필(수정) → 버전: <b>새 버전</b> → 배포<br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
+  return h;
+}
+const GAS_CODE=`// 물리치료실 관리앱 클라우드 저장 (Drive 파일 방식 — 용량 한도 없음)
+function _file(){ var name='pt_clinic_backup.json'; var it=DriveApp.getFilesByName(name); if(it.hasNext()) return it.next(); return DriveApp.createFile(name,'',MimeType.PLAIN_TEXT); }
+function doGet(e){ var f=_file(); var txt=f.getBlob().getDataAsString()||''; var savedAt=txt?f.getLastUpdated().toISOString():''; return ContentService.createTextOutput(JSON.stringify({ok:true,payload:txt,savedAt:savedAt})).setMimeType(ContentService.MimeType.JSON); }
+function doPost(e){ try{ var body=JSON.parse(e.postData.contents||'{}'); var p=body.payload||''; if(!p) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'빈 데이터'})).setMimeType(ContentService.MimeType.JSON); JSON.parse(p); var f=_file(); f.setContent(p); return ContentService.createTextOutput(JSON.stringify({ok:true,savedAt:new Date().toISOString(),size:p.length})).setMimeType(ContentService.MimeType.JSON); }catch(err){ return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err)})).setMimeType(ContentService.MimeType.JSON); } }`;
+function compressAllPhotos(){
+  var list=[]; (state.elders||[]).forEach(function(e){ if(e.ltcPlan&&e.ltcPlan.photos) e.ltcPlan.photos.forEach(function(p){ list.push(p); }); });
+  if(!list.length){ alert('줄일 사진이 없어요.'); return; }
+  var before=list.reduce(function(a,p){return a+p.data.length;},0), done=0;
+  var fin=function(){ var after=list.reduce(function(a,p){return a+p.data.length;},0); var ok=save(); alert('사진 '+list.length+'장 용량을 줄였어요.\n'+Math.round(before/1024)+' KB → '+Math.round(after/1024)+' KB'+(ok===false?'\n\n※ 그래도 저장이 안 되면 "백업 파일 받기"로 먼저 백업하세요.':'')); renderSafeCard(); };
+  list.forEach(function(p){ var img=new Image(); img.onload=function(){ var MAX=1000,w=img.width,h=img.height; if(w>MAX||h>MAX){ var r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); } var cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); var d2=cv.toDataURL('image/jpeg',0.6); if(d2.length<p.data.length) p.data=d2; if(++done===list.length) fin(); }; img.onerror=function(){ if(++done===list.length) fin(); }; img.src=p.data; });
+}
+
 
 // ===== 비밀번호 잠금 =====
 const LOCK_KEY = 'pt_clinic_lock';
@@ -2298,6 +2393,7 @@ function go(btn){
   if(tab==='history') initHistory();
   if(tab==='program') initProgram();
   if(tab==='bedcare'){ bedDate=new Date().toISOString().slice(0,10); renderBedcare(); }
+  if(tab==='data') renderSafeCard();
   if(tab==='counsel') renderCounsel();
   if(tab==='needs') renderNeeds();
   if(tab==='plan') renderPlanTab(); else { guideOpen=false; if(typeof renderGuideDrawer==='function') renderGuideDrawer(); }
@@ -3439,7 +3535,7 @@ function sel(opts, cur, id, key){
 }
 function cnsSet(id, key, v){
   const c=counselById(id); if(!c) return;
-  c[key]=v; saveCounsel(c);
+  c[key]=v; if(key==='elderName'){ const m=state.elders.find(x=>x.name===v); c.elderId=m?m.id:null; if(state.elders.filter(x=>x.name===v).length>1) alert('같은 이름의 어르신이 여러 명 있어요. 호실을 확인해 정확한 분인지 확인하세요.'); } saveCounsel(c);
   if(key==='week'||key==='fields') renderCounsel();
   if(key==='week') renderCounsel();
 }
@@ -4178,8 +4274,8 @@ function openLtcImport(){
   mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>📑 개장 붙여넣기 → 어르신 등록</b><button onclick="closeLtcImport()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;">✕</button></div>'+
     '<div class="modal-body" style="'+modalBodyStyle()+'">'+
     '<p class="hint"><b>두 가지 모두 돼요.</b> ① 갤럭시 갤러리 → 개장 사진 → <b>텍스트 추출</b> → 전체 복사 → 여기 붙여넣기 (형식 상관없음) &nbsp;② 정리된 형식 텍스트 붙여넣기. 같은 이름의 어르신이 있으면 개장만 갱신하고, 없으면 새로 등록합니다.</p>'+
-    '<div class="cns-guide">사진 추출 텍스트가 <b>표 순서가 뒤섞여 있으면 등록을 막아요</b>(잘못 들어가는 것 방지). 그럴 땐 사진을 채팅에 올려 정리된 텍스트를 받아 붙여넣으세요 — 그건 항상 정확히 들어가요. 등록 전에는 읽은 내용을 확인창으로 보여드려요.</div>'+
-    '<div class="hint">여러 명을 한꺼번에 붙여넣어도 <b>성명:</b> 줄마다 나눠 각각 등록돼요.</div>'+
+    '<div class="cns-guide">사진 추출 텍스트가 <b>표 순서가 뒤섞여 있으면 등록을 막아요</b>(잘못 들어가는 것 방지). 그럴 땐 사진을 채팅에 올려 정리된 텍스트를 받아 붙여넣으세요. 등록 후 원본과 대조하고 "검토 완료"를 눌러주세요. 등록 전에는 읽은 내용을 확인창으로 보여드려요.</div>'+
+    '<div class="hint">여러 명을 한꺼번에 붙여넣어도 <b>성명:</b> 줄마다 나눠 각각 등록돼요. 등록된 개장에는 <b>검토 필요</b> 표시가 붙고, 사진과 대조한 뒤 검토 완료를 누르세요.</div>'+
     '<details class="ltc-fmt"><summary>입력 형식 보기</summary><pre>성명: 유옥순\n등급: 4등급\n생년월일: 1934-03-28\n인정기간: 2023-12-03 ~ 2027-12-02\n본인부담율 시설: 8 (감경)\n본인부담율 재가: 6 (감경)\n항목: 신체활동지원 | 개인위생관리 | 목표 | 필요내용\n항목: 건강관리 | 약물관리 | 목표 | 필요내용\n희망급여: 노인요양시설\n유의사항: 부드럽고 여유 있는 어조로…\n유의사항: 인지기능저하 예방을 위해…</pre></details>'+
     '<textarea id="ltc-import-ta" class="note-ta" rows="12" placeholder="여기에 붙여넣기"></textarea>'+
     '<div class="sp-foot"><button class="btn" onclick="closeLtcImport()">취소</button><button class="btn teal" onclick="doLtcImport()">확인 → 등록</button></div>'+
@@ -4196,12 +4292,14 @@ function doLtcImportBatch(text){
     const p=parseLtcText(b);
     if(!p.name){ res.push({name:'(이름없음)',err:'성명 못 읽음'}); return; }
     if(!p.items.length){ res.push({name:p.name,err:'항목 줄이 없음'}); return; }
-    let e=state.elders.find(x=>x.name===p.name); let created=false;
+    const sameName=state.elders.filter(x=>x.name===p.name); let e=sameName[0]; let created=false;
+    if(sameName.length>1){ e=sameName.find(x=>x.ltcPlan&&x.ltcPlan.birth&&p.birth&&x.ltcPlan.birth===p.birth)||null; if(!e){ res.push({name:p.name,err:'같은 이름 '+sameName.length+'명 — 생년월일로 구분 불가, 수동 등록 필요'}); return; } }
+    if(e&&e.ltcPlan&&e.ltcPlan.birth&&p.birth&&e.ltcPlan.birth!==p.birth){ res.push({name:p.name,err:'기존 어르신 생년월일('+e.ltcPlan.birth+')과 다름('+p.birth+') — 동명이인 가능, 확인 필요'}); return; }
     if(!e){ e={id:Date.now()+res.length, name:p.name, room:'', status:'치료중', gender:'', age:ageFromBirth(p.birth), grade:p.grade||'', diag:'', admit:today, visit:'치료실', plan:[], risks:[], days:[], slots:{}}; state.elders.push(e); created=true; }
     else { if(p.grade) e.grade=p.grade; if(p.birth&&!e.age) e.age=ageFromBirth(p.birth); }
     const L=ensureLtc(e);
     Object.assign(L,{name:p.name,grade:p.grade||L.grade,birth:p.birth||L.birth,validFrom:p.validFrom||L.validFrom,validTo:p.validTo||L.validTo,burdenHome:p.burdenHome||L.burdenHome,burdenFac:p.burdenFac||L.burdenFac,limitHome:p.limitHome||L.limitHome,hope:p.hope||L.hope,issued:p.issued||L.issued});
-    L.items=p.items.map(i=>({d:i.d,need:i.need,goal:i.goal||'',content:i.content||'',review:false})); L.needsReview=false;
+    L.items=p.items.map(i=>({d:i.d,need:i.need,goal:i.goal||'',content:i.content||'',review:!i.content})); L.needsReview=true;
     if(p.notes.length) L.notes=p.notes; L.updatedAt=today;
     const warn=[]; if(!p.birth) warn.push('생년월일'); if(!p.validFrom) warn.push('인정기간'); if(!p.grade) warn.push('등급'); if(p.items.some(i=>!i.content)) warn.push('필요내용 빈 항목');
     res.push({name:p.name,created,items:L.items.length,notes:L.notes.length,warn});
@@ -4218,7 +4316,7 @@ function doLtcImport(){
   if(!p.name){ alert('어르신 성명을 찾지 못했어요.\n텍스트 맨 위에 "성명: 이름" 한 줄을 추가해 주세요.'); return; }
   if(p.quality==='low'){
     const noC=p.items.filter(i=>!i.content).length;
-    alert('⛔ 이 텍스트는 표가 심하게 섞여 있어 정확히 읽을 수 없어요.\n\n· 읽은 항목 '+p.items.length+'개 중 필요내용 없음 '+noC+'개'+(!p.birth?'\n· 생년월일 못 읽음':'')+(!p.validFrom?'\n· 인정기간 못 읽음':'')+'\n\n잘못 등록되는 것을 막기 위해 등록하지 않았어요.\n\n👉 개장 사진을 채팅(클로드)에 올려 "앱 형식으로 정리"를 요청하시면, 그 텍스트는 100% 정확히 들어가요.');
+    alert('⛔ 이 텍스트는 표가 심하게 섞여 있어 정확히 읽을 수 없어요.\n\n· 읽은 항목 '+p.items.length+'개 중 필요내용 없음 '+noC+'개'+(!p.birth?'\n· 생년월일 못 읽음':'')+(!p.validFrom?'\n· 인정기간 못 읽음':'')+'\n\n잘못 등록되는 것을 막기 위해 등록하지 않았어요.\n\n👉 개장 사진을 채팅(클로드)에 올려 "앱 형식으로 정리"를 요청하시면 정확도가 크게 올라가요. 등록 후에는 반드시 사진과 대조하세요.');
     return;
   }
   if(p.loose||p.structured){
@@ -4257,11 +4355,11 @@ function ltcAddPhoto(id, input){
   rd.onload=function(ev){
     const img=new Image();
     img.onload=function(){
-      const MAX=1400; let w=img.width, h=img.height;
+      const MAX=1100; let w=img.width, h=img.height;
       if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
       const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
       cv.getContext('2d').drawImage(img,0,0,w,h);
-      const data=cv.toDataURL('image/jpeg',0.72);
+      const data=cv.toDataURL('image/jpeg',0.62);
       const L=ensureLtc(e); L.photos.push({data, at:today, name:file.name||''});
       save(); openElderProfile(id);
     };
@@ -4408,7 +4506,9 @@ const NEEDS_TABS=[
   ]},
   {k:'body', n:'4. 신체상태', qs:[
     {k:'state',q:'수급자 상태',o:['자립','준와상','와상'],req:true},
-    {k:'height',q:'키(cm)',o:[]},{k:'weight',q:'체중(kg)',o:[]}
+    {k:'height',q:'키(cm)',o:[]},{k:'weight',q:'체중(kg)',o:[]},
+    {k:'medSelf',q:'약 복용 수행 (직접 확인)',o:['스스로 가능','확인 필요','전적 도움']},
+    {k:'insulin',q:'인슐린 주사 처방',o:['없음','있음']}
   ], adl:true},
   {k:'cog', n:'5. 인지상태', qs:[
     {k:'demMed',q:'치매약 복용',o:['복용','미복용','해당없음']},
@@ -5230,7 +5330,7 @@ function startCP(elderId){
   const nd=latestNeedsOf(elderId); const g=(typeof latestEvalData==='function')?latestEvalData(elderId):null;
   const p={id:Date.now(), elderId, date:today, author:'', type:'신규', changeReason:'', startDate:today, goal:'잔존 기능 유지 및 악화 예방',
     items:[], goals:{}, ptProvided:null, ptReason:'', opinion:{status:'',direction:'',diff:'',special:''}, consent:{method:'',date:'',note:''}, nhisDate:'', carepoDone:false, signDone:false,
-    basedOn:{needsDate:nd?nd.date:'', evalDate:g&&g.date?g.date:''}};
+    basedOn:{needsId:nd?nd.id:null, needsDate:nd?nd.date:'', evalDate:g&&g.date?g.date:''}};
   const e=state.elders.find(x=>x.id===elderId); const rs=latestResultOf(elderId); const prevCP=latestCPOf(elderId);
   if(e&&!isNewHalf(e,today)){
     if(rs&&rs.rewrite==='30일 이내 재작성') p.type='결과평가 반영 재작성';
@@ -5269,7 +5369,8 @@ function pFillFromNeeds(id){
 }
 function renderCPForm(box){
   const p=cpById(cpId); if(!p){ cpView='list'; return renderCP(); }
-  const e=state.elders.find(x=>x.id===p.elderId)||{name:'?'}; const nd=latestNeedsOf(p.elderId); const g=(typeof latestEvalData==='function')?latestEvalData(p.elderId):null;
+  const e=state.elders.find(x=>x.id===p.elderId)||{name:'?'}; const nd=cpNeedsOf(p); const g=cpEvalOf(p);
+  if(nd&&(!p.basedOn||!p.basedOn.needsId)){ p.basedOn=p.basedOn||{}; p.basedOn.needsId=nd.id; p.basedOn.needsDate=nd.date; saveCP(p); }
   const adl=(nd&&nd.tabs&&nd.tabs.body&&nd.tabs.body.adl)||{};
   let h='<div class="card"><button class="btn" onclick="backCP()">‹ 목록</button> <button class="btn danger-btn" style="float:right" onclick="delCP('+p.id+')">삭제</button></div>';
   // 헤더·관리
@@ -5282,9 +5383,10 @@ function renderCPForm(box){
     fld('적용 종료일','<input type="date" value="'+(p.endDate||'')+'" onchange="pSet('+p.id+',\'endDate\',this.value)">')+
     '</div>'+
     (p.type&&p.type!=='신규'?'<div class="cq" style="margin-top:6px;"><div class="cq-q">변경 사유 <span class="fr-need">(필수)</span></div><div class="cq-opts">'+['기능상태 변화','수급자 욕구 변화','보호자 요구','사례관리 반영','집중배설관찰 결과 반영','정기 재수립','기타'].map(o=>'<button class="cq-opt'+(p.changeReason===o?' on':'')+'" onclick="pSet('+p.id+',\'changeReason\',\''+o+'\');renderCP();">'+o+'</button>').join('')+'</div></div>':'')+
-    '<div class="nd-ref"><b>📊 근거가 된 사정 기록</b> 욕구사정 '+(nd?esc(nd.date):'<span class="fr-need">없음</span>')+' · 기초평가 '+(g&&g.date?esc(g.date):'<span class="fr-need">없음</span>')+(g?' (낙상 '+(g.fall!=null?g.fall+'점':'—')+' · 욕창 '+(g.braden!=null?g.braden+'점':'—')+' · CIST '+(g.cist!=null?g.cist+'점':'—')+')':'')+
+    '<div class="nd-ref"><b>📊 근거가 된 사정 기록</b> (계획 작성일 '+esc(p.date)+' 기준 — 이후 자료는 연결하지 않음)<br>욕구사정 '+(nd?esc(nd.date):'<span class="fr-need">없음</span>')+' · 낙상 '+(g&&g.fall!=null?g.fall+'점('+esc(g.fallDate)+')':'<span class="fr-need">없음</span>')+' · 욕창 '+(g&&g.braden!=null?g.braden+'점('+esc(g.bradenDate)+')':'<span class="fr-need">없음</span>')+' · 인지 '+(g&&g.cist!=null?'CIST '+g.cist+'점('+esc(g.cistDate)+')':(cistExempt(p.elderId)?'치매진단 제외':'<span class="fr-need">없음</span>'))+(g&&g.rom!=null?' · ROM '+g.rom+'%('+esc(g.romDate)+')':'')+
     (nd&&p.date<nd.date?' <span class="fr-need">⚠ 계획 작성일이 욕구사정일보다 앞서요</span>':'')+'</div>'+ltcMiniPanel(e)+'</div>';
   h+='<div class="card">'+flowStepperHtml(e,p)+'</div>';
+  const nn=cpNewerNotice(p); if(nn) h+='<div class="card">'+nn+'</div>';
   h+=resultPanelHtml(p,e);
   h+=ltcCmpTable(p,e,nd,g);
   // 항목 선택
@@ -5344,21 +5446,21 @@ function cpOpinionHtml(p,e,nd,g){
     ta('status','1. 주요기능상태',6)+ta('direction','2. 서비스 제공 방향',2)+ta('diff','3. 개인별장기요양이용계획서와 다른 내용',6)+ta('special','4. 특이사항',4)+'</div>';
 }
 function genCPOpinion(id){
-  const p=cpById(id); if(!p) return; const e=state.elders.find(x=>x.id===p.elderId)||{}; const nd=latestNeedsOf(p.elderId); const g=(typeof latestEvalData==='function')?latestEvalData(p.elderId):null;
+  const p=cpById(id); if(!p) return; const e=state.elders.find(x=>x.id===p.elderId)||{}; const nd=cpNeedsOf(p); const g=cpEvalOf(p);
   const NA=(t,k)=>nd?nA(nd,t,k):'', NM=(t,k)=>nd?nM(nd,t,k):'';
   const L=[];
   const dx=NM('disease','dx')||e.diag||''; if(dx) L.push('- '+dx+euro(dx)+' 진료 및 건강관리가 필요한 상태임');
   const chronic=NM('disease','chronic'); if(chronic) L.push('- 만성질환('+chronic+')으로 지속적인 복약 및 관찰이 필요함');
   const st=NA('body','state'); const gait=NA('rehab','gait')||(g&&g.status&&g.status.gait)||''; const pa=NA('rehab','paresis');
-  if(st==='와상') L.push('- 와상 상태로 스스로 이동이 불가능하며 체위변경 및 일상생활 전반에 전적인 도움이 필요한 상태임');
+  if(st==='와상') L.push('- 와상 상태로 스스로 이동이 어려움 (일상생활 도움 정도는 아래 ADL 항목 참조)');
   else if(gait){ L.push('- '+(pa&&pa!=='없음'?pj(pa)+' 운동장애로 ':'')+(/휠체어|불가/.test(gait)?'보행이 불가능하여 휠체어로 이동 중이시며 도움 없이는 이동이 어려운 상태임':/보조도구|부축/.test(gait)?'보조도구 또는 부축하여 보행하며 이동 시 낙상 위험이 있는 상태임':/균형|어지러움/.test(gait)?'보행 시 '+gait+' 상태로 낙상 위험이 있어 지켜보기가 필요함':'보행은 가능하나 안전 확인이 필요한 상태임')); }
   const adl=(nd&&nd.tabs&&nd.tabs.body&&nd.tabs.body.adl)||{}; const full=ADL10.filter(i=>adl[i]==='완전도움'), part=ADL10.filter(i=>adl[i]==='부분도움');
   if(full.length) L.push('- '+cj(full)+' 등 일상생활동작에 전적인 도움이 필요한 상태임'); if(part.length) L.push('- '+cj(part)+eunNeun(part[part.length-1])+' 부분적인 도움으로 수행 가능함');
   const cm=NA('comm','comm'); if(cm) L.push('- 의사소통은 '+cm+'하'+(/원활|가능/.test(cm)?'며 간단한 일상적 대화도 가능하신 상태임':'여 표정·행동 관찰을 통한 욕구 파악이 필요함'));
-  if(g&&g.cist!=null) L.push('- 인지선별검사(CIST) '+g.cist+'점으로 '+(g.cist>=20?'인지기능은 비교적 유지되고 있음':g.cist>=15?'경도의 인지 저하가 있음':'인지 저하가 있어 지남력 유지 지원이 필요함'));
+  if(g&&g.cist!=null) L.push('- 인지선별검사(CIST) '+g.cist+'점('+(g.cistDate||'')+') [판정 구간은 공식 규준(연령·교육수준) 확인 후 기재]');
   const bp=NA('cog','bpsd'); if(bp&&bp!=='없음') L.push('- '+pj(bp)+' 등의 행동심리증상이 관찰되어 정서적 안정 지원이 필요함'+(NM('cog','bpsd')?'('+NM('cog','bpsd')+')':''));
-  const risks=[]; if(g&&g.fall!=null&&g.fall>=5) risks.push('낙상'); if(g&&g.braden!=null&&g.braden<=18) risks.push('욕창');
-  if(risks.length) L.push('- '+risks.join(' 및 ')+' 위험도 평가 결과 '+(g&&((g.fall||0)>=11||(g.braden||99)<=12)?'고위험군':'위험군')+'에 속하므로 예방을 위한 주의 관찰이 필요함');
+  if(g&&g.fall!=null) L.push('- 낙상위험도 평가 결과 '+g.fall+'점('+(g.fallDate||'')+') '+(g.fallJudge||'')+(g.fall>=5?'으로 낙상 예방에 주의 관찰이 필요함':'으로 확인됨'));
+  if(g&&g.braden!=null) L.push('- 욕창위험도 평가 결과 '+g.braden+'점('+(g.bradenDate||'')+') '+(g.braden<=12?'고위험':g.braden<=18?'위험':'위험없음')+(g.braden<=18?'으로 피부 관찰과 체위변경이 필요함':'으로 확인됨'));
   const mp=NA('nutrition','mealProb'), mt=NA('nutrition','mealType'); if(mp&&mp!=='양호') L.push('- '+pj(mp)+'으로 인해 '+(mt&&mt!=='일반식'?mt+'으로 식사 중이심':(mt==='일반식'?'일반식으로 드시나 다진 반찬 등 식사형태 조정이 필요함':'식사형태 조정과 관찰이 필요함'))); 
   if(NA('nutrition','avoid')==='있음') L.push('- 기피식품('+NM('nutrition','avoid')+')이 있어 식단에서 제외하여 제공함');
   if(NA('nutrition','diaper')==='착용') L.push('- 기저귀를 착용하고 있어 규칙적인 확인과 교환이 필요함');
@@ -5371,41 +5473,42 @@ function genCPOpinion(id){
   if(NA('disease','sore')&&NA('disease','sore')!=='없음') S.push('- 욕창 '+NA('disease','sore')+'('+pj(NA('disease','sorePart'))+')이 있어 기저귀 교환 시 세심한 피부 관리가 필요함');
   else if(g&&g.braden!=null&&g.braden<=18) S.push('- 욕창 위험군으로 기저귀 교환 및 체위변경 시 압박 부위 피부상태 확인이 필요함');
   if(NA('disease','allergy')&&NA('disease','allergy')!=='없음') S.push('- 알레르기('+pj(NA('disease','allergy'))+(NM('disease','allergy')?': '+NM('disease','allergy'):'')+') 주의');
-  const cs=(state.counsels||[]).filter(c=>(c.elderName===e.name)&&c.memos).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const cutoff=(()=>{ const d=new Date((p.date||today)+'T00:00:00'); d.setFullYear(d.getFullYear()-1); return d.toISOString().slice(0,10); })();
+  const cs=(state.counsels||[]).filter(c=>c.memos&&(c.elderId?c.elderId===e.id:c.elderName===e.name)&&(c.date||'')<=(p.date||today)&&(c.date||'')>=cutoff).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   cs.forEach(c=>{ const fr=(c.memos||{}).famReq||(c.memos||{}).famWant; if(fr&&!S.some(x=>x.indexOf(fr)>=0)) S.push('- 보호자님께서 '+fr.replace(/[.\s]+$/,'')+'를 요청하셨음'); const wo=(c.memos||{}).worry; if(wo&&!S.some(x=>x.indexOf(wo)>=0)) S.push('- 보호자가 걱정하는 점: '+wo.replace(/[.\s]+$/,'')); });
   const want=NM('subj','want'); if(want) S.push('- 수급자'+(NA('subj','who')==='보호자'?' 보호자':'')+'는 "'+want+'"'+eulReul(want)+' 원함');
   if(e.ltcPlan&&e.ltcPlan.notes) e.ltcPlan.notes.forEach(n=>{ if(n) S.push('- (개장 유의사항) '+n.replace(/[.\s]+$/,'')); });
-  o.special=S.length?S.join('\n'):'- 특이사항 없음';
+  o.special=S.length?S.join('\n'):'- [특이사항: 확인 필요 — 욕구사정·상담에 기록된 특이사항이 없음. 없으면 "특이사항 없음"으로 직접 수정]';
   p.opinion=o; saveCP(p); renderCP();
 }
 // 개장 필요내용 ↔ 계획 항목 대조
 function cpLtcDiff(p,e,nd){
   const L=e.ltcPlan; const out=[];
   if(!L||!L.items||!L.items.length) return ['- 개인별장기요양이용계획서가 등록되어 있지 않아 대조할 수 없음 (어르신 프로필에서 개장을 먼저 입력하세요)'];
-  const g=(typeof latestEvalData==='function')?latestEvalData(p.elderId):null;
-  const rows=ltcCompare(p,e,nd,g); const cmp=p.ltcCmp||{};
-  const said={};
+  const g=cpEvalOf(p); const rows=ltcCompare(p,e,nd,g); const cmp=p.ltcCmp||{};
+  const said={}; const lvName=(lv)=>lv==='전적도움'?'전적인 도움':lv==='부분도움'?'도움':lv==='지켜보기'?'지켜보기':(lv||'');
   rows.forEach(r=>{
     const d=cmp[r.ph]; if(!d) return;
     if(d.decision==='changed'){
       const key=r.item+'|'+d.to; if(said[key]) return; said[key]=1;
-      const toName=d.to==='전적도움'?'전적인 도움':d.to==='부분도움'?'도움':'지켜보기';
-      if(r.item==='이동'&&d.to==='전적도움') out.push('- '+r.ph+' 항목은 '+(d.why||'보행이 불가능한 상태이므로 휠체어 이동 도움')+' 항목으로 변경하여 작성함');
-      else if(r.item==='투약관리'&&d.to==='전적도움') out.push('- '+r.ph+' 항목은 '+(d.why||'스스로 약물 관리가 어려운 상태이므로 약 복용 및 인슐린 주사 항목')+'으로 변경하여 작성함');
-      else if(r.item==='화장실 이용하기'&&d.to==='전적도움') out.push('- '+r.ph+' 항목은 '+(d.why||'기저귀 착용 상태이므로 기저귀 교환 도움')+' 항목으로 변경하여 작성함');
-      else { let why=d.why||('실제 기능상태가 달라 '+toName+' 항목'); if(/(이므로|어서|있어)$/.test(why)) why+=' '+toName+' 항목'; out.push('- '+r.ph+' 항목은 '+why+'으로 변경 작성함'); }
+      let why=d.why||('실제 기능상태가 달라 '+lvName(d.to)+' 항목'); if(/(이므로|어서|있어)$/.test(why)) why+=' '+lvName(d.to)+' 항목';
+      out.push('- '+r.ph+' 항목은 '+why+'으로 변경하여 작성함'+(d.ev?' (근거: '+d.ev+')':''));
+    } else if(d.decision==='keep'){
+      out.push('- '+r.ph+' 항목은 실제 상태가 '+lvName(d.actual)+' 수준으로 확인되나, '+d.reason.replace(/[.\s]+$/,'')+' 개장 수준('+lvName(d.from)+')을 유지하여 작성함'+(d.ev?' (근거: '+d.ev+')':''));
     } else if(d.decision==='excluded'){
       const rs=(p.excluded||{})[r.ph]||''; const rs2=rs==='기타'?((p.exclEtc||{})[r.ph]||'[사유]'):rs; out.push('- '+r.ph+' 항목은 '+rs2+' 제외하였음');
+    } else if(d.decision==='same'&&d.noEvidence){
+      out.push('- '+r.ph+' 항목은 개장 내용대로 작성함 (※ 욕구사정에 해당 근거가 없어 확인 필요)');
     }
   });
-  // 개장에 없는 추가 항목
   const mapped={}; rows.forEach(r=>{ if(r.item) mapped[r.item]=1; });
-  const extra=(p.items||[]).filter(it=>!mapped[it.n]).map(it=>it.n);
-  if(extra.length) out.push('- 그 외 추가 작성된 항목('+cj(extra)+')은 보호자 상담 및 수급자 욕구사정, 평가 결과를 기반으로 수급자에게 필요한 항목이라 판단되어 추가 작성하였음');
-  // 판정 대기
-  const pend=rows.filter(r=>!cmp[r.ph]&&(r.kind==='mismatch'||r.kind==='noitem'));
-  if(pend.length) out.push('- ⚠ 판정하지 않은 개장 항목: '+cj(pend.map(r=>r.ph))+' → 위 개장 대조표에서 "실제대로 변경 / 개장 수준 유지 / 제외 사유"를 정하세요');
-  if(!out.length) out.push('- 개인별장기요양이용계획서 내용과 동일하게 작성함');
+  const extra=(p.items||[]).filter(it=>!mapped[it.n]);
+  if(extra.length){ const parts=extra.map(it=>{ const a=actualLevel(it.n,nd,g); return it.n+(a&&a.ev&&!a.unknown?'('+a.ev.replace(/^욕구사정\([^)]*\)\s*/,'')+')':'(근거 확인 필요)'); }); out.push('- 그 외 추가 작성된 항목은 욕구사정 및 평가 결과를 근거로 수급자에게 필요한 항목이라 판단되어 추가 작성하였음: '+parts.join(', ')); }
+  const pend=rows.filter(r=>!cmp[r.ph]&&r.kind!=='alt');
+  if(pend.length) out.push('- ⚠ 판정하지 않은 개장 항목 '+pend.length+'건: '+cj(pend.map(r=>r.ph))+' → 개장 대조표에서 정하세요');
+  const anyDiff=rows.some(r=>r.kind==='mismatch'||r.kind==='conflict'||r.kind==='noitem'||r.kind==='unmapped');
+  if(!out.length&&!anyDiff) out.push('- 개인별장기요양이용계획서 내용과 동일하게 작성함');
+  else if(!out.length) out.push('- ⚠ 개장과 다른 항목이 있으나 판정되지 않았음 → 개장 대조표 확인');
   return out;
 }
 function ltcSubItems(e){
@@ -5444,135 +5547,125 @@ function ltcSubPanelHtml(p,e){
 
 // ===== 개장 ↔ 실제 상태 대조 엔진 =====
 // 개장 필요내용 문구 → 계획 항목 + 개장이 뜻하는 도움 수준
-const LTC_MAP=[
-  {re:/옷갈아입기\s*지시\s*및\s*지켜보기/, item:'옷갈아입기', lv:'지켜보기'},
-  {re:/옷갈아입기\s*도움/, item:'옷갈아입기', lv:'부분도움'},
-  {re:/옷\s*입고\s*뒷정리/, item:'옷갈아입기', lv:null},
-  {re:/세면|세수/, item:'세면하기', lv:'부분도움'},
-  {re:/양치/, item:'양치하기', lv:'부분도움'},
-  {re:/몸씻기\s*도움|목욕\s*도움/, item:'몸씻기', lv:'부분도움'},
-  {re:/머리감기\s*도움/, item:'머리감기', lv:'부분도움'},
-  {re:/손발톱/, item:'손발톱 정리', lv:null},
-  {re:/식사\s*도움|식사하기/, item:'식사하기', lv:'부분도움'},
-  {re:/이동\s*지시\s*및\s*지켜보기/, item:'이동', lv:'지켜보기'},
-  {re:/이동\s*시\s*부축/, item:'이동', lv:'부분도움'},
-  {re:/보조기구\s*사용\s*도움/, item:'이동', lv:'부분도움'},
-  {re:/위험요소\s*최소화|낙상예방/, item:'이동', lv:null, aspect:'낙상예방'},
-  {re:/화장실|배설\s*도움|기저귀/, item:'화장실 이용하기', lv:'부분도움'},
-  {re:/체위\s*변경/, item:'체위변경', lv:null},
-  {re:/정확한\s*복약도움|복약/, item:'약복용', lv:null},
-  {re:/관절운동지원|관절구축예방간호|관절구축/, item:'관절제한', lv:null},
-  {re:/의사소통\s*도움|욕구파악|말벗|정서적\s*지원/, item:'정서지원', lv:null},
-  {re:/비상연락망/, item:null, lv:null, note:'기관 관리 항목'},
-  {re:/투약관리\s*지도/, item:'투약관리', lv:'지켜보기'},
-  {re:/약\s*복용\s*및\s*인슐린/, item:'투약관리', lv:'전적도움'},
-  {re:/건강상태\s*관찰/, item:'기초건강관리', lv:null},
-  {re:/건강교육/, item:'교육 상담', lv:null},
-  {re:/치매간호/, item:'치매간호', lv:null},
-  {re:/의료기관\s*의뢰/, item:'의료기관 의뢰', lv:null},
-  {re:/신체.?인지기능\s*향상/, item:'신체 인지기능 향상 프로그램', lv:null},
-  {re:/신체기능의?\s*훈련/, item:'신체기능의 훈련', lv:null},
-  {re:/기본동작\s*훈련/, item:'기본동작 훈련', lv:null},
-  {re:/일상생활동작\s*훈련/, item:'일상생활동작 훈련', lv:null},
-  {re:/인지기능\s*프로그램/, item:'인지기능 프로그램', lv:null},
-  {re:/여가.{0,3}정서/, item:'여가 · 정서 프로그램', lv:null},
-  {re:/가족대상/, item:'가족대상프로그램', lv:null},
-  {re:/물리치료/, item:'물리치료', lv:null},
-  {re:/작업치료/, item:null, lv:null, note:'작업치료사 상주기관 아님'},
-  {re:/응급/, item:'응급서비스', lv:null},
-  {re:/침구/, item:'침구정리', lv:null},
-  {re:/환경관리/, item:'환경정리', lv:null},
-  {re:/물품관리/, item:'물품관리', lv:null},
-  {re:/세탁물/, item:'세탁물 관리', lv:null},
-  {re:/구강/, item:'구강간호', lv:null},
-  {re:/욕창/, item:'욕창간호', lv:null},
-  {re:/인지관리|인지자극/, item:'인지기능 프로그램', lv:null}
+const LTC_ITEM_KEYS=[
+  [/옷\s*갈아입|옷\s*입/,'옷갈아입기'],[/세면|세수/,'세면하기'],[/양치/,'양치하기'],[/몸씻기|목욕/,'몸씻기'],[/머리감기|머리\s*감/,'머리감기'],[/손발톱/,'손발톱 정리'],[/식사/,'식사하기'],
+  [/체위\s*변경/,'체위변경'],[/화장실|배뇨|배설|기저귀/,'화장실 이용하기'],[/이동|부축|보조기구|위험요소|낙상예방/,'이동'],[/복약/,'약복용'],[/관절운동지원|관절구축/,'관절제한'],
+  [/의사소통\s*도움|욕구파악|말벗|정서적\s*지원/,'정서지원'],[/투약관리\s*지도|약\s*복용\s*및\s*인슐린/,'투약관리'],[/건강상태\s*관찰/,'기초건강관리'],[/건강교육/,'교육 상담'],[/감염간호/,'감염간호'],[/의사진료/,'의사진료 및 보조'],[/치매간호/,'치매간호'],[/의료기관\s*의뢰/,'의료기관 의뢰'],
+  [/신체.?인지기능\s*향상/,'신체 인지기능 향상 프로그램'],[/신체기능의?\s*훈련/,'신체기능의 훈련'],[/기본동작\s*훈련/,'기본동작 훈련'],[/일상생활동작\s*훈련/,'일상생활동작 훈련'],[/인지기능\s*프로그램|인지관리|인지자극/,'인지기능 프로그램'],[/여가.{0,3}정서/,'여가 · 정서 프로그램'],[/사회적응/,'사회적응훈련'],[/가족대상/,'가족대상프로그램'],[/물리치료/,'물리치료'],
+  [/응급/,'응급서비스'],[/침구/,'침구정리'],[/환경관리/,'환경정리'],[/물품관리/,'물품관리'],[/세탁물/,'세탁물 관리'],[/구강/,'구강간호'],[/욕창/,'욕창간호']
 ];
+const LTC_NOITEM=[[/비상연락망/,'기관 관리 항목'],[/작업치료/,'작업치료사 상주기관 아님'],[/몸단장|외모관리|머리단장/,'개인위생 항목에 포함 검토'],[/송영/,'시설급여 미해당'],[/취사|장보기|병원동행|지역사회.*연계/,'재가급여 항목']];
+function mapLtcPhrase(ph){
+  const noi=LTC_NOITEM.find(x=>x[0].test(ph)); if(noi) return {item:null, lv:null, note:noi[1]};
+  const k=LTC_ITEM_KEYS.find(x=>x[0].test(ph)); if(!k) return null;
+  let lv=null;
+  if(/전적인?\s*도움|전적/.test(ph)) lv='전적도움';
+  else if(/지시\s*및\s*지켜보기|지켜보기/.test(ph)) lv='지켜보기';
+  else if(/휠체어/.test(ph)) lv='전적도움';
+  else if(/투약관리\s*지도/.test(ph)) lv='지켜보기';
+  else if(/약\s*복용\s*및\s*인슐린/.test(ph)) lv='전적도움';
+  else if(/도움/.test(ph)&&/옷|세면|세수|양치|몸씻기|목욕|머리|식사|화장실|이동|부축|체위/.test(ph)) lv='부분도움';
+  return {item:k[1], lv, aspect:(/위험요소|낙상예방/.test(ph)?'낙상예방':null)};
+}
+
 const ADL2LV={'완전자립':'지켜보기','부분도움':'부분도움','완전도움':'전적도움'};
 // 실제 상태에서 항목별 도움 수준 판정 (근거 문장 포함)
 function actualLevel(itemName, nd, g){
-  const c=cpCatalogItem(itemName); if(!c||!nd) return null;
-  const adl=(nd.tabs&&nd.tabs.body&&nd.tabs.body.adl)||{};
-  const gait=nA(nd,'rehab','gait')||(g&&g.status&&g.status.gait)||'';
-  const fallHigh=g&&g.fall!=null&&g.fall>=11, fallMid=g&&g.fall!=null&&g.fall>=5;
+  const c=cpCatalogItem(itemName); if(!c) return null;
+  if(!nd) return {unknown:true, ev:'욕구사정 없음'};
+  const adl=(nd.tabs&&nd.tabs.body&&nd.tabs.body.adl)||{}; const ND=nd.date;
+  const gait=nA(nd,'rehab','gait'); const st=nA(nd,'body','state'); const fallHigh=g&&g.fall!=null&&g.fall>=11;
   if(itemName==='이동'){
-    if(/균형\s*유지\s*못함|휠체어|불가|침상/.test(gait)||nA(nd,'body','state')==='와상') return {lv:'전적도움', why:'이동 시 체중 지지가 어렵고 보행이 불가능한 상태이므로 휠체어 이동 도움', ev:'욕구사정 보행: '+(gait||nA(nd,'body','state'))};
-    if(/보조도구|부축|어지러움/.test(gait)||fallMid) return {lv:'부분도움', why:'이동 시 낙상 위험이 있어 부축 도움이 필요한 상태이므로', ev:'욕구사정 보행: '+gait+(g&&g.fall!=null?' · 낙상위험도 '+g.fall+'점':'')};
-    if(gait==='정상') return {lv:'지켜보기', why:'스스로 이동이 가능한 상태이므로', ev:'욕구사정 보행: 정상'};
-    return null;
+    if(st==='와상') return {lv:'전적도움', why:'와상 상태로 스스로 이동이 불가능하여 휠체어 이동 도움', ev:'욕구사정('+ND+') 수급자 상태: 와상'};
+    if(!gait) return {unknown:true, ev:'욕구사정 재활상태의 걸음걸이·균형 미입력'};
+    if(/균형\s*유지\s*못함/.test(gait)) return {lv:'전적도움', why:'서거나 걸을 때 균형을 유지하지 못하여 휠체어 이동 도움', ev:'욕구사정('+ND+') 걸음걸이: '+gait};
+    if(/보조도구|부축/.test(gait)) return {lv:'부분도움', why:'보조도구나 부축이 있어야 걸을 수 있는 상태이므로 이동 시 부축 도움', ev:'욕구사정('+ND+') 걸음걸이: '+gait};
+    if(/어지러움/.test(gait)) return {lv:'부분도움', why:'일어서거나 걸을 때 어지러움이 있어 이동 시 부축 도움', ev:'욕구사정('+ND+') 걸음걸이: '+gait};
+    if(gait==='정상') return {lv:'지켜보기', confirm:true, ev:'욕구사정('+ND+') 걸음걸이: 정상'+(g&&g.fall!=null&&g.fall>=5?' · 낙상위험도 '+g.fall+'점('+(g.fallDate||'')+') → 낙상예방은 필요하나 부축 수준의 근거는 아님':'')};
+    return {unknown:true, ev:'걸음걸이 값 해석 불가: '+gait};
   }
   if(itemName==='화장실 이용하기'){
-    if(nA(nd,'nutrition','diaper')==='착용') return {lv:'전적도움', why:'기저귀를 착용하고 있어 기저귀 교환 도움이 필요한 상태이므로', ev:'욕구사정 기저귀 착용'};
-    if(adl['화장실 사용하기']) return {lv:ADL2LV[adl['화장실 사용하기']], why:null, ev:'욕구사정 ADL 화장실 사용하기: '+adl['화장실 사용하기']};
-    return null;
+    const a=adl['화장실 사용하기']; const dp=nA(nd,'nutrition','diaper');
+    if(!a) return {unknown:true, ev:'욕구사정 ADL 화장실 사용하기 미입력'+(dp==='착용'?' (기저귀 착용은 기록됨 — 화장실 이용 능력과 별도)':'')};
+    if(a==='완전자립'&&dp==='착용') return {conflict:true, ev:'ADL 화장실 사용하기: 완전자립 vs 기저귀 착용 — 자료 충돌(야간·외출 시만 착용인지 확인)'};
+    const lv=ADL2LV[a]; const why=lv==='전적도움'?'스스로 화장실 이용이 어려운 상태이므로 '+(dp==='착용'?'기저귀 교환 도움':'전적인 도움')+' 항목':lv==='부분도움'?'화장실 이동·뒤처리 등에 일부 도움이 필요한 상태이므로 도움 항목':null;
+    return {lv, confirm:lv==='지켜보기', why, ev:'욕구사정('+ND+') ADL 화장실 사용하기: '+a+(dp==='착용'?' · 기저귀 착용':'')};
   }
   if(itemName==='투약관리'){
-    const dem=nA(nd,'cog','demMed')==='복용'||(g&&g.cist!=null&&g.cist<20)||/치매/.test(nM(nd,'disease','dx'));
-    if(dem) return {lv:'전적도움', why:'어르신께서 스스로 약물 관리가 어려운 상태이므로 약 복용 및 인슐린 주사 항목', ev:(nA(nd,'cog','demMed')==='복용'?'치매약 복용':'')+(g&&g.cist!=null?' · CIST '+g.cist+'점':'')};
-    return null;
+    const ms=nA(nd,'body','medSelf'), ins=nA(nd,'body','insulin');
+    if(!ms) return {unknown:true, ev:'욕구사정 신체상태의 "약 복용 수행" 미입력 (인지 점수만으로 판정하지 않음)'};
+    if(ms==='전적 도움') return {lv:'전적도움', why:'스스로 약물 관리가 어려운 상태이므로 '+(ins==='있음'?'약 복용 및 인슐린 주사':'약 복용 도움')+' 항목', ev:'욕구사정('+ND+') 약 복용 수행: 전적 도움'+(ins==='있음'?' · 인슐린 처방 있음':'')};
+    if(ms==='확인 필요') return {lv:'지켜보기', ev:'욕구사정('+ND+') 약 복용 수행: 확인 필요 → 투약관리 지도'};
+    return {lv:'지켜보기', confirm:true, ev:'욕구사정('+ND+') 약 복용 수행: 스스로 가능'};
   }
-  if(c.it.adl&&adl[c.it.adl]){
-    const lv=ADL2LV[adl[c.it.adl]]; let why=null;
+  if(c.it.adl){
+    const a=adl[c.it.adl]; if(!a) return {unknown:true, ev:'욕구사정 ADL "'+c.it.adl+'" 미입력'};
+    const lv=ADL2LV[a]; let why=null;
     if(lv==='전적도움') why='스스로 하실 수 없는 상태'+(fallHigh&&/몸씻기|머리감기/.test(itemName)?'이고 낙상 위험이 매우 높은 수급자이므로 안전사고 예방을 위하여':'이므로')+' 전적인 도움 항목';
     else if(lv==='부분도움') why='활동 과정 중 준비 및 뒷처리 등의 도움이 필요한 상태이므로 도움 항목';
-    else why='스스로 수행이 가능한 상태이므로 지켜보기 항목';
-    return {lv, why, ev:'욕구사정 ADL '+c.it.adl+': '+adl[c.it.adl]+(fallHigh?' · 낙상위험도 '+g.fall+'점(아주 높음)':'')};
+    return {lv, confirm:lv==='지켜보기', why, ev:'욕구사정('+ND+') ADL '+c.it.adl+': '+a+(fallHigh?' · 낙상위험도 '+g.fall+'점('+(g.fallDate||'')+')':'')};
   }
   return null;
 }
+
 function ltcCompare(p,e,nd,g){
-  const subs=ltcSubItems(e); const rows=[]; const seenItem={};
+  const subs=ltcSubItems(e); const rows=[];
   subs.forEach(sb=>{
-    const map=LTC_MAP.find(m=>m.re.test(sb.ph));
+    const map=mapLtcPhrase(sb.ph);
     const row={ph:sb.ph, need:sb.need, item:map?map.item:null, ltcLv:map?map.lv:null, aspect:map?map.aspect:null, mapNote:map?map.note:null};
-    const dec=(p.ltcCmp||{})[sb.ph]||{};
-    row.decision=dec.decision||'';
-    if(!row.item){ row.kind='noitem'; }
+    const dec=(p.ltcCmp||{})[sb.ph]||{}; row.decision=dec.decision||''; row.dec=dec;
+    if(!map) row.kind='unmapped';
+    else if(!row.item) row.kind='noitem';
     else {
-      const act=actualLevel(row.item, nd, g);
-      row.act=act;
-      const inPlan=cpItemOf(p,row.item);
-      row.inPlan=!!inPlan; row.planLv=inPlan?inPlan.lv:'';
-      const siblings=subs.filter(x=>x!==sb).map(x=>LTC_MAP.find(m=>m.re.test(x.ph))).filter(m=>m&&m.item===row.item);
-      const siblingMatches=act&&siblings.some(m=>m.lv===act.lv);
-      if(row.ltcLv&&act&&act.lv!==row.ltcLv&&!siblingMatches) row.kind='mismatch';
-      else if(row.ltcLv&&act&&act.lv!==row.ltcLv&&siblingMatches){ row.kind='match'; row.note='개장의 다른 문구('+act.lv+')와 일치'; }
-      else if(!nd&&row.ltcLv) row.kind='nodata';
+      const act=actualLevel(row.item, nd, g); row.act=act;
+      const inPlan=cpItemOf(p,row.item); row.inPlan=!!inPlan; row.planLv=inPlan?inPlan.lv:'';
+      const c=cpCatalogItem(row.item); const single=c&&Object.keys(c.it.lv).length===1;   // 도움 수준 구분이 없는 항목(복약·프로그램·환경 등)
+      if(!row.ltcLv&&(single||!act||act.unknown)){ row.kind='match'; row.act=act&&!act.unknown?act:{lv:Object.keys(c.it.lv)[0], ev:'도움 수준 구분 없는 항목 — 개장 문구대로 반영'}; }
+      else if(!act||act.unknown) row.kind='nodata';
+      else if(act.conflict) row.kind='conflict';
+      else if(row.ltcLv&&act.lv!==row.ltcLv){ const alt=subs.some(x=>x!==sb&&(()=>{ const m=mapLtcPhrase(x.ph); return m&&m.item===row.item&&m.lv===act.lv; })()); row.kind=alt?'alt':'mismatch'; }
+      else if(act.confirm) row.kind='confirm';
       else row.kind='match';
-      if(seenItem[row.item]&&row.kind==='mismatch') row.kind='match';
-      seenItem[row.item]=true;
     }
     rows.push(row);
   });
   return rows;
 }
+
 function ltcCmpTable(p,e,nd,g){
   const rows=ltcCompare(p,e,nd,g); if(!rows.length) return '<div class="card"><div class="card-title">📑 개장 대조표</div><div class="cns-draft-warn">⚠ 개장이 등록되어 있지 않아 대조할 수 없어요. 어르신 프로필에서 개장을 먼저 넣어주세요.</div></div>';
-  const pend=rows.filter(r=>!r.decision&&(r.kind==='mismatch'||r.kind==='noitem'||(r.kind==='match'&&!r.inPlan))).length;
-  const mism=rows.filter(r=>r.kind==='mismatch').length;
+  const pend=rows.filter(r=>!r.decision&&r.kind!=='alt'&&(r.kind!=='match'||!r.inPlan)).length;
+  const mism=rows.filter(r=>r.kind==='mismatch'||r.kind==='conflict').length; const nod=rows.filter(r=>r.kind==='nodata').length;
   let h='<div class="card cmp-card"><div class="card-title">📑 개장 대조표 <span class="hint">개장 필요내용 ↔ 실제 상태(욕구사정·기초평가)</span>'+
     '<span class="note-btns no-print"><button class="note-gen simple" onclick="pApplyCmpAll('+p.id+')">✓ 대조 결과대로 전부 반영</button></span></div>';
   if(!nd) h+='<div class="cns-draft-warn">⛔ 욕구사정이 없어 실제 상태를 알 수 없어요. 욕구사정을 먼저 작성해야 정확히 대조됩니다.</div>';
-  h+='<div class="cmp-sum">'+(mism?'<span class="cp-cov">⚠ 불일치 '+mism+'건</span>':'<span class="cp-cov ok">✓ 개장 수준과 실제 상태 불일치 없음</span>')+(pend?' <span class="cp-cov">판정 대기 '+pend+'건</span>':' <span class="cp-cov ok">판정 완료</span>')+'</div>';
+  h+='<div class="cmp-sum">'+(mism?'<span class="cp-cov">⚠ 불일치·충돌 '+mism+'건</span>':'<span class="cp-cov ok">✓ 불일치 없음</span>')+(nod?' <span class="cp-cov" style="background:#FFF3C4;color:#8a5a00;border-color:#F5C518;">근거 없음 '+nod+'건</span>':'')+(pend?' <span class="cp-cov">판정 대기 '+pend+'건</span>':' <span class="cp-cov ok">판정 완료</span>')+'</div>';
   h+='<div class="rd-wrap"><table class="cmp-table"><thead><tr><th>개장 항목</th><th>개장 수준</th><th>실제 상태 (근거)</th><th>판정</th><th>반영</th></tr></thead><tbody>';
   rows.forEach(r=>{
     const dec=(p.ltcCmp||{})[r.ph]||{};
-    let cls=r.kind==='mismatch'?'mm':r.kind==='noitem'?'ni':r.kind==='nodata'?'nd':'ok';
+    let cls=(r.kind==='mismatch'||r.kind==='conflict')?'mm':(r.kind==='noitem'||r.kind==='unmapped'||r.kind==='nodata'||r.kind==='confirm')?'ni':'ok';
     if(dec.decision) cls+=' done';
     h+='<tr class="'+cls+'"><td><b>'+esc(r.ph)+'</b><div class="rd-sub">'+esc(r.need)+(r.item?' → '+esc(r.item):'')+'</div></td>';
     h+='<td>'+(r.ltcLv||'—')+'</td>';
     if(r.kind==='noitem') h+='<td class="rd-sub">'+(r.mapNote?esc(r.mapNote):'대응 항목 없음')+'</td>';
-    else if(r.act) h+='<td><b>'+r.act.lv+'</b><div class="rd-sub">'+esc(r.act.ev)+'</div></td>';
-    else h+='<td class="rd-sub">'+(nd?'판정 근거 없음 (개장 수준 적용)':'욕구사정 없음')+'</td>';
+    else if(r.kind==='unmapped') h+='<td class="rd-sub">문구를 항목에 연결하지 못함 — 직접 검토</td>';
+    else if(r.act&&r.act.unknown) h+='<td class="rd-sub"><b style="color:#8a5a00">근거 없음</b> — '+esc(r.act.ev)+'</td>';
+    else if(r.act&&r.act.conflict) h+='<td class="rd-sub"><b style="color:#B4452F">자료 충돌</b> — '+esc(r.act.ev)+'</td>';
+    else if(r.act) h+='<td><b>'+r.act.lv+'</b>'+(r.act.confirm?' <span class="rd-sub">(자립 — 지켜보기 필요 여부 확인)</span>':'')+'<div class="rd-sub">'+esc(r.act.ev)+'</div></td>';
+    else h+='<td class="rd-sub">욕구사정 없음</td>';
     // 판정
-    let jt=''; if(r.kind==='mismatch') jt='<span class="rd-tag red">불일치 → 변경 필요</span>'; else if(r.kind==='noitem') jt='<span class="rd-tag amber">계획 항목 없음</span>'; else if(r.kind==='nodata') jt='<span class="rd-tag amber">확인 필요</span>'; else jt='<span class="rd-tag green">일치</span>';
-    if(dec.decision) jt+='<div class="rd-sub">✓ '+({same:'개장대로 반영',changed:'실제대로 변경',excluded:'제외',keep:'개장 수준 유지'})[dec.decision]+'</div>';
+    let jt=''; if(r.kind==='mismatch') jt='<span class="rd-tag red">불일치 → 변경 필요</span>'; else if(r.kind==='conflict') jt='<span class="rd-tag red">자료 충돌 → 재확인</span>'; else if(r.kind==='noitem'||r.kind==='unmapped') jt='<span class="rd-tag amber">계획 항목 없음</span>'; else if(r.kind==='nodata') jt='<span class="rd-tag amber">판정 불가 (근거 없음)</span>'; else if(r.kind==='confirm') jt='<span class="rd-tag amber">자립 — 확인 후 반영</span>'; else if(r.kind==='alt') jt='<span class="rd-tag green">일치</span><div class="rd-sub">개장의 다른 문구('+esc(r.act.lv)+')와 일치</div>'; else jt='<span class="rd-tag green">일치</span>';
+    if(dec.decision) jt+='<div class="rd-sub">✓ '+({same:'개장대로 반영',changed:'실제대로 변경',excluded:'제외',keep:'개장 수준 유지(사유 기록)'})[dec.decision]+(dec.reason?' — '+esc(dec.reason):'')+(dec.noEvidence?' <b style="color:#8a5a00">(근거 없음)</b>':'')+'</div>';
     h+='<td>'+jt+'</td>';
     // 반영 버튼
     let bt='';
-    if(r.kind==='noitem'){ bt='<select class="cmp-sel" onchange="pCmpExclude('+p.id+',\''+esc(r.ph)+'\',this.value)"><option value="">제외 사유 선택</option>'+EXCL_REASONS.map(x=>'<option'+((p.excluded||{})[r.ph]===x?' selected':'')+'>'+x+'</option>').join('')+'</select>'; }
-    else if(r.kind==='mismatch'){ bt='<button class="cq-opt sm'+(dec.decision==='changed'?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'changed\')">실제대로 변경</button> <button class="cq-opt sm'+(dec.decision==='keep'?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'keep\')">개장 수준 유지</button>'; }
-    else { bt='<button class="cq-opt sm'+(dec.decision==='same'||r.inPlan?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'same\')">'+(r.inPlan?'✓ 반영됨':'반영')+'</button>'; }
+    const exclSel='<select class="cmp-sel" onchange="pCmpExclude('+p.id+',\''+esc(r.ph)+'\',this.value)"><option value="">제외 사유 선택</option>'+EXCL_REASONS.map(x=>'<option'+((p.excluded||{})[r.ph]===x?' selected':'')+'>'+x+'</option>').join('')+'</select>';
+    if(r.kind==='noitem'||r.kind==='unmapped') bt=exclSel;
+    else if(r.kind==='mismatch') bt='<button class="cq-opt sm'+(dec.decision==='changed'?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'changed\')">실제대로 변경</button> <button class="cq-opt sm'+(dec.decision==='keep'?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'keep\')">예외: 개장 수준 유지(사유 필수)</button>';
+    else if(r.kind==='conflict') bt='<span class="rd-sub">욕구사정에서 ADL과 기저귀 기록을 먼저 정리하세요</span>';
+    else if(r.kind==='nodata') bt='<span class="rd-sub">욕구사정에 근거를 입력하면 판정돼요</span> <button class="cq-opt sm'+(dec.decision==='same'?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'same\')">개장대로 반영(근거 없음 표시)</button>';
+    else if(r.kind==='confirm') bt='<button class="cq-opt sm'+(dec.decision==='same'?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'same\')">지켜보기 필요함 → 반영</button> '+exclSel;
+    else bt='<button class="cq-opt sm'+(dec.decision==='same'||r.inPlan?' on':'')+'" onclick="pCmpApply('+p.id+',\''+esc(r.ph)+'\',\'same\')">'+(r.inPlan?'✓ 반영됨':'반영')+'</button>';
     h+='<td>'+bt+'</td></tr>';
   });
   h+='</tbody></table></div>';
@@ -5584,7 +5677,7 @@ function ltcCmpTable(p,e,nd,g){
     if(g&&g.braden!=null&&g.braden<=18&&!cpItemOf(p,'욕창간호')&&!mapped['욕창간호']) sug.push({n:'욕창간호',lv:'부분도움',ev:'욕창위험도 '+g.braden+'점'});
     if(nA(nd,'cog','demMed')==='복용'&&!cpItemOf(p,'치매간호')&&!mapped['치매간호']) sug.push({n:'치매간호',lv:'부분도움',ev:'치매약 복용'});
     if(sug.length) h+='<div class="ltc-h">➕ 개장에는 없지만 실제 상태상 필요한 항목 (추가 검토)</div><div class="cq-opts">'+sug.map(x=>'<button class="cq-opt sm" onclick="pAddSug('+p.id+',\''+esc(x.n)+'\',\''+x.lv+'\')">＋ '+esc(x.n)+' ('+x.lv+') <span class="rd-sub">'+esc(x.ev)+'</span></button>').join('')+'</div><div class="hint">추가하면 종합의견 3번에 "그 외 추가 작성된 항목…" 문장으로 들어가요.</div>'; }
-  h+='<div class="hint" style="margin-top:6px;">🟥 불일치 = 개장이 정한 도움 수준과 욕구사정 결과가 다름 → "실제대로 변경"하면 항목이 실제 수준으로 체크되고 종합의견 3번에 변경 사유가 들어가요. 🟨 항목 없음 = 계획 카탈로그에 없는 개장 문구(작업치료·비상연락망 등) → 제외 사유를 고르면 문장이 들어가요.</div></div>';
+  h+='<div class="hint" style="margin-top:6px;">판정 근거는 <b>욕구사정에 입력한 값</b>이에요. "근거 없음"은 그 항목이 욕구사정에 비어 있다는 뜻이니 욕구사정을 먼저 채우세요. 🟥 불일치 = 개장이 정한 도움 수준과 욕구사정 결과가 다름 → "실제대로 변경"하면 항목이 실제 수준으로 체크되고 종합의견 3번에 변경 사유가 들어가요. 🟨 항목 없음 = 계획 카탈로그에 없는 개장 문구(작업치료·비상연락망 등) → 제외 사유를 고르면 문장이 들어가요.</div></div>';
   return h;
 }
 function ensureItemLv(p,itemName,lv){
@@ -5596,28 +5689,38 @@ function ensureItemLv(p,itemName,lv){
 }
 function pAddSug(id,n,lv){ const p=cpById(id); if(!p) return; if(!p.items) p.items=[]; ensureItemLv(p,n,lv); saveCP(p); renderCP(); }
 function pCmpApply(id,ph,decision){
-  const p=cpById(id); if(!p) return; const e=state.elders.find(x=>x.id===p.elderId); const nd=latestNeedsOf(p.elderId); const g=(typeof latestEvalData==='function')?latestEvalData(p.elderId):null;
+  const p=cpById(id); if(!p) return; const e=state.elders.find(x=>x.id===p.elderId); const nd=cpNeedsOf(p); const g=cpEvalOf(p);
   const row=ltcCompare(p,e,nd,g).find(r=>r.ph===ph); if(!row||!row.item) return;
   if(!p.items) p.items=[]; if(!p.ltcCmp) p.ltcCmp={};
-  if(decision==='changed'&&row.act){ ensureItemLv(p,row.item,row.act.lv); p.ltcCmp[ph]={decision:'changed', from:row.ltcLv, to:row.act.lv, why:row.act.why, ev:row.act.ev}; }
-  else if(decision==='keep'){ ensureItemLv(p,row.item,row.ltcLv); p.ltcCmp[ph]={decision:'keep', from:row.ltcLv, to:row.ltcLv}; }
-  else { ensureItemLv(p,row.item,row.ltcLv||(row.act&&row.act.lv)||null); p.ltcCmp[ph]={decision:'same'}; }
-  saveCP(p); renderCP();
+  if(decision==='changed'&&row.act&&row.act.lv){ ensureItemLv(p,row.item,row.act.lv); p.ltcCmp[ph]={decision:'changed', from:row.ltcLv, to:row.act.lv, why:row.act.why, ev:row.act.ev, at:today}; }
+  else if(decision==='keep'){ const reason=prompt('실제 상태('+(row.act&&row.act.lv||'?')+')와 다른데 개장 수준('+row.ltcLv+')을 유지하는 사유를 적어주세요. (종합의견 3번에 그대로 들어가요)'); if(!reason||!reason.trim()) return; ensureItemLv(p,row.item,row.ltcLv); p.ltcCmp[ph]={decision:'keep', from:row.ltcLv, to:row.ltcLv, actual:row.act&&row.act.lv, reason:reason.trim(), ev:row.act&&row.act.ev, at:today}; }
+  else { ensureItemLv(p,row.item,row.ltcLv||(row.act&&row.act.lv)||null); p.ltcCmp[ph]={decision:'same', noEvidence:!!(row.act&&row.act.unknown), ev:row.act&&row.act.ev, at:today}; }
+  saveCP(p); refreshCPDiff(p); renderCP();
 }
-function pCmpExclude(id,ph,reason){ const p=cpById(id); if(!p) return; if(!p.excluded) p.excluded={}; if(!p.ltcCmp) p.ltcCmp={}; if(reason){ p.excluded[ph]=reason; p.ltcCmp[ph]={decision:'excluded'}; } else { delete p.excluded[ph]; delete p.ltcCmp[ph]; } saveCP(p); renderCP(); }
+function pCmpExclude(id,ph,reason){ const p=cpById(id); if(!p) return; if(!p.excluded) p.excluded={}; if(!p.ltcCmp) p.ltcCmp={}; if(reason){ p.excluded[ph]=reason; p.ltcCmp[ph]={decision:'excluded',at:today}; } else { delete p.excluded[ph]; delete p.ltcCmp[ph]; } saveCP(p); refreshCPDiff(p); renderCP(); }
+function refreshCPDiff(p){ const e=state.elders.find(x=>x.id===p.elderId); if(!e) return; if(!p.opinion) p.opinion={}; p.opinion.diff=cpLtcDiff(p,e,cpNeedsOf(p)).join('\n'); saveCP(p); }
 function pApplyCmpAll(id){
-  const p=cpById(id); if(!p) return; const e=state.elders.find(x=>x.id===p.elderId); const nd=latestNeedsOf(p.elderId); const g=(typeof latestEvalData==='function')?latestEvalData(p.elderId):null;
+  const p=cpById(id); if(!p) return; const e=state.elders.find(x=>x.id===p.elderId); const nd=cpNeedsOf(p); const g=cpEvalOf(p);
   if(!nd){ alert('욕구사정이 없어 실제 상태를 대조할 수 없어요. 욕구사정을 먼저 작성하세요.'); return; }
-  const rows=ltcCompare(p,e,nd,g); const mm=rows.filter(r=>r.kind==='mismatch').length; const ni=rows.filter(r=>r.kind==='noitem'&&!(p.excluded||{})[r.ph]).length;
-  if(!confirm('개장 항목 '+rows.length+'건을 계획에 반영합니다.\n· 일치 항목: 개장 수준으로 체크\n· 불일치 '+mm+'건: 욕구사정 결과(실제) 수준으로 변경 + 종합의견 3번에 사유 삽입\n'+(ni?'· 계획 항목 없는 '+ni+'건: 표에서 제외 사유를 따로 골라주세요\n':'')+'\n진행할까요?')) return;
+  const rows=ltcCompare(p,e,nd,g); const mm=rows.filter(r=>r.kind==='mismatch').length; const ni=rows.filter(r=>(r.kind==='noitem'||r.kind==='unmapped')&&!(p.excluded||{})[r.ph]).length; const nd2=rows.filter(r=>r.kind==='nodata'||r.kind==='conflict'||r.kind==='confirm').length;
+  if(!confirm('개장 항목 '+rows.length+'건 중 근거가 확실한 것만 반영합니다.\n· 일치 항목: 개장 수준으로 체크\n· 불일치 '+mm+'건: 욕구사정 결과(실제) 수준으로 변경 + 종합의견 3번에 사유 삽입\n'+(nd2?'· 근거 없음·충돌·자립 확인 '+nd2+'건: 자동 반영하지 않음 → 표에서 직접 판정\n':'')+(ni?'· 계획 항목 없는 '+ni+'건: 제외 사유를 따로 골라주세요\n':'')+'\n진행할까요?')) return;
   if(!p.items) p.items=[]; if(!p.ltcCmp) p.ltcCmp={};
   rows.forEach(r=>{ if(!r.item||p.ltcCmp[r.ph]) return;
-    if(r.kind==='mismatch'&&r.act){ ensureItemLv(p,r.item,r.act.lv); p.ltcCmp[r.ph]={decision:'changed',from:r.ltcLv,to:r.act.lv,why:r.act.why,ev:r.act.ev}; }
-    else { ensureItemLv(p,r.item,r.ltcLv||(r.act&&r.act.lv)||null); p.ltcCmp[r.ph]={decision:'same'}; } });
-  saveCP(p); renderCP();
+    if(r.kind==='mismatch'&&r.act&&r.act.lv){ ensureItemLv(p,r.item,r.act.lv); p.ltcCmp[r.ph]={decision:'changed',from:r.ltcLv,to:r.act.lv,why:r.act.why,ev:r.act.ev,at:today}; }
+    else if(r.kind==='match'||r.kind==='alt'){ ensureItemLv(p,r.item,r.ltcLv||(r.act&&r.act.lv)||null); p.ltcCmp[r.ph]={decision:'same',ev:r.act&&r.act.ev,at:today}; }
+    /* nodata·conflict·confirm 은 자동 반영하지 않음 */ });
+  saveCP(p); refreshCPDiff(p); renderCP();
 }
 
 // ---- 일관성 점검 ----
+function cpNeedsOf(p){ if(p.basedOn&&p.basedOn.needsId){ const n=needsById(p.basedOn.needsId); if(n) return n; } return (state.needs||[]).filter(n=>n.elderId===p.elderId&&n.date<=(p.date||today)).sort((a,b)=>b.date.localeCompare(a.date))[0]||null; }
+function cpEvalOf(p){ return (typeof latestEvalData==='function')?latestEvalData(p.elderId, p.date||today):null; }
+function cpNewerNotice(p){
+  const nd=cpNeedsOf(p); const newerN=(state.needs||[]).filter(n=>n.elderId===p.elderId&&n.date>(p.date||today)).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const evs=(state.evals&&state.evals[p.elderId])||[]; const newerE=evs.filter(en=>en.date>(p.date||today)).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(!newerN&&!newerE) return '';
+  return '<div class="cns-guide">🔎 <b>재검토 필요</b> — 이 계획서('+esc(p.date)+') 이후에 '+(newerN?'욕구사정('+esc(newerN.date)+')':'')+(newerN&&newerE?', ':'')+(newerE?'기초평가('+esc(newerE.date)+')':'')+'이 새로 작성됐어요. 이 계획서는 작성 당시 근거('+(nd?'욕구사정 '+esc(nd.date):'욕구사정 없음')+')로 고정되어 있어요. 최신 상태를 반영하려면 <b>새 계획서</b>를 만드세요.</div>';
+}
 function cpChecks(p,e,nd,g){
   const w=[]; const items=p.items||[]; const txt=items.map(i=>i.n+' '+i.need+' '+i.detail).join(' ');
   const hasPT=items.some(i=>i.n==='물리치료');
@@ -5631,7 +5734,7 @@ function cpChecks(p,e,nd,g){
   if((st==='와상'||/침상/.test(gait))&&/보행훈련|보행|걷기/.test(txt)) w.push({t:'와상(침상) 상태인데 계획에 보행 관련 내용이 있어요. 욕구사정과 맞지 않아요.',lv:'err'});
   if(g&&g.braden!=null&&g.braden<=18&&!/체위|욕창|피부/.test(txt)) w.push({t:'욕창위험도 '+g.braden+'점(위험군)인데 체위변경·욕창 예방 항목이 없어요.',lv:'warn'});
   if(g&&g.fall!=null&&g.fall>=5&&!/낙상|안전/.test(txt)) w.push({t:'낙상위험도 '+g.fall+'점인데 낙상 예방 내용이 없어요.',lv:'warn'});
-  if(nd&&nA(nd,'nutrition','avoid')==='있음'&&!/기피|'+nM(nd,'nutrition','avoid')+'/.test(txt+(p.opinion&&p.opinion.special||''))) w.push({t:'기피식품('+nM(nd,'nutrition','avoid')+')이 계획·특이사항에 반영되지 않았어요.',lv:'warn'});
+  if(nd&&nA(nd,'nutrition','avoid')==='있음'){ const av=nM(nd,'nutrition','avoid'); const all=txt+' '+((p.opinion&&(p.opinion.special||'')+(p.opinion.status||''))||''); if(!(all.indexOf('기피')>=0||(av&&all.indexOf(av)>=0))) w.push({t:'기피식품('+(av||'내용 미입력')+')이 계획·종합의견에 반영되지 않았어요.',lv:'warn'}); }
   if(p.type&&p.type!=='신규'&&!p.changeReason) w.push({t:'변경 계획은 변경 사유가 필수예요.',lv:'err'});
   if(nd&&p.date<nd.date) w.push({t:'계획 작성일이 최근 욕구사정일('+nd.date+')보다 앞서요.',lv:'warn'});
   if(!nd) w.push({t:'이 어르신의 욕구사정이 없어요. 계획서는 욕구사정 결과를 근거로 작성해야 해요.',lv:'warn'});
@@ -5662,12 +5765,15 @@ function cpChecksHtml(p,e,nd,g){
 }
 function copyCPAll(id,btn){
   const p=cpById(id); if(!p) return; const o=p.opinion||{};
+  const eC=state.elders.find(x=>x.id===p.elderId)||{}; const errs=cpChecks(p,eC,cpNeedsOf(p),cpEvalOf(p)).filter(x=>x.lv==='err');
+  let draftMark='';
+  if(errs.length){ if(!confirm('⛔ 필수 점검 미통과 '+errs.length+'건:\n- '+errs.map(x=>x.t).join('\n- ')+'\n\n이 상태로는 제출용으로 쓸 수 없어요.\n[확인]을 누르면 "초안" 표시를 붙여 복사만 합니다. (케어포에 붙이기 전에 반드시 해결)')) return; draftMark='※※ 초안 — 필수 점검 미통과 '+errs.length+'건: '+errs.map(x=>x.t).join(' / ')+' ※※\n\n'; }
   const e=state.elders.find(x=>x.id===p.elderId)||{}; const g=(typeof latestEvalData==='function')?latestEvalData(p.elderId):null; const nd=latestNeedsOf(p.elderId);
   const head='수급자명 '+(e.name||'')+' · '+(e.gender||'')+' / '+(e.birth||'')+' · 입소일 '+(e.admit||'')+' · 작성일 '+p.date+' · 적용기간 '+(p.startDate||'')+' ~ '+(p.endDate||'')+' · 작성자 '+(p.author||'');
-  const base='기초평가: 낙상위험도 '+(g&&g.fall!=null?g.fall+'점'+(g.fallJudge?'('+g.fallJudge+')':''):'—')+' · 욕창위험도 '+(g&&g.braden!=null?g.braden+'점':'—')+' · 인지기능 '+(g&&g.cist!=null?g.cist+'점':'—')+(nd?'\n욕구사정 총평: '+(nd.summary||'').slice(0,400):'');
+  const base='기초평가: 낙상위험도 '+(g&&g.fall!=null?g.fall+'점'+(g.fallJudge?'('+g.fallJudge+')':''):'—')+' · 욕창위험도 '+(g&&g.braden!=null?g.braden+'점':'—')+' · 인지기능 '+(g&&g.cist!=null?g.cist+'점':'—')+(nd?'\n욕구사정 총평: '+(nd.summary||''):'');
   const rows=[]; CP_CATALOG.forEach((grp,gi)=>{ const its=grp.items.filter(it=>cpItemOf(p,it.n)); if(!its.length) return; rows.push('['+grp.dom+'] '+((p.goals&&p.goals[gi])||grp.goal)); its.forEach(it=>{ const s=cpItemOf(p,it.n); rows.push('  · '+s.n+' ('+s.f+' / '+s.t+' / '+(s.author||p.author||'')+')\n    필요내용: '+s.need+'\n    세부제공내용: '+s.detail); }); });
   const c=p.consent||{};
-  const t='장기요양 급여제공계획\n'+head+'\n'+base+'\n\n'+rows.join('\n')+'\n\n목표: '+(p.goal||'')+'\n\n종합의견\n1. 주요기능상태\n'+(o.status||'')+'\n\n2. 서비스 제공 방향\n'+(o.direction||'')+'\n\n3. 개인별장기요양이용계획서와 다른 내용\n'+(o.diff||'')+'\n\n4. 특이사항\n'+(o.special||'')+
+  const t=draftMark+'장기요양 급여제공계획\n'+head+'\n'+base+'\n\n'+rows.join('\n')+'\n\n목표: '+(p.goal||'')+'\n\n종합의견\n1. 주요기능상태\n'+(o.status||'')+'\n\n2. 서비스 제공 방향\n'+(o.direction||'')+'\n\n3. 개인별장기요양이용계획서와 다른 내용\n'+(o.diff||'')+'\n\n4. 특이사항\n'+(o.special||'')+
     '\n\n총괄확인자 '+(p.supervisor||'')+' · 동의일 '+(c.date||'')+(p.signDone?'(서명완료)':'')+' · 동의자 '+(c.name||'')+(c.rel?'('+c.rel+')':'')+(c.tel?' ('+c.tel+')':'')+' · 공단통보일 '+(p.nhisDate||'')+' · 기관장 '+(p.director||'');
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(()=>{ btn.textContent='✓ 복사됨'; setTimeout(()=>btn.textContent='📋 전체 복사',1500); }); else alert(t);
 }
@@ -5767,7 +5873,7 @@ function renderRoundBody(){
     // 결과평가
     if(newHalf&&!rs) h+=roundCell(true,'대상 제외','입소 반기','warn', "rdGo('result',"+e.id+")"); else if(rs) h+=roundCell(true,'작성완료', rs.date.slice(5)+(rs.rewrite==='30일 이내 재작성'?' · 재작성 '+(rs.rewriteDue||'').slice(5):''), null, "rdGo('result',"+e.id+","+rs.id+")"); else h+=roundCell(false,'미작성','', null, "rdGo('result',"+e.id+")");
     // 계획
-    if(cp){ const rowsC=(e.ltcPlan&&e.ltcPlan.items&&e.ltcPlan.items.length)?ltcCompare(cp,e,latestNeedsOf(e.id),(typeof latestEvalData==='function')?latestEvalData(e.id):null):[]; const pendC=rowsC.filter(r=>(r.kind==='mismatch'||r.kind==='noitem')&&!((cp.ltcCmp||{})[r.ph])).length;
+    if(cp){ const rowsC=(e.ltcPlan&&e.ltcPlan.items&&e.ltcPlan.items.length)?ltcCompare(cp,e,cpNeedsOf(cp),cpEvalOf(cp)):[]; const pendC=rowsC.filter(r=>(r.kind==='mismatch'||r.kind==='conflict'||r.kind==='noitem'||r.kind==='unmapped')&&!((cp.ltcCmp||{})[r.ph])).length;
       const end=cp.endDate||(cp.startDate?(()=>{const d=new Date(cp.startDate+'T00:00:00'); d.setFullYear(d.getFullYear()+1); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10);})():''); h+=roundCell(true, (cp.startDate||cp.date).slice(2).replace(/-/g,'.')+(end?'~'+end.slice(2).replace(/-/g,'.'):''), (cp.nhisDate?'공단('+cp.nhisDate.slice(5)+')':'<span class="rd-due">공단 미통보</span>')+(pendC?'<br><span class="rd-due">개장 불일치 '+pendC+'건</span>':''), (cp.nhisDate&&!pendC)?'ok':'warn', "rdGo('plan',"+e.id+","+cp.id+")"); } else h+=roundCell(false,'미작성','', null, "rdGo('plan',"+e.id+")");
     // 안내·발송
     if(cp){ const sent=!!cp.nhisDate, sign=!!cp.signDone; const late=cp.nhisDate&&cp.startDate&&cp.nhisDate>cp.startDate;
@@ -5870,6 +5976,7 @@ function extractFromText(txt){
   EXTRACT_RULES.forEach((r,i)=>{
     if(r.unless&&r.unless.test(txt)) return;
     const m=txt.match(r.re); if(!m) return;
+    { const after=txt.slice(m.index+m[0].length, m.index+m[0].length+8); const before=txt.slice(Math.max(0,m.index-6), m.index); if(/^\s*(은|는|이|가|도)?\s*(없|무|아니|않|못\s*함)/.test(after)||/(없는|무)\s*$/.test(before)) return; }
     let val=r.v; if(r.vGroup) val=m[r.vGroup]+(r.vSuffix||'');
     let memo=''; if(r.memoGroup&&m[r.memoGroup]) memo=m[r.memoGroup].trim(); if(r.memoRe){ const mm=txt.match(r.memoRe); if(mm) memo=mm[0].trim(); } if(r.memoText) memo=r.memoText;
     const key=r.tab+'|'+r.k+'|'+(Array.isArray(val)?val.join():val||'')+'|'+(r.memoKey||''); if(seen[key]) return; seen[key]=1;
@@ -5912,7 +6019,7 @@ function applyExtract(){
   let msg=[];
   if(toC){
     ensureCounsel();
-    const c={id:Date.now(), type:document.getElementById('ex-ctype').value, date, elderName:e.name, targetName:'', targetRel:'', staff:'', method:'면담', place:'', div:document.getElementById('ex-div').value, fields:{}, memos:{}, content:(src?'['+src+']\n':'')+txt.trim(), action:'', carepoDone:false, imported:true};
+    const c={id:Date.now(), type:document.getElementById('ex-ctype').value, date, elderName:e.name, elderId:e.id, targetName:'', targetRel:'', staff:'', method:'면담', place:'', div:document.getElementById('ex-div').value, fields:{}, memos:{}, content:(src?'['+src+']\n':'')+txt.trim(), action:'', carepoDone:false, imported:true};
     state.counsels.push(c); msg.push('상담 기록 1건 저장');
   }
   if(toN){
@@ -9820,11 +9927,13 @@ function evalAssessLines(g, saltKey){
   if(g.motor&&g.motor.move&&Object.values(g.motor.move).some(v=>v&&v!=='운동장애 없음')) f.push('운동장애 소견 있어 잔존 기능을 활용하고 마비측을 보호하며 진행함.');
   return f;
 }
-function latestEvalData(id){
-  const evs=(state.evals[id]||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+function latestEvalData(id, asOf){
+  const evs=(state.evals[id]||[]).filter(en=>!asOf||en.date<=asOf).slice().sort((a,b)=>b.date.localeCompare(a.date));
   const pick=(cond)=>{ for(const en of evs){ const v=cond(en); if(v!==undefined&&v!==null) return v; } return null; };
+  const pickDate=(cond)=>{ for(const en of evs){ const v=cond(en); if(v!==undefined&&v!==null) return en.date; } return null; };
   return {
     has: evs.length>0, date: evs[0]?evs[0].date:null,
+    fallDate: pickDate(en=>en.fall), bradenDate: pickDate(en=>en.braden), cistDate: pickDate(en=>en.cist), romDate: pickDate(en=>en.rom), adlDate: pickDate(en=>en.adl), statusDate: pickDate(en=>(en.detail&&en.detail.status)?en.detail.status:null),
     fall: pick(en=>en.fall),
     braden: pick(en=>en.braden),
     bradenLevel: pick(en=>(en.detail&&en.detail.braden)?en.detail.braden.level:null),
@@ -11429,7 +11538,7 @@ function importData(ev){
   const r=new FileReader();
   r.onload=e=>{
     try{ const d=JSON.parse(e.target.result);
-      if(d.elders){ state=d; save(); renderElders(); renderSched(); renderDash();
+      if(d.elders){ state=d; state._rev=Math.max(d._rev||0,parseInt(localStorage.getItem(REV_KEY)||'0',10)); save(); renderElders(); renderSched(); renderDash();
         showMsg('불러오기 완료! 어르신 '+state.elders.length+'명을 복원했어요.','ok');
       } else showMsg('올바른 백업 파일이 아니에요.','err');
     }catch(err){ showMsg('파일을 읽을 수 없어요.','err'); }
@@ -11439,7 +11548,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-09-30-09';
+const APP_VERSION = '2026-10-02-01';
 function checkForUpdate(){
   try{
     const base=location.pathname;
@@ -11448,7 +11557,7 @@ function checkForUpdate(){
         const m=txt.match(/APP_VERSION\s*=\s*'([^']+)'/);
         if(!m) return;
         const remoteV=m[1];
-        if(remoteV && remoteV!==APP_VERSION){
+        if(remoteV && verNewer(remoteV, APP_VERSION)){   // 서버가 더 새 버전일 때만 (옛 버전으로 되돌리지 않음)
           // 이미 이 버전으로 새로고침 시도했으면 루프 방지
           const cur=new URLSearchParams(location.search).get('v');
           if(cur===remoteV){ showUpdateBanner(remoteV); return; }
@@ -11467,8 +11576,19 @@ function showUpdateBanner(v){
 // ===== 구글 시트 자동 동기화 =====
 var SYNC_URL = 'https://script.google.com/macros/s/AKfycbzFpDGk4SVD1SapnbmgV-n9uS0kHY3RM56O6tYIYUYLuIVuA9RM7mXwlYy_1NIgEMrxiw/exec';
 var SYNC_META_KEY = 'pt_clinic_sync';
-let _syncTimer=null, _syncing=false, _syncBusy=false;
-function payloadStr(){ return JSON.stringify(state); }
+let _syncTimer=null, _syncing=false, _syncBusy=false, _pausePush=false;
+function payloadStr(){
+  // 사진(base64)은 용량이 커서 클라우드에 보내지 않고 이 기기에만 보관 — 클라우드에는 '사진 n장 있음'만 기록
+  const copy=JSON.parse(JSON.stringify(state));
+  (copy.elders||[]).forEach(e=>{ if(e.ltcPlan&&e.ltcPlan.photos&&e.ltcPlan.photos.length){ e.ltcPlan.photoCount=e.ltcPlan.photos.length; e.ltcPlan.photos=[]; } });
+  copy._cloud={savedAt:new Date().toISOString(), app:APP_VERSION, counts:stateCounts(state)};
+  return JSON.stringify(copy);
+}
+function mergeLocalPhotos(remoteObj){
+  // 클라우드에서 불러올 때 이 기기에 있던 사진은 살려서 붙임 (어르신 이름+생년월일 기준)
+  try{ (remoteObj.elders||[]).forEach(re=>{ if(!re.ltcPlan) return; const le=(state.elders||[]).find(x=>x.name===re.name&&(!x.ltcPlan||!re.ltcPlan.birth||!x.ltcPlan.birth||x.ltcPlan.birth===re.ltcPlan.birth)); if(le&&le.ltcPlan&&le.ltcPlan.photos&&le.ltcPlan.photos.length) re.ltcPlan.photos=le.ltcPlan.photos; }); }catch(e){}
+  return remoteObj;
+}
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return String(h>>>0); }
 function getSyncMeta(){ try{ return JSON.parse(localStorage.getItem(SYNC_META_KEY))||{}; }catch(e){ return {}; } }
 function setSyncMeta(m){ localStorage.setItem(SYNC_META_KEY, JSON.stringify(m)); }
@@ -11478,11 +11598,12 @@ function updateSyncUI(status){
   if(!dot||!txt) return;
   const meta=getSyncMeta();
   const last=meta.lastSync?('마지막 동기화: '+fmtTime(meta.lastSync)):'아직 동기화 안 됨';
-  const map={ pending:['#C8862F','변경 감지 — 곧 저장'], syncing:['#2E7D6B','동기화 중…'], ok:['#2E7D6B',last], err:['#B4452F','동기화 실패 — 인터넷 확인'] };
+  const map={ pending:['#C8862F','변경 감지 — 곧 저장'], syncing:['#2E7D6B','동기화 중…'], ok:['#2E7D6B',last], err:['#B4452F','동기화 실패 — 인터넷 확인'], paused:['#C8862F','클라우드 자동 저장 일시중지 — 백업 탭에서 해결하세요'] };
   const s=map[status]||map.ok; dot.style.background=s[0]; txt.textContent=s[1];
 }
 function scheduleSync(){
   if(!SYNC_URL) return;
+  if(_pausePush){ updateSyncUI('paused'); return; }   // 충돌 미해결 중에는 클라우드를 덮어쓰지 않음
   clearTimeout(_syncTimer); updateSyncUI('pending');
   _syncTimer=setTimeout(pushSync, 2500);
 }
@@ -11490,48 +11611,57 @@ function pushSync(force){
   if(!SYNC_URL || _syncing) return;
   _syncing=true; updateSyncUI('syncing');
   const body=payloadStr();
+  const meta0=getSyncMeta();
+  if(body.length>CLOUD_LIMIT&&!meta0.bigOk){ _syncing=false; pushFailed('용량 초과('+Math.round(body.length/1000)+'천 자 / 구글 시트 한 칸 한도 50천 자). 백업 탭의 안내대로 구글 스크립트를 교체하면 해결돼요.', body.length); return; }
   return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload:body})})
     .then(r=>r.json()).then(res=>{
-      if(res&&res.ok){ setSyncMeta({lastSync:res.savedAt, lastHash:strHash(body)}); updateSyncUI('ok'); }
-      else updateSyncUI('err');
-    }).catch(()=>updateSyncUI('err')).finally(()=>{ _syncing=false; });
+      if(res&&res.ok){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:strHash(body), lastPushOk:new Date().toISOString(), failCount:0, bigOk: body.length>CLOUD_LIMIT?true:getSyncMeta().bigOk})); updateSyncUI('ok'); hidePushBanner(); }
+      else pushFailed((res&&res.error)||'서버가 저장을 거부함', body.length);
+    }).catch(err=>pushFailed('연결 실패 — '+(err&&err.message||'인터넷·스크립트 주소 확인'), body.length)).finally(()=>{ _syncing=false; });
 }
+var CLOUD_LIMIT=49000;
+function pushFailed(reason,size){
+  const m=getSyncMeta(); m.failCount=(m.failCount||0)+1; m.lastFail=new Date().toISOString(); m.lastFailReason=reason; setSyncMeta(m); updateSyncUI('err');
+  const b=ensureBanner('push-banner','#B4452F'); b.style.display='flex';
+  b.innerHTML='<b>☁️ 클라우드 저장이 안 되고 있어요</b><span>'+esc(reason)+'<br>이 기기에는 저장되어 있지만 다른 기기에서는 옛날 내용이 보여요. 마지막 성공: '+fmtTime(m.lastPushOk||m.lastSync)+'</span><button style="'+_bbtn+'" onclick="exportData()">백업 파일 받기</button><button style="'+_bbtn+'" onclick="go(document.querySelector(\'nav.tabs button[data-tab=\\\'data\\\']\'))">해결 방법 보기</button><button style="'+_bbtn+'" onclick="hidePushBanner()">닫기</button>';
+}
+function hidePushBanner(){ const b=document.getElementById('push-banner'); if(b) b.style.display='none'; }
 function pullSync(forced){
   if(!SYNC_URL || _syncBusy) return;
   _syncBusy=true; updateSyncUI('syncing');
-  return fetch(SYNC_URL).then(r=>r.json()).then(res=>{
+  return fetch(SYNC_URL).then(function(r){return r.json();}).then(function(res){
     if(!res||!res.ok){ updateSyncUI('err'); return; }
-    const remote=res.payload||''; const savedAt=res.savedAt||'';
-    const meta=getSyncMeta();
-    const localStr=payloadStr(); const localHash=strHash(localStr);
+    var remote=res.payload||''; var savedAt=res.savedAt||'';
+    var meta=getSyncMeta();
+    var localStr=payloadStr(); var localHash=strHash(localStr);
     if(!remote){ updateSyncUI('ok'); return; }               // 클라우드 비어있음 → 이 기기가 원본
-    const remoteHash=strHash(remote);
+    var remoteHash=strHash(remote);
     if(remoteHash===localHash){ setSyncMeta({lastSync:savedAt, lastHash:localHash}); updateSyncUI('ok'); return; } // 동일
-    const localChanged = meta.lastHash ? (meta.lastHash!==localHash) : true;
-    const remoteChanged = meta.lastSync ? (savedAt!==meta.lastSync) : true;
-    if(forced){
-      if(confirm('클라우드 백업('+fmtTime(savedAt)+')을 불러올까요?\n이 기기 데이터는 되돌림용으로 백업돼요.')) doRestore(remote, savedAt);
-      else updateSyncUI('ok');
-    } else if(remoteChanged && localChanged){
-      if(confirm('⚠️ 이 기기와 다른 기기 양쪽에서 데이터가 바뀌었어요.\n\n클라우드 백업 시각: '+fmtTime(savedAt)+'\n\n[확인]을 누르면 클라우드 것을 불러오고 이 기기의 최근 변경은 덮어써집니다.\n(덮어쓰기 전 자동으로 되돌림용 백업을 만들어요)\n[취소]를 누르면 이 기기 것을 유지하고, 다음 변경 때 클라우드에 올립니다.')){
-        doRestore(remote, savedAt);
-      } else { updateSyncUI('ok'); }
-    } else if(remoteChanged){
-      if(confirm('다른 기기에서 저장한 더 최신 백업이 있어요 ('+fmtTime(savedAt)+').\n불러올까요?\n(이 기기 데이터는 되돌림용으로 백업돼요)')){
-        doRestore(remote, savedAt);
-      } else { updateSyncUI('ok'); }
-    } else {
-      pushSync(); // 로컬만 변경 → 올리기
-    }
-  }).catch(()=>updateSyncUI('err')).finally(()=>{ _syncBusy=false; });
+    var lc=stateCounts(state), rc=stateCounts(remote);
+    if(!rc){ updateSyncUI('err'); return; }                  // 형식 이상 → 건드리지 않음
+    var cmp=compareCounts(lc,rc);
+    // 클라우드가 이 기기의 마지막 저장보다 오래됐고 내용도 적으면 = 클라우드가 멈춰 있는 것 → 불러오기 금지, 올리기만
+    var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||''; var lastOk=meta.lastPushOk||meta.lastSync||'';
+    var cloudStale = savedAt && (lastOk&&savedAt<lastOk || (localSavedAt&&savedAt<localSavedAt&&!cmp.cloudAhead));
+    if(cloudStale&&!cmp.cloudAhead){ setSyncMeta(Object.assign({},meta,{staleCloud:savedAt})); if(forced) alert('클라우드 백업('+fmtTime(savedAt)+')이 이 기기 내용보다 오래됐어요. 불러오면 데이터가 지워지므로 불러오기를 막았어요.\n\n이 기기 내용을 클라우드에 올립니다.'); pushSync(true); return; }
+    if(forced){ showSyncChoice(remote,savedAt,lc,rc,cmp,true); updateSyncUI('ok'); return; }
+    var remoteChanged = meta.lastSync ? (savedAt!==meta.lastSync) : true;
+    if(!remoteChanged){ pushSync(); return; }                // 클라우드는 그대로, 이 기기만 변경 → 올리기
+    if(cmp.localAhead){ pushSync(); return; }                // 클라우드가 이 기기보다 오래됨 → 묻지 않고 이 기기 내용을 올림
+    if(meta.dismissed===savedAt){ _pausePush=true; updateSyncUI('paused'); return; }
+    showSyncChoice(remote,savedAt,lc,rc,cmp,false);
+  }).catch(function(){ updateSyncUI('err'); }).finally(function(){ _syncBusy=false; });
 }
 function doRestore(remoteStr, savedAt){
   try{
-    JSON.parse(remoteStr); // 형식 검증
+    var obj=JSON.parse(remoteStr); // 형식 검증
+    var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||'';
+    if(savedAt&&localSavedAt&&savedAt<localSavedAt){ var rc=stateCounts(obj), lc=stateCounts(state); if(!confirm('⚠ 이 클라우드 백업('+fmtTime(savedAt)+')은 이 기기의 마지막 저장('+fmtTime(localSavedAt)+')보다 오래됐어요.\n\n클라우드: '+JSON.stringify(rc)+'\n이 기기: '+JSON.stringify(lc)+'\n\n불러오면 그 사이 작업이 사라져요. 정말 진행할까요?')) return; }
+    remoteStr=JSON.stringify(mergeLocalPhotos(obj));
     localStorage.setItem(KEY+'_prerestore', localStorage.getItem(KEY)||'');
     localStorage.setItem(KEY+'_prerestore_at', new Date().toISOString());
-    localStorage.setItem(KEY, remoteStr);
-    setSyncMeta({lastSync:savedAt, lastHash:strHash(remoteStr)});
+    localStorage.setItem(KEY, remoteStr); localStorage.removeItem(REV_KEY);
+    setSyncMeta({lastSync:savedAt, lastHash:strHash(remoteStr), lastPushOk:savedAt});
     alert('클라우드 백업을 불러왔어요. 문제가 있으면 백업 탭 → "되돌리기"를 누르면 직전 상태로 복구돼요.');
     location.reload();
   }catch(e){ alert('불러오기 실패: 데이터 형식 오류'); updateSyncUI('err'); }
@@ -11540,12 +11670,13 @@ function undoRestore(){
   const prev=localStorage.getItem(KEY+'_prerestore');
   if(!prev){ alert('되돌릴 백업이 없어요.'); return; }
   const at=localStorage.getItem(KEY+'_prerestore_at');
-  if(!confirm('되돌리기 직전('+fmtTime(at)+') 상태로 복구할까요?\n지금 데이터는 사라지고, 복구 후 클라우드에도 반영돼요.')) return;
-  localStorage.setItem(KEY, prev);
+  var pc=stateCounts(prev), cc=stateCounts(state);
+  if(!confirm('되돌리기 직전('+fmtTime(at)+') 상태로 복구할까요?\n\n[복구될 내용] '+JSON.stringify(pc)+'\n[지금 내용] '+JSON.stringify(cc)+'\n\n지금 데이터는 사라지고, 복구 후 클라우드에도 반영돼요.')) return;
+  localStorage.setItem(KEY, prev); localStorage.removeItem(REV_KEY);
   setSyncMeta({}); // 다시 동기화되도록
   location.reload();
 }
-function manualPush(){ pushSync(true).then(()=>{ if(!_syncing) showMsg('클라우드에 올렸어요.','ok'); }); }
+function manualPush(){ _pausePush=false; pushSync(true).then(()=>{ if(!_syncing) showMsg('클라우드에 올렸어요.','ok'); }); }
 function manualPull(){ pullSync(true); }
 
 renderPlanForm(); renderElders(); renderDash(); initLock();
