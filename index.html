@@ -11557,7 +11557,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-12-03';
+const APP_VERSION = '2026-10-12-05';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11585,7 +11585,7 @@ function showUpdateBanner(v){
 }
 
 // ===== 구글 시트 자동 동기화 =====
-var SYNC_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzFpDGk4SVD1SapnbmgV-n9uS0kHY3RM56O6tYIYUYLuIVuA9RM7mXwlYy_1NIgEMrxiw/exec';
+var SYNC_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwVRuspVvDsk1Zi_Kv4XWU-fDwe8AhuZeg-9MYlc6LhbmKOq_vAVNfu5xN7xPg5LkBDLA/exec';
 var SYNC_URL_KEY='pt_clinic_sync_url';
 var SYNC_URL = (function(){ try{ var u=localStorage.getItem(SYNC_URL_KEY); if(u&&/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)) return u; }catch(e){} return SYNC_URL_DEFAULT; })();
 function setSyncUrl(){ var inp=document.getElementById('sync-url-inp'); var u=(inp&&inp.value||'').trim(); if(!u){ localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; alert('기본 주소로 되돌렸어요.'); renderSafeCard(); return; } if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){ alert('주소 형식이 아니에요. https://script.google.com/macros/s/…/exec 형태여야 해요.'); return; } localStorage.setItem(SYNC_URL_KEY,u); SYNC_URL=u; setSyncMeta({}); alert('클라우드 주소를 바꿨어요. 연결 진단을 눌러 확인하세요.\n※ 폰과 컴퓨터 모두 같은 주소를 넣어야 해요.'); renderSafeCard(); }
@@ -11749,7 +11749,7 @@ function manualPull(){ pullSync(true); }
 
 renderPlanForm(); renderElders(); renderDash(); initLock();
 updateSyncUI('ok');
-try{ if(localStorage.getItem('pt_clinic_last_ver')!==APP_VERSION){ localStorage.setItem('pt_clinic_last_ver',APP_VERSION); var _m=getSyncMeta(); delete _m.dismissed; _m.failCount=0; setSyncMeta(_m); } }catch(e){}
+try{ if(localStorage.getItem('pt_clinic_last_ver')!==APP_VERSION){ localStorage.setItem('pt_clinic_last_ver',APP_VERSION); var _m=getSyncMeta(); delete _m.dismissed; _m.failCount=0; setSyncMeta(_m); } if(localStorage.getItem('pt_clinic_sync_default')!==SYNC_URL_DEFAULT){ localStorage.setItem('pt_clinic_sync_default',SYNC_URL_DEFAULT); localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; setSyncMeta({}); } }catch(e){}
 try{ var _t=sessionStorage.getItem('pt_clinic_toast'); if(_t){ sessionStorage.removeItem('pt_clinic_toast'); var tb=ensureBanner('toast-banner','#2E7D6B'); tb.style.display='flex'; tb.innerHTML='<span>'+_t+'</span><button style="'+_bbtn+'" onclick="this.parentNode.style.display=\'none\'">확인</button>'; setTimeout(function(){ tb.style.display='none'; },12000); } }catch(e){}
 setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
 window.addEventListener('focus',function(){ if(SYNC_URL&&!document.getElementById('sync-choice-modal')) pullSync(false); });
