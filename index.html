@@ -2282,6 +2282,7 @@ function cloudStatusHtml(){
   if(over) h+='<br><span style="color:#B4452F;font-weight:700;">⚠ 구글 시트 한 칸 한도(50천 자)를 넘을 수 있어요. 저장 실패가 반복되면 아래 스크립트 교체가 필요해요.</span>';
   if(m.staleCloud||m.ignoreHash) h+='<br><span style="color:#8a5a00;">ℹ 오래된 클라우드 백업('+fmtTime(m.staleCloud||m.dismissed)+')은 불러오지 않도록 막아 두었어요. 이 기기가 기준이에요.</span>';
   h+='<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn teal" onclick="forceCloudOverwrite()">🔁 이 기기 기준으로 클라우드 강제 덮어쓰기</button><button class="btn" onclick="pullSync(true)">☁️ 클라우드 내용 확인</button><button class="btn" onclick="testCloud()">🩺 연결 진단</button>'+(localStorage.getItem(KEY+'_cloudprev')?'<button class="btn" onclick="restoreCloudPrev()">↩ 덮어쓰기 전 클라우드 내용 복구('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')</button>':'')+'<button class="btn" onclick="checkForUpdate(true)">🔄 앱 업데이트 확인</button></div>';
+  h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">🔗 클라우드 주소 '+(SYNC_URL!==SYNC_URL_DEFAULT?'(직접 입력한 주소 사용 중)':'(기본)')+'</summary><div style="margin-top:6px;"><input id="sync-url-inp" style="width:100%;font-size:11px;" value="'+esc(SYNC_URL)+'" placeholder="https://script.google.com/macros/s/…/exec"><div class="row" style="margin-top:4px;"><button class="btn" onclick="setSyncUrl()">주소 저장</button><button class="btn" onclick="document.getElementById(\'sync-url-inp\').value=\'\';setSyncUrl()">기본 주소로</button></div><div style="font-size:11.5px;color:#666;margin-top:4px;">옛 배포를 못 찾겠으면: 구글 스크립트에서 <b>배포 → 새 배포 → 웹 앱 → 액세스 "모든 사용자" → 배포</b> 후 나온 주소를 여기 붙여넣기 (폰·컴퓨터 둘 다).</div></div></details>';
   h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (한도 없음, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 기존 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기<br>2) 배포 → 배포 관리 → <b>앱에 넣은 주소와 같은 배포</b>의 연필(수정) → 버전: <b>새 버전</b> → 배포 <span style="color:#B4452F;">(코드만 바꾸고 "새 버전"으로 배포하지 않으면 옛 코드가 계속 돌아가요!)</span><br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요. 배포가 2개 이상이면 앱의 주소가 어느 배포인지 확인하세요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
   return h;
 }
@@ -11556,7 +11557,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-12-02';
+const APP_VERSION = '2026-10-12-03';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11584,7 +11585,10 @@ function showUpdateBanner(v){
 }
 
 // ===== 구글 시트 자동 동기화 =====
-var SYNC_URL = 'https://script.google.com/macros/s/AKfycbzFpDGk4SVD1SapnbmgV-n9uS0kHY3RM56O6tYIYUYLuIVuA9RM7mXwlYy_1NIgEMrxiw/exec';
+var SYNC_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzFpDGk4SVD1SapnbmgV-n9uS0kHY3RM56O6tYIYUYLuIVuA9RM7mXwlYy_1NIgEMrxiw/exec';
+var SYNC_URL_KEY='pt_clinic_sync_url';
+var SYNC_URL = (function(){ try{ var u=localStorage.getItem(SYNC_URL_KEY); if(u&&/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)) return u; }catch(e){} return SYNC_URL_DEFAULT; })();
+function setSyncUrl(){ var inp=document.getElementById('sync-url-inp'); var u=(inp&&inp.value||'').trim(); if(!u){ localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; alert('기본 주소로 되돌렸어요.'); renderSafeCard(); return; } if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){ alert('주소 형식이 아니에요. https://script.google.com/macros/s/…/exec 형태여야 해요.'); return; } localStorage.setItem(SYNC_URL_KEY,u); SYNC_URL=u; setSyncMeta({}); alert('클라우드 주소를 바꿨어요. 연결 진단을 눌러 확인하세요.\n※ 폰과 컴퓨터 모두 같은 주소를 넣어야 해요.'); renderSafeCard(); }
 var SYNC_META_KEY = 'pt_clinic_sync';
 let _syncTimer=null, _syncing=false, _syncBusy=false, _pausePush=false;
 function payloadStr(){
@@ -11638,7 +11642,32 @@ function pushFailed(reason,size){
   b.innerHTML='<b>☁️ 클라우드 저장이 안 되고 있어요</b><span>'+esc(reason)+'<br>이 기기에는 저장되어 있지만 다른 기기에서는 옛날 내용이 보여요. 마지막 성공: '+fmtTime(m.lastPushOk||m.lastSync)+'</span><button style="'+_bbtn+'" onclick="exportData()">백업 파일 받기</button><button style="'+_bbtn+'" onclick="go(document.querySelector(\'nav.tabs button[data-tab=\\\'data\\\']\'))">해결 방법 보기</button><button style="'+_bbtn+'" onclick="hidePushBanner()">닫기</button>';
 }
 function restoreCloudPrev(){ var p=localStorage.getItem(KEY+'_cloudprev'); if(!p){ alert('보관된 내용이 없어요.'); return; } if(!confirm('덮어쓰기 전 클라우드 내용('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')으로 되돌릴까요?\n지금 내용은 되돌리기용으로 보관돼요.')) return; doRestore(p, localStorage.getItem(KEY+'_cloudprev_at')); }
-function testCloud(){ if(!SYNC_URL){ alert('클라우드 주소가 비어 있어요.'); return; } var t0=Date.now(); fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.text();}).then(function(txt){ var res=null; try{ res=JSON.parse(txt); }catch(e){} if(!res){ alert('❌ 구글 스크립트가 JSON이 아닌 응답을 보냈어요 (로그인 화면이거나 배포 설정 오류).\n\n배포 관리 → "액세스 권한: 모든 사용자"인지, "새 버전"으로 배포했는지 확인하세요.\n\n응답 앞부분: '+txt.slice(0,120)); return; } if(!res.ok){ alert('❌ 스크립트 오류: '+(res.error||'')); return; } var sz=(res.payload||'').length; alert('✅ 클라우드 연결 정상 ('+(Date.now()-t0)+'ms)\n클라우드 저장 시각: '+fmtTime(res.savedAt)+'\n클라우드 데이터 크기: '+Math.round(sz/1000)+'천 자\n이 기기 데이터 크기: '+Math.round(payloadStr().length/1000)+'천 자\n이 기기 마지막 저장: '+fmtTime(localStorage.getItem(SAVED_AT_KEY))+'\n\n'+(sz&&Math.round(sz/1000)!==Math.round(payloadStr().length/1000)?'크기가 다르면 "클라우드 내용 확인"으로 비교하세요.':'')); }).catch(function(e){ alert('❌ 연결 실패: '+(e&&e.message||'')+'\n인터넷 또는 스크립트 주소를 확인하세요.'); }); }
+function testCloud(){
+  if(!SYNC_URL){ alert('클라우드 주소가 비어 있어요.'); return; }
+  var L=[]; var t0=Date.now(); var localSize=payloadStr().length; var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||'';
+  var get=function(){ return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.text();}).then(function(txt){ var res=null; try{ res=JSON.parse(txt); }catch(e){} if(!res) throw new Error('JSON 아님: '+txt.slice(0,80)); if(!res.ok) throw new Error('스크립트 오류: '+(res.error||'')); return res; }); };
+  get().then(function(r1){
+    L.push('① 읽기 성공 ('+(Date.now()-t0)+'ms)'); L.push('   클라우드 저장 시각: '+fmtTime(r1.savedAt)+' / 크기 '+Math.round((r1.payload||'').length/1000)+'천 자');
+    L.push('   이 기기 마지막 저장: '+fmtTime(localSavedAt)+' / 크기 '+Math.round(localSize/1000)+'천 자');
+    var rc=stateCounts(r1.payload||'')||{}, lc=stateCounts(state)||{};
+    L.push('   클라우드 개수: '+JSON.stringify(rc)); L.push('   이 기기 개수: '+JSON.stringify(lc));
+    var cmp=compareCounts(lc,rc);
+    if(cmp.cloudAhead){ L.push('② 클라우드가 이 기기보다 많아요 → 올리기 시험은 생략 (덮어쓰기 방지). "클라우드 내용 확인"으로 비교하세요.'); alert(L.join('\n')); return; }
+    var body=payloadStr();
+    return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload:body})}).then(function(r){return r.text();}).then(function(txt){
+      var res=null; try{ res=JSON.parse(txt); }catch(e){}
+      if(!res){ L.push('② 올리기 실패: 응답이 JSON이 아님 (배포 권한 "모든 사용자"인지 확인)'); alert(L.join('\n')); return; }
+      if(!res.ok){ L.push('② 올리기 실패: '+(res.error||'')+(body.length>CLOUD_LIMIT?'\n   → 데이터가 50천 자를 넘어요. 옛 스크립트 한도. 백업 탭의 새 스크립트로 교체 + "새 버전" 배포 또는 "새 배포" 주소 입력 필요':'')); alert(L.join('\n')); return; }
+      L.push('② 올리기 성공 (서버 시각 '+fmtTime(res.savedAt)+')');
+      return get().then(function(r2){
+        var ok=(r2.payload||'').length===body.length;
+        L.push(ok?'③ 다시 읽기: 방금 올린 내용 그대로 확인됨 ✅':'③ 다시 읽기: 크기가 달라요 ('+Math.round((r2.payload||'').length/1000)+'천 자) ❌ → 스크립트가 옛 코드로 돌아가는 중. "새 버전" 배포 또는 "새 배포" 주소 입력');
+        if(ok){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:r2.savedAt,lastHash:contentHash(body),lastPushOk:new Date().toISOString(),failCount:0})); hidePushBanner(); updateSyncUI('ok'); L.push('\n이제 다른 기기에서 앱을 열면 이 내용을 받아와요.'); }
+        alert(L.join('\n')); renderSafeCard();
+      });
+    });
+  }).catch(function(e){ L.push('❌ '+(e&&e.message||'연결 실패')); L.push('인터넷·주소·배포 권한을 확인하세요.'); alert(L.join('\n')); });
+}
 function hidePushBanner(){ const b=document.getElementById('push-banner'); if(b) b.style.display='none'; }
 function forceCloudOverwrite(){ if(!SYNC_URL){ alert('클라우드 주소가 설정되어 있지 않아요.'); return; } if(!confirm('이 기기 내용으로 클라우드 백업을 완전히 덮어쓸까요?\n(다른 기기의 옛 백업은 사라지고, 이 기기 내용이 기준이 돼요)')) return; var m=getSyncMeta(); delete m.ignoreHash; delete m.dismissed; m.failCount=0; m.bigOk=true; setSyncMeta(m); _pausePush=false; var p=pushSync(true); if(p&&p.then) p.then(function(){ var mm=getSyncMeta(); if(mm.failCount){ alert('덮어쓰기 실패: '+(mm.lastFailReason||'')); } else { alert('클라우드를 이 기기 내용으로 덮어썼어요 ('+fmtTime(mm.lastPushOk)+').'); if(typeof renderData==='function') try{ renderData(); }catch(e){} } }); }
 function pullSync(forced){
@@ -11720,6 +11749,7 @@ function manualPull(){ pullSync(true); }
 
 renderPlanForm(); renderElders(); renderDash(); initLock();
 updateSyncUI('ok');
+try{ if(localStorage.getItem('pt_clinic_last_ver')!==APP_VERSION){ localStorage.setItem('pt_clinic_last_ver',APP_VERSION); var _m=getSyncMeta(); delete _m.dismissed; _m.failCount=0; setSyncMeta(_m); } }catch(e){}
 try{ var _t=sessionStorage.getItem('pt_clinic_toast'); if(_t){ sessionStorage.removeItem('pt_clinic_toast'); var tb=ensureBanner('toast-banner','#2E7D6B'); tb.style.display='flex'; tb.innerHTML='<span>'+_t+'</span><button style="'+_bbtn+'" onclick="this.parentNode.style.display=\'none\'">확인</button>'; setTimeout(function(){ tb.style.display='none'; },12000); } }catch(e){}
 setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
 window.addEventListener('focus',function(){ if(SYNC_URL&&!document.getElementById('sync-choice-modal')) pullSync(false); });
