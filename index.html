@@ -11556,7 +11556,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-12-01';
+const APP_VERSION = '2026-10-12-02';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11669,6 +11669,9 @@ function pullSync(forced){
     else if(!cloudChanged) takeCloud=false;                        // 클라우드 그대로, 이 기기만 변경 → 올리기
     else if(!localChanged) takeCloud=true;                         // 다른 기기(폰)에서 저장 → 그대로 받기
     else takeCloud = cloudNewer && !(ageDays>=14 && !cmp.cloudAhead);  // 둘 다 변경 → 더 나중에 저장된 쪽, 단 2주 이상 멈춘 백업은 제외
+    // 절대 규칙: 이 기기가 마지막으로 저장한 시각보다 오래된 클라우드는 받지 않음 (이 기기에 데이터가 있을 때)
+    if(hasLocal && localSavedAt && savedAt && savedAt<localSavedAt) takeCloud=false;
+    if(hasLocal && ageDays>=14) takeCloud=false;
     if(takeCloud){ applyCloud(remote,savedAt); return; }
     if(cmp.cloudAhead){ try{ localStorage.setItem(KEY+'_cloudprev', remote); localStorage.setItem(KEY+'_cloudprev_at', savedAt); }catch(e){} } // 덮어쓰기 전 클라우드 내용 보관(복구용)
     pushSync();
