@@ -2206,7 +2206,7 @@ function showConflictBanner(){ var b=ensureBanner('conflict-banner','#8A5A00'); 
 function save(){
   try{
     var stored=parseInt(localStorage.getItem(REV_KEY)||'0',10);
-    if(stored>(state._rev||0)){ showConflictBanner(); return false; }   // 다른 탭/화면이 더 나중에 저장함 → 옛 화면이 덮어쓰지 않게 차단
+    // (저장 차단 없음) 다른 탭에서 저장했더라도 지금 화면의 저장을 막지 않음 — 사용자가 1명이라 차단이 오히려 '저장 안 됨' 문제를 만들었음
     var next=(state._rev||0)+1; state._rev=next;
     var str=JSON.stringify(state);
     localStorage.setItem(KEY,str);
@@ -2217,8 +2217,9 @@ function save(){
   if(typeof scheduleSync==='function') scheduleSync();
   return true;
 }
-window.addEventListener('storage',function(ev){ if(ev.key===REV_KEY||ev.key===KEY) showConflictBanner(); });
+// 다른 탭 저장 알림 배너 제거 — 저장을 막지 않으므로 불필요
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+try{ if(!localStorage.getItem(SAVED_AT_KEY)&&localStorage.getItem(KEY)) localStorage.setItem(SAVED_AT_KEY,new Date().toISOString()); }catch(e){}
 // ---- 데이터 개수 비교 ----
 function stateCounts(x){
   var o=x; if(typeof x==='string'){ try{ o=JSON.parse(x); }catch(e){ return null; } }
@@ -2239,14 +2240,17 @@ function showSyncChoice(remote,savedAt,lc,rc,cmp,forced){
     '<p style="font-size:13px;line-height:1.6;margin:0 0 8px;">클라우드에 저장된 시각: <b>'+fmtTime(savedAt)+'</b><br><span style="color:#8a5a00;">※ 시각이 달라도 "더 최신"이라는 뜻은 아니에요. 아래 개수로 확인하세요.</span></p>'+
     '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;"><thead><tr style="background:#eef2f6;"><th style="text-align:left;padding:5px 8px;">항목</th><th style="padding:5px 8px;">이 기기</th><th style="padding:5px 8px;">클라우드</th></tr></thead><tbody>'+rows+'</tbody></table>'+
     '<div style="font-size:13px;background:#FFF8E1;border:1px solid #F5C518;border-radius:8px;padding:8px 10px;margin-bottom:10px;">'+rec+'</div>'+
+    (function(){ var d=savedAt?Math.round((Date.now()-new Date(savedAt).getTime())/86400000):0; return d>=7?'<div style="font-size:13px;background:#FDE2E2;border:1px solid #B4452F;border-radius:8px;padding:8px 10px;margin-bottom:10px;color:#8a1f1f;"><b>⚠ 이 클라우드 백업은 '+d+'일 전 것이에요.</b> 그 사이 저장한 내용이 클라우드에 올라가지 못한 상태예요. 이 백업을 불러오면 최근 작업이 지워집니다. <b>"이 기기 내용 유지"</b> 또는 <b>"이 백업은 무시"</b>를 누르세요.</div>':''; })()+
     '<div style="display:flex;flex-direction:column;gap:8px;">'+
     '<button class="btn teal" style="padding:12px;" onclick="syncKeepLocal()">✓ 이 기기 내용 유지 (클라우드를 이 기기 것으로 덮어쓰기)</button>'+
+    '<button class="btn" style="padding:12px;" onclick="syncIgnoreRemote()">🚫 이 백업은 무시하고 다시 묻지 않기 (이 기기를 기준으로 삼기)</button>'+
     '<button class="btn" style="padding:12px;" onclick="syncTakeCloud()">⬇ 클라우드 것으로 바꾸기 <small>(이 기기 내용은 되돌리기용으로 보관)</small></button>'+
-    (forced?'<button class="btn" onclick="syncCloseChoice()">닫기</button>':'<button class="btn" onclick="syncLater()">나중에 (자동 클라우드 저장을 잠시 멈춰요)</button>')+
+    '<button class="btn" onclick="syncCloseChoice()">닫기</button>'+
     '</div></div></div>';
 }
 function syncCloseChoice(){ var m=document.getElementById('sync-choice-modal'); if(m) m.remove(); updateSyncUI('ok'); }
-function syncKeepLocal(){ syncCloseChoice(); _pausePush=false; pushSync(true); }
+function syncKeepLocal(){ if(_syncCtx){ setSyncMeta(Object.assign({},getSyncMeta(),{ignoreHash:contentHash(_syncCtx.remote),dismissed:''})); } syncCloseChoice(); _pausePush=false; pushSync(true); }
+function syncIgnoreRemote(){ if(_syncCtx){ setSyncMeta(Object.assign({},getSyncMeta(),{ignoreHash:contentHash(_syncCtx.remote),dismissed:_syncCtx.savedAt,ignoredAt:new Date().toISOString()})); } syncCloseChoice(); _pausePush=false; pushSync(true); alert('이 백업('+fmtTime(_syncCtx&&_syncCtx.savedAt)+')은 앞으로 무시해요.\n\n지금부터 이 기기 내용을 클라우드에 올립니다. 클라우드 저장이 계속 실패하면 백업 탭 → "클라우드 저장 상태"에서 원인을 확인하세요.'); }
 function syncTakeCloud(){
   if(!_syncCtx) return;
   var lc=stateCounts(state), rc=stateCounts(_syncCtx.remote);
@@ -2254,7 +2258,7 @@ function syncTakeCloud(){
   var m=document.getElementById('sync-choice-modal'); if(m) m.remove(); _pausePush=false;
   doRestore(_syncCtx.remote,_syncCtx.savedAt);
 }
-function syncLater(){ if(_syncCtx){ setSyncMeta(Object.assign({},getSyncMeta(),{dismissed:_syncCtx.savedAt})); } _pausePush=true; syncCloseChoice(); updateSyncUI('paused'); }
+function syncLater(){ syncCloseChoice(); }
 // ---- 저장 상태 카드 (백업 탭) ----
 function storageUsedKB(){ var t=0; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); t+=(k.length+(localStorage.getItem(k)||'').length); } }catch(e){} return Math.round(t/1024); }
 function renderSafeCard(){
@@ -2272,9 +2276,13 @@ function renderSafeCard(){
 function cloudStatusHtml(){
   const m=getSyncMeta(); const size=payloadStr().length; const over=size>CLOUD_LIMIT&&!m.bigOk;
   let h='<div style="margin:10px 0 6px;padding:9px 11px;border-radius:9px;font-size:12.5px;line-height:1.7;background:'+(over||m.failCount?'#FDE2E2':'#E6F6E6')+';">';
-  h+='<b>☁️ 클라우드 저장 상태</b><br>마지막 성공: <b>'+fmtTime(m.lastPushOk||m.lastSync)+'</b> · 보낼 크기 <b>'+Math.round(size/1000)+'천 자</b> (사진 제외)'+(m.failCount?'<br><span style="color:#B4452F;font-weight:700;">⚠ 최근 실패 '+m.failCount+'회 — '+esc(m.lastFailReason||'')+'</span>':'');
-  if(over) h+='<br><span style="color:#B4452F;font-weight:700;">⚠ 구글 시트 한 칸 한도(50천 자)를 넘어 클라우드 저장이 멈춰요.</span>';
-  h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (한도 없음, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 기존 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기<br>2) 배포 → 배포 관리 → 연필(수정) → 버전: <b>새 버전</b> → 배포<br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
+  h+='<b>☁️ 클라우드 저장 상태</b> <span style="color:#666;">(앱 버전 '+APP_VERSION+')</span><br>올리기 마지막 성공: <b>'+fmtTime(m.lastPushOk)+'</b> · 보낼 크기 <b>'+Math.round(size/1000)+'천 자</b> (사진 제외)'+(m.failCount?'<br><span style="color:#B4452F;font-weight:700;">⚠ 올리기 실패 '+m.failCount+'회 — '+esc(m.lastFailReason||'')+'</span>':'')+
+  '<br>받기 마지막 확인: <b>'+fmtTime(m.lastPullAt)+'</b>'+(m.lastPullErr?' <span style="color:#B4452F;font-weight:700;">⚠ '+esc(m.lastPullErr)+'</span>':(m.lastPullAt?' → 클라우드에 저장된 시각 <b>'+fmtTime(m.lastPullSavedAt)+'</b>, 크기 '+Math.round((m.lastPullSize||0)/1000)+'천 자':''))+(m.lastAutoTake?'<br>최근 다른 기기 내용 받음: '+fmtTime(m.lastAutoTake):'')+
+  '<br>이 기기 마지막 저장: <b>'+fmtTime(localStorage.getItem(SAVED_AT_KEY))+'</b>'+(!SYNC_URL?'<br><span style="color:#B4452F;font-weight:700;">⚠ 클라우드 주소가 비어 있어요</span>':'');
+  if(over) h+='<br><span style="color:#B4452F;font-weight:700;">⚠ 구글 시트 한 칸 한도(50천 자)를 넘을 수 있어요. 저장 실패가 반복되면 아래 스크립트 교체가 필요해요.</span>';
+  if(m.staleCloud||m.ignoreHash) h+='<br><span style="color:#8a5a00;">ℹ 오래된 클라우드 백업('+fmtTime(m.staleCloud||m.dismissed)+')은 불러오지 않도록 막아 두었어요. 이 기기가 기준이에요.</span>';
+  h+='<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn teal" onclick="forceCloudOverwrite()">🔁 이 기기 기준으로 클라우드 강제 덮어쓰기</button><button class="btn" onclick="pullSync(true)">☁️ 클라우드 내용 확인</button><button class="btn" onclick="testCloud()">🩺 연결 진단</button>'+(localStorage.getItem(KEY+'_cloudprev')?'<button class="btn" onclick="restoreCloudPrev()">↩ 덮어쓰기 전 클라우드 내용 복구('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')</button>':'')+'<button class="btn" onclick="checkForUpdate(true)">🔄 앱 업데이트 확인</button></div>';
+  h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (한도 없음, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 기존 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기<br>2) 배포 → 배포 관리 → <b>앱에 넣은 주소와 같은 배포</b>의 연필(수정) → 버전: <b>새 버전</b> → 배포 <span style="color:#B4452F;">(코드만 바꾸고 "새 버전"으로 배포하지 않으면 옛 코드가 계속 돌아가요!)</span><br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요. 배포가 2개 이상이면 앱의 주소가 어느 배포인지 확인하세요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
   return h;
 }
 const GAS_CODE=`// 물리치료실 관리앱 클라우드 저장 (Drive 파일 방식 — 용량 한도 없음)
@@ -11548,15 +11556,17 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-02-01';
-function checkForUpdate(){
+const APP_VERSION = '2026-10-12-01';
+function checkForUpdate(manual){
   try{
     const base=location.pathname;
+    if(manual&&location.protocol==='file:'){ alert('파일로 직접 연 앱은 자동 업데이트가 안 돼요. 새 파일로 바꿔서 여세요. (현재 '+APP_VERSION+')'); return; }
     fetch(base + '?_ck=' + Date.now(), {cache:'no-store'})
       .then(r=>r.text()).then(txt=>{
         const m=txt.match(/APP_VERSION\s*=\s*'([^']+)'/);
-        if(!m) return;
+        if(!m){ if(manual) alert('서버 파일에서 버전을 찾지 못했어요. (현재 '+APP_VERSION+')'); return; }
         const remoteV=m[1];
+        if(manual&&!verNewer(remoteV, APP_VERSION)){ alert('최신 버전이에요.\n이 기기: '+APP_VERSION+'\n서버: '+remoteV+(verNewer(APP_VERSION,remoteV)?'\n\n※ 서버가 더 옛 버전이에요 — 깃허브에 새 파일(index.html)을 올렸는지 확인하세요.':'')); return; }
         if(remoteV && verNewer(remoteV, APP_VERSION)){   // 서버가 더 새 버전일 때만 (옛 버전으로 되돌리지 않음)
           // 이미 이 버전으로 새로고침 시도했으면 루프 방지
           const cur=new URLSearchParams(location.search).get('v');
@@ -11589,6 +11599,9 @@ function mergeLocalPhotos(remoteObj){
   try{ (remoteObj.elders||[]).forEach(re=>{ if(!re.ltcPlan) return; const le=(state.elders||[]).find(x=>x.name===re.name&&(!x.ltcPlan||!re.ltcPlan.birth||!x.ltcPlan.birth||x.ltcPlan.birth===re.ltcPlan.birth)); if(le&&le.ltcPlan&&le.ltcPlan.photos&&le.ltcPlan.photos.length) re.ltcPlan.photos=le.ltcPlan.photos; }); }catch(e){}
   return remoteObj;
 }
+function contentHash(x){ // 내용만의 해시 (저장 시각·사진·버전 등 매번 달라지는 값 제외)
+  try{ var o=typeof x==='string'?JSON.parse(x):JSON.parse(JSON.stringify(x)); delete o._cloud; delete o._rev; delete o.lastBackup; (o.elders||[]).forEach(function(e){ if(e.ltcPlan){ delete e.ltcPlan.photos; delete e.ltcPlan.photoCount; } }); return strHash(JSON.stringify(o)); }catch(e){ return strHash(String(x)); }
+}
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return String(h>>>0); }
 function getSyncMeta(){ try{ return JSON.parse(localStorage.getItem(SYNC_META_KEY))||{}; }catch(e){ return {}; } }
 function setSyncMeta(m){ localStorage.setItem(SYNC_META_KEY, JSON.stringify(m)); }
@@ -11603,7 +11616,6 @@ function updateSyncUI(status){
 }
 function scheduleSync(){
   if(!SYNC_URL) return;
-  if(_pausePush){ updateSyncUI('paused'); return; }   // 충돌 미해결 중에는 클라우드를 덮어쓰지 않음
   clearTimeout(_syncTimer); updateSyncUI('pending');
   _syncTimer=setTimeout(pushSync, 2500);
 }
@@ -11612,11 +11624,11 @@ function pushSync(force){
   _syncing=true; updateSyncUI('syncing');
   const body=payloadStr();
   const meta0=getSyncMeta();
-  if(body.length>CLOUD_LIMIT&&!meta0.bigOk){ _syncing=false; pushFailed('용량 초과('+Math.round(body.length/1000)+'천 자 / 구글 시트 한 칸 한도 50천 자). 백업 탭의 안내대로 구글 스크립트를 교체하면 해결돼요.', body.length); return; }
+  // 용량은 서버가 판단 (새 스크립트는 한도 없음). 실패하면 pushFailed로 안내.
   return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload:body})})
     .then(r=>r.json()).then(res=>{
-      if(res&&res.ok){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:strHash(body), lastPushOk:new Date().toISOString(), failCount:0, bigOk: body.length>CLOUD_LIMIT?true:getSyncMeta().bigOk})); updateSyncUI('ok'); hidePushBanner(); }
-      else pushFailed((res&&res.error)||'서버가 저장을 거부함', body.length);
+      if(res&&res.ok){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:contentHash(body), lastPushOk:new Date().toISOString(), failCount:0, bigOk: body.length>CLOUD_LIMIT?true:getSyncMeta().bigOk})); updateSyncUI('ok'); hidePushBanner(); }
+      else pushFailed(((res&&res.error)||'서버가 저장을 거부함')+(body.length>CLOUD_LIMIT?' — 데이터가 '+Math.round(body.length/1000)+'천 자로 커서 옛 구글 스크립트(시트 한 칸 50천 자 한도)로는 저장이 안 돼요. 백업 탭 → "해결 방법"의 새 스크립트로 교체하고, 배포 관리에서 반드시 "새 버전"으로 배포하세요.':''), body.length);
     }).catch(err=>pushFailed('연결 실패 — '+(err&&err.message||'인터넷·스크립트 주소 확인'), body.length)).finally(()=>{ _syncing=false; });
 }
 var CLOUD_LIMIT=49000;
@@ -11625,32 +11637,56 @@ function pushFailed(reason,size){
   const b=ensureBanner('push-banner','#B4452F'); b.style.display='flex';
   b.innerHTML='<b>☁️ 클라우드 저장이 안 되고 있어요</b><span>'+esc(reason)+'<br>이 기기에는 저장되어 있지만 다른 기기에서는 옛날 내용이 보여요. 마지막 성공: '+fmtTime(m.lastPushOk||m.lastSync)+'</span><button style="'+_bbtn+'" onclick="exportData()">백업 파일 받기</button><button style="'+_bbtn+'" onclick="go(document.querySelector(\'nav.tabs button[data-tab=\\\'data\\\']\'))">해결 방법 보기</button><button style="'+_bbtn+'" onclick="hidePushBanner()">닫기</button>';
 }
+function restoreCloudPrev(){ var p=localStorage.getItem(KEY+'_cloudprev'); if(!p){ alert('보관된 내용이 없어요.'); return; } if(!confirm('덮어쓰기 전 클라우드 내용('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')으로 되돌릴까요?\n지금 내용은 되돌리기용으로 보관돼요.')) return; doRestore(p, localStorage.getItem(KEY+'_cloudprev_at')); }
+function testCloud(){ if(!SYNC_URL){ alert('클라우드 주소가 비어 있어요.'); return; } var t0=Date.now(); fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.text();}).then(function(txt){ var res=null; try{ res=JSON.parse(txt); }catch(e){} if(!res){ alert('❌ 구글 스크립트가 JSON이 아닌 응답을 보냈어요 (로그인 화면이거나 배포 설정 오류).\n\n배포 관리 → "액세스 권한: 모든 사용자"인지, "새 버전"으로 배포했는지 확인하세요.\n\n응답 앞부분: '+txt.slice(0,120)); return; } if(!res.ok){ alert('❌ 스크립트 오류: '+(res.error||'')); return; } var sz=(res.payload||'').length; alert('✅ 클라우드 연결 정상 ('+(Date.now()-t0)+'ms)\n클라우드 저장 시각: '+fmtTime(res.savedAt)+'\n클라우드 데이터 크기: '+Math.round(sz/1000)+'천 자\n이 기기 데이터 크기: '+Math.round(payloadStr().length/1000)+'천 자\n이 기기 마지막 저장: '+fmtTime(localStorage.getItem(SAVED_AT_KEY))+'\n\n'+(sz&&Math.round(sz/1000)!==Math.round(payloadStr().length/1000)?'크기가 다르면 "클라우드 내용 확인"으로 비교하세요.':'')); }).catch(function(e){ alert('❌ 연결 실패: '+(e&&e.message||'')+'\n인터넷 또는 스크립트 주소를 확인하세요.'); }); }
 function hidePushBanner(){ const b=document.getElementById('push-banner'); if(b) b.style.display='none'; }
+function forceCloudOverwrite(){ if(!SYNC_URL){ alert('클라우드 주소가 설정되어 있지 않아요.'); return; } if(!confirm('이 기기 내용으로 클라우드 백업을 완전히 덮어쓸까요?\n(다른 기기의 옛 백업은 사라지고, 이 기기 내용이 기준이 돼요)')) return; var m=getSyncMeta(); delete m.ignoreHash; delete m.dismissed; m.failCount=0; m.bigOk=true; setSyncMeta(m); _pausePush=false; var p=pushSync(true); if(p&&p.then) p.then(function(){ var mm=getSyncMeta(); if(mm.failCount){ alert('덮어쓰기 실패: '+(mm.lastFailReason||'')); } else { alert('클라우드를 이 기기 내용으로 덮어썼어요 ('+fmtTime(mm.lastPushOk)+').'); if(typeof renderData==='function') try{ renderData(); }catch(e){} } }); }
 function pullSync(forced){
   if(!SYNC_URL || _syncBusy) return;
   _syncBusy=true; updateSyncUI('syncing');
-  return fetch(SYNC_URL).then(function(r){return r.json();}).then(function(res){
-    if(!res||!res.ok){ updateSyncUI('err'); return; }
-    var remote=res.payload||''; var savedAt=res.savedAt||'';
+  return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.json();}).then(function(res){
     var meta=getSyncMeta();
-    var localStr=payloadStr(); var localHash=strHash(localStr);
-    if(!remote){ updateSyncUI('ok'); return; }               // 클라우드 비어있음 → 이 기기가 원본
-    var remoteHash=strHash(remote);
-    if(remoteHash===localHash){ setSyncMeta({lastSync:savedAt, lastHash:localHash}); updateSyncUI('ok'); return; } // 동일
-    var lc=stateCounts(state), rc=stateCounts(remote);
+    if(!res||!res.ok){ meta.lastPullErr=(res&&res.error)||'응답 형식 오류'; meta.lastPullAt=new Date().toISOString(); setSyncMeta(meta); updateSyncUI('err'); return; }
+    var remote=res.payload||''; var savedAt=res.savedAt||'';
+    meta.lastPullAt=new Date().toISOString(); meta.lastPullSavedAt=savedAt; meta.lastPullSize=remote.length; delete meta.lastPullErr; setSyncMeta(meta);
+    var localHash=contentHash(state);
+    var hasLocal=!!((state.elders||[]).length||(state.counsels||[]).length||(state.notes||[]).length);
+    if(!remote){ if(hasLocal) pushSync(true); else updateSyncUI('ok'); return; }      // 클라우드 비어있음 → 이 기기가 원본
+    var remoteHash=contentHash(remote);
+    if(remoteHash===localHash){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt, lastHash:localHash})); updateSyncUI('ok'); return; } // 동일
+    var rc=stateCounts(remote), lc=stateCounts(state);
     if(!rc){ updateSyncUI('err'); return; }                  // 형식 이상 → 건드리지 않음
+    if(forced){ showSyncChoice(remote,savedAt,lc,rc,compareCounts(lc,rc),true); updateSyncUI('ok'); return; }
+    if(meta.ignoreHash===remoteHash){ pushSync(); return; }  // 사용자가 '무시'한 백업 → 이 기기 내용을 올림
+    var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||'';
+    var cloudChanged = meta.lastHash ? (remoteHash!==meta.lastHash) : true;   // 이 기기가 마지막으로 본 클라우드와 다른가
+    var localChanged = meta.lastHash ? (localHash!==meta.lastHash) : hasLocal; // 이 기기가 마지막 동기화 후 바뀌었는가
+    var ageDays=savedAt?Math.round((Date.now()-new Date(savedAt).getTime())/86400000):0;
+    var cloudNewer = savedAt && (!localSavedAt || savedAt>localSavedAt);
     var cmp=compareCounts(lc,rc);
-    // 클라우드가 이 기기의 마지막 저장보다 오래됐고 내용도 적으면 = 클라우드가 멈춰 있는 것 → 불러오기 금지, 올리기만
-    var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||''; var lastOk=meta.lastPushOk||meta.lastSync||'';
-    var cloudStale = savedAt && (lastOk&&savedAt<lastOk || (localSavedAt&&savedAt<localSavedAt&&!cmp.cloudAhead));
-    if(cloudStale&&!cmp.cloudAhead){ setSyncMeta(Object.assign({},meta,{staleCloud:savedAt})); if(forced) alert('클라우드 백업('+fmtTime(savedAt)+')이 이 기기 내용보다 오래됐어요. 불러오면 데이터가 지워지므로 불러오기를 막았어요.\n\n이 기기 내용을 클라우드에 올립니다.'); pushSync(true); return; }
-    if(forced){ showSyncChoice(remote,savedAt,lc,rc,cmp,true); updateSyncUI('ok'); return; }
-    var remoteChanged = meta.lastSync ? (savedAt!==meta.lastSync) : true;
-    if(!remoteChanged){ pushSync(); return; }                // 클라우드는 그대로, 이 기기만 변경 → 올리기
-    if(cmp.localAhead){ pushSync(); return; }                // 클라우드가 이 기기보다 오래됨 → 묻지 않고 이 기기 내용을 올림
-    if(meta.dismissed===savedAt){ _pausePush=true; updateSyncUI('paused'); return; }
-    showSyncChoice(remote,savedAt,lc,rc,cmp,false);
-  }).catch(function(){ updateSyncUI('err'); }).finally(function(){ _syncBusy=false; });
+    var takeCloud=false;
+    if(!hasLocal) takeCloud=true;                                  // 이 기기가 비어있음 → 클라우드 받기
+    else if(!cloudChanged) takeCloud=false;                        // 클라우드 그대로, 이 기기만 변경 → 올리기
+    else if(!localChanged) takeCloud=true;                         // 다른 기기(폰)에서 저장 → 그대로 받기
+    else takeCloud = cloudNewer && !(ageDays>=14 && !cmp.cloudAhead);  // 둘 다 변경 → 더 나중에 저장된 쪽, 단 2주 이상 멈춘 백업은 제외
+    if(takeCloud){ applyCloud(remote,savedAt); return; }
+    if(cmp.cloudAhead){ try{ localStorage.setItem(KEY+'_cloudprev', remote); localStorage.setItem(KEY+'_cloudprev_at', savedAt); }catch(e){} } // 덮어쓰기 전 클라우드 내용 보관(복구용)
+    pushSync();
+  }).catch(function(err){ var m=getSyncMeta(); m.lastPullErr='연결 실패 — '+(err&&err.message||''); m.lastPullAt=new Date().toISOString(); setSyncMeta(m); updateSyncUI('err'); }).finally(function(){ _syncBusy=false; });
+}
+function applyCloud(remoteStr, savedAt){
+  // 묻지 않고 클라우드 내용을 받음. 직전 내용은 되돌리기용으로 보관.
+  try{
+    var obj=JSON.parse(remoteStr);
+    remoteStr=JSON.stringify(mergeLocalPhotos(obj));
+    localStorage.setItem(KEY+'_prerestore', localStorage.getItem(KEY)||'');
+    localStorage.setItem(KEY+'_prerestore_at', new Date().toISOString());
+    localStorage.setItem(KEY, remoteStr); localStorage.removeItem(REV_KEY);
+    localStorage.setItem(SAVED_AT_KEY, savedAt||new Date().toISOString());
+    setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt, lastHash:contentHash(remoteStr), lastPushOk:savedAt, lastAutoTake:new Date().toISOString()}));
+    sessionStorage.setItem('pt_clinic_toast','☁️ 다른 기기에서 저장한 최신 내용('+fmtTime(savedAt)+')을 받았어요. 문제가 있으면 백업 탭 → 되돌리기');
+    location.reload();
+  }catch(e){ updateSyncUI('err'); }
 }
 function doRestore(remoteStr, savedAt){
   try{
@@ -11661,7 +11697,7 @@ function doRestore(remoteStr, savedAt){
     localStorage.setItem(KEY+'_prerestore', localStorage.getItem(KEY)||'');
     localStorage.setItem(KEY+'_prerestore_at', new Date().toISOString());
     localStorage.setItem(KEY, remoteStr); localStorage.removeItem(REV_KEY);
-    setSyncMeta({lastSync:savedAt, lastHash:strHash(remoteStr), lastPushOk:savedAt});
+    setSyncMeta({lastSync:savedAt, lastHash:contentHash(remoteStr), lastPushOk:savedAt});
     alert('클라우드 백업을 불러왔어요. 문제가 있으면 백업 탭 → "되돌리기"를 누르면 직전 상태로 복구돼요.');
     location.reload();
   }catch(e){ alert('불러오기 실패: 데이터 형식 오류'); updateSyncUI('err'); }
@@ -11681,7 +11717,9 @@ function manualPull(){ pullSync(true); }
 
 renderPlanForm(); renderElders(); renderDash(); initLock();
 updateSyncUI('ok');
+try{ var _t=sessionStorage.getItem('pt_clinic_toast'); if(_t){ sessionStorage.removeItem('pt_clinic_toast'); var tb=ensureBanner('toast-banner','#2E7D6B'); tb.style.display='flex'; tb.innerHTML='<span>'+_t+'</span><button style="'+_bbtn+'" onclick="this.parentNode.style.display=\'none\'">확인</button>'; setTimeout(function(){ tb.style.display='none'; },12000); } }catch(e){}
 setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
+window.addEventListener('focus',function(){ if(SYNC_URL&&!document.getElementById('sync-choice-modal')) pullSync(false); });
 setTimeout(checkForUpdate, 1500);
 function showAppVersion(){ const el=document.getElementById('app-version'); if(el) el.textContent='버전 '+APP_VERSION; }
 showAppVersion(); window.addEventListener('load', showAppVersion); setTimeout(showAppVersion, 300);
