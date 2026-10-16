@@ -385,6 +385,11 @@
   .ben-row { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; }
   .ben-row.has { border-color: var(--teal); background: var(--teal-bg, #EAF4F0); }
   .ben-name { font-size: 13.5px; color: var(--navy); font-weight: 600; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+  .ben-tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+  .ben-tools .modal-search { flex:1; min-width:160px; }
+  .ben-tog { display:inline-flex; gap:4px; }
+  .ben-row.nosched { background:#FAFAF7; }
+  .ben-row.nosched .ben-name { color:#5a6670; font-weight:500; }
   .ben-slot { font-size: 11px; background: var(--navy); color: #fff; padding: 1px 7px; border-radius: 10px; font-weight: 600; }
   .ben-ta { width: 100%; box-sizing: border-box; font-size: 14px; line-height: 1.6; padding: 8px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; font-family: inherit; }
   .ben-add { display: flex; gap: 6px; margin-top: 10px; }
@@ -2516,7 +2521,8 @@ let briefExtra={morning:[], evening:[]};
 function briefElderList(sec, b){
   const wd=WEEKDAYS[new Date(briefDate+'T00:00:00').getDay()]||'';
   const notes=(b.elderNotes&&b.elderNotes[sec])||{};
-  let list=state.elders.filter(e=>e.status==='치료중' && slotOf(e,wd));
+  // 기본: 치료중 어르신 전부 (치료 예정 어르신이 먼저, 나머지는 호실순). '치료예정만' 보기로 전환 가능
+  let list=state.elders.filter(e=>e.status==='치료중' && (briefShowAll || slotOf(e,wd)));
   const addId=(id)=>{ if(!list.some(x=>x.id==id)){ const e=state.elders.find(x=>x.id==id); if(e) list.push(e); } };
   Object.keys(notes).forEach(addId);
   (briefExtra[sec]||[]).forEach(addId);
@@ -2528,23 +2534,30 @@ function briefElderList(sec, b){
   });
   return {list, notes, wd};
 }
+var briefShowAll=true; try{ if(localStorage.getItem('pt_brief_showall')==='0') briefShowAll=false; }catch(e){}
+function setBriefShowAll(v){ briefShowAll=!!v; try{ localStorage.setItem('pt_brief_showall',v?'1':'0'); }catch(e){} renderBriefing(); }
+function filterBenRows(inp, sec){ const q=(inp.value||'').trim().toLowerCase(); document.querySelectorAll('#ben-list-'+sec+' .ben-row').forEach(function(r){ r.style.display=(!q||(r.getAttribute('data-key')||'').indexOf(q)>=0)?'':'none'; }); }
 function briefElderHtml(sec, b){
   const {list, notes, wd}=briefElderList(sec, b);
   const label = sec==='morning' ? '오늘 치료 예정 어르신께 확인·전달할 내용을 적어요.' : '어르신별 오늘 치료 상황·특이사항을 적어요. 발표할 때 그대로 쓰면 돼요.';
   if(!list.length) return '<p class="hint">'+label+'</p><div class="todo-empty">이 날짜('+wd+')에 치료 예정 어르신이 없어요. 아래에서 어르신을 골라 추가할 수 있어요.</div>'+briefElderAddHtml(sec);
+  const sched=list.filter(e=>slotOf(e,wd)).length;
+  const tog='<div class="ben-tools no-print">'+
+    '<input type="text" class="modal-search" placeholder="🔍 이름·호실 검색" oninput="filterBenRows(this,\''+sec+'\')" autocomplete="off">'+
+    '<span class="ben-tog"><button class="bmt'+(briefShowAll?' on':'')+'" onclick="setBriefShowAll(true)">전체 '+list.length+'명</button><button class="bmt'+(!briefShowAll?' on':'')+'" onclick="setBriefShowAll(false)">치료예정만 '+sched+'명</button></span></div>';
   let rows=list.map(e=>{
     const slot=slotOf(e,wd);
     const val=notes[e.id]||'';
-    return '<div class="ben-row'+(val?' has':'')+'">'+
+    return '<div class="ben-row'+(val?' has':'')+(slot?'':' nosched')+'" data-key="'+esc(((e.room||'')+' '+e.name).toLowerCase())+'">'+
       '<div class="ben-name">'+(slot?'<span class="ben-slot">'+slot+'</span>':'')+(e.room?'<b>'+esc(e.room)+'호</b> ':'')+esc(e.name)+'</div>'+
       '<textarea class="ben-ta" rows="2" placeholder="'+(sec==='morning'?'예) 어제 통증 호소 → 오늘 강도 조절':'예) 온열·전기 시행, 통증 호전. 보행 안정적')+'" onchange="setElderNote(\''+sec+'\','+e.id+',this.value)">'+esc(val)+'</textarea>'+
       '</div>';
   }).join('');
-  return '<p class="hint">'+label+'</p><div class="ben-list">'+rows+'</div>'+briefElderAddHtml(sec);
+  return '<p class="hint">'+label+'</p>'+tog+'<div class="ben-list" id="ben-list-'+sec+'">'+rows+'</div>'+briefElderAddHtml(sec);
 }
 function briefElderAddHtml(sec){
   const {list}=briefElderList(sec, state.briefings[briefDate]||{});
-  const rest=state.elders.filter(e=>e.status==='치료중' && !list.some(x=>x.id===e.id))
+  const rest=state.elders.filter(e=>!list.some(x=>x.id===e.id))
     .sort((a,b)=>(a.room||'').localeCompare(b.room||'',undefined,{numeric:true}));
   if(!rest.length) return '';
   return '<div class="ben-add no-print">'+
@@ -11557,7 +11570,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-13-01';
+const APP_VERSION = '2026-10-16-01';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
