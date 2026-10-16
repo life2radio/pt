@@ -2207,7 +2207,7 @@ function save(){
   try{
     var stored=parseInt(localStorage.getItem(REV_KEY)||'0',10);
     // (저장 차단 없음) 다른 탭에서 저장했더라도 지금 화면의 저장을 막지 않음 — 사용자가 1명이라 차단이 오히려 '저장 안 됨' 문제를 만들었음
-    var next=(state._rev||0)+1; state._rev=next;
+    var next=(state._rev||0)+1; state._rev=next; state.updatedAt=new Date().toISOString();
     var str=JSON.stringify(state);
     localStorage.setItem(KEY,str);
     localStorage.setItem(REV_KEY,String(next));
@@ -2281,7 +2281,7 @@ function cloudStatusHtml(){
   '<br>이 기기 마지막 저장: <b>'+fmtTime(localStorage.getItem(SAVED_AT_KEY))+'</b>'+(!SYNC_URL?'<br><span style="color:#B4452F;font-weight:700;">⚠ 클라우드 주소가 비어 있어요</span>':'');
   if(over) h+='<br><span style="color:#B4452F;font-weight:700;">⚠ 구글 시트 한 칸 한도(50천 자)를 넘을 수 있어요. 저장 실패가 반복되면 아래 스크립트 교체가 필요해요.</span>';
   if(m.staleCloud||m.ignoreHash) h+='<br><span style="color:#8a5a00;">ℹ 오래된 클라우드 백업('+fmtTime(m.staleCloud||m.dismissed)+')은 불러오지 않도록 막아 두었어요. 이 기기가 기준이에요.</span>';
-  h+='<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn teal" onclick="forceCloudOverwrite()">🔁 이 기기 기준으로 클라우드 강제 덮어쓰기</button><button class="btn" onclick="pullSync(true)">☁️ 클라우드 내용 확인</button><button class="btn" onclick="testCloud()">🩺 연결 진단</button>'+(localStorage.getItem(KEY+'_cloudprev')?'<button class="btn" onclick="restoreCloudPrev()">↩ 덮어쓰기 전 클라우드 내용 복구('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')</button>':'')+'<button class="btn" onclick="checkForUpdate(true)">🔄 앱 업데이트 확인</button></div>';
+  h+='<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn teal" onclick="forceCloudOverwrite()">🔁 이 기기 기준으로 클라우드 강제 덮어쓰기</button><button class="btn" onclick="pullSync(true)">☁️ 클라우드 내용 확인</button><button class="btn" onclick="testCloud()">🩺 연결 진단</button>'+(localStorage.getItem(KEY+'_prerestore2')?'<button class="btn" onclick="restorePre2()">↩ 되돌리기 2번 칸('+fmtTime(localStorage.getItem(KEY+'_prerestore2_at'))+')</button>':'')+(localStorage.getItem(KEY+'_cloudprev')?'<button class="btn" onclick="restoreCloudPrev()">↩ 덮어쓰기 전 클라우드 내용 복구('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')</button>':'')+'<button class="btn" onclick="checkForUpdate(true)">🔄 앱 업데이트 확인</button></div>';
   h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">🔗 클라우드 주소 '+(SYNC_URL!==SYNC_URL_DEFAULT?'(직접 입력한 주소 사용 중)':'(기본)')+'</summary><div style="margin-top:6px;"><input id="sync-url-inp" style="width:100%;font-size:11px;" value="'+esc(SYNC_URL)+'" placeholder="https://script.google.com/macros/s/…/exec"><div class="row" style="margin-top:4px;"><button class="btn" onclick="setSyncUrl()">주소 저장</button><button class="btn" onclick="document.getElementById(\'sync-url-inp\').value=\'\';setSyncUrl()">기본 주소로</button></div><div style="font-size:11.5px;color:#666;margin-top:4px;">옛 배포를 못 찾겠으면: 구글 스크립트에서 <b>배포 → 새 배포 → 웹 앱 → 액세스 "모든 사용자" → 배포</b> 후 나온 주소를 여기 붙여넣기 (폰·컴퓨터 둘 다).</div></div></details>';
   h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (한도 없음, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 기존 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기<br>2) 배포 → 배포 관리 → <b>앱에 넣은 주소와 같은 배포</b>의 연필(수정) → 버전: <b>새 버전</b> → 배포 <span style="color:#B4452F;">(코드만 바꾸고 "새 버전"으로 배포하지 않으면 옛 코드가 계속 돌아가요!)</span><br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요. 배포가 2개 이상이면 앱의 주소가 어느 배포인지 확인하세요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
   return h;
@@ -11557,7 +11557,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-12-05';
+const APP_VERSION = '2026-10-13-01';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11604,7 +11604,7 @@ function mergeLocalPhotos(remoteObj){
   return remoteObj;
 }
 function contentHash(x){ // 내용만의 해시 (저장 시각·사진·버전 등 매번 달라지는 값 제외)
-  try{ var o=typeof x==='string'?JSON.parse(x):JSON.parse(JSON.stringify(x)); delete o._cloud; delete o._rev; delete o.lastBackup; (o.elders||[]).forEach(function(e){ if(e.ltcPlan){ delete e.ltcPlan.photos; delete e.ltcPlan.photoCount; } }); return strHash(JSON.stringify(o)); }catch(e){ return strHash(String(x)); }
+  try{ var o=typeof x==='string'?JSON.parse(x):JSON.parse(JSON.stringify(x)); delete o._cloud; delete o._rev; delete o.lastBackup; delete o.updatedAt; (o.elders||[]).forEach(function(e){ if(e.ltcPlan){ delete e.ltcPlan.photos; delete e.ltcPlan.photoCount; } }); return strHash(JSON.stringify(o)); }catch(e){ return strHash(String(x)); }
 }
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return String(h>>>0); }
 function getSyncMeta(){ try{ return JSON.parse(localStorage.getItem(SYNC_META_KEY))||{}; }catch(e){ return {}; } }
@@ -11641,6 +11641,7 @@ function pushFailed(reason,size){
   const b=ensureBanner('push-banner','#B4452F'); b.style.display='flex';
   b.innerHTML='<b>☁️ 클라우드 저장이 안 되고 있어요</b><span>'+esc(reason)+'<br>이 기기에는 저장되어 있지만 다른 기기에서는 옛날 내용이 보여요. 마지막 성공: '+fmtTime(m.lastPushOk||m.lastSync)+'</span><button style="'+_bbtn+'" onclick="exportData()">백업 파일 받기</button><button style="'+_bbtn+'" onclick="go(document.querySelector(\'nav.tabs button[data-tab=\\\'data\\\']\'))">해결 방법 보기</button><button style="'+_bbtn+'" onclick="hidePushBanner()">닫기</button>';
 }
+function restorePre2(){ var p=localStorage.getItem(KEY+'_prerestore2'); if(!p){ alert('보관된 내용이 없어요.'); return; } var pc=stateCounts(p),cc=stateCounts(state); if(!confirm('2번 칸('+fmtTime(localStorage.getItem(KEY+'_prerestore2_at'))+') 내용으로 되돌릴까요?\n[복구될 내용] '+JSON.stringify(pc)+'\n[지금 내용] '+JSON.stringify(cc))) return; try{ var po=JSON.parse(p); po.updatedAt=new Date().toISOString(); p=JSON.stringify(po); }catch(e){} savePrerestore(); localStorage.setItem(KEY,p); localStorage.removeItem(REV_KEY); localStorage.setItem(SAVED_AT_KEY,new Date().toISOString()); setSyncMeta({}); location.reload(); }
 function restoreCloudPrev(){ var p=localStorage.getItem(KEY+'_cloudprev'); if(!p){ alert('보관된 내용이 없어요.'); return; } if(!confirm('덮어쓰기 전 클라우드 내용('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')으로 되돌릴까요?\n지금 내용은 되돌리기용으로 보관돼요.')) return; doRestore(p, localStorage.getItem(KEY+'_cloudprev_at')); }
 function testCloud(){
   if(!SYNC_URL){ alert('클라우드 주소가 비어 있어요.'); return; }
@@ -11691,28 +11692,36 @@ function pullSync(forced){
     var cloudChanged = meta.lastHash ? (remoteHash!==meta.lastHash) : true;   // 이 기기가 마지막으로 본 클라우드와 다른가
     var localChanged = meta.lastHash ? (localHash!==meta.lastHash) : hasLocal; // 이 기기가 마지막 동기화 후 바뀌었는가
     var ageDays=savedAt?Math.round((Date.now()-new Date(savedAt).getTime())/86400000):0;
-    var cloudNewer = savedAt && (!localSavedAt || savedAt>localSavedAt);
     var cmp=compareCounts(lc,rc);
+    var remoteObj=null; try{ remoteObj=JSON.parse(remote); }catch(e){}
+    var cloudEdit=(remoteObj&&(remoteObj.updatedAt||(remoteObj._cloud&&remoteObj._cloud.savedAt)))||savedAt||'';  // 클라우드 '내용'이 마지막으로 편집된 시각 (올린 시각 아님)
+    var localEdit=state.updatedAt||localSavedAt||'';
+    var cloudNewer = cloudEdit && (!localEdit || cloudEdit>localEdit);
     var takeCloud=false;
     if(!hasLocal) takeCloud=true;                                  // 이 기기가 비어있음 → 클라우드 받기
     else if(!cloudChanged) takeCloud=false;                        // 클라우드 그대로, 이 기기만 변경 → 올리기
     else if(!localChanged) takeCloud=true;                         // 다른 기기(폰)에서 저장 → 그대로 받기
-    else takeCloud = cloudNewer && !(ageDays>=14 && !cmp.cloudAhead);  // 둘 다 변경 → 더 나중에 저장된 쪽, 단 2주 이상 멈춘 백업은 제외
+    else takeCloud = cloudNewer && !(ageDays>=14 && !cmp.cloudAhead);  // 둘 다 변경 → 더 나중에 편집된 쪽, 단 2주 이상 멈춘 백업은 제외
+    if(hasLocal && cmp.localAhead) takeCloud=false;                     // 이 기기에 더 많은 기록이 있으면 절대 자동으로 받지 않음
+    if(hasLocal && cmp.mixed && takeCloud){ showSyncChoice(remote,savedAt,lc,rc,cmp,true); updateSyncUI('ok'); return; } // 서로 더 많은 게 다르면 자동 결정하지 않고 물어봄
     // 절대 규칙: 이 기기가 마지막으로 저장한 시각보다 오래된 클라우드는 받지 않음 (이 기기에 데이터가 있을 때)
-    if(hasLocal && localSavedAt && savedAt && savedAt<localSavedAt) takeCloud=false;
+    if(hasLocal && localEdit && cloudEdit && cloudEdit<localEdit) takeCloud=false;
     if(hasLocal && ageDays>=14) takeCloud=false;
     if(takeCloud){ applyCloud(remote,savedAt); return; }
     if(cmp.cloudAhead){ try{ localStorage.setItem(KEY+'_cloudprev', remote); localStorage.setItem(KEY+'_cloudprev_at', savedAt); }catch(e){} } // 덮어쓰기 전 클라우드 내용 보관(복구용)
     pushSync();
   }).catch(function(err){ var m=getSyncMeta(); m.lastPullErr='연결 실패 — '+(err&&err.message||''); m.lastPullAt=new Date().toISOString(); setSyncMeta(m); updateSyncUI('err'); }).finally(function(){ _syncBusy=false; });
 }
+function savePrerestore(){ // 되돌리기용 보관 — 이미 보관된 내용이 지금 것보다 많으면 덮어쓰지 않고 2번 칸에 보관
+  try{ var cur=localStorage.getItem(KEY)||''; var pre=localStorage.getItem(KEY+'_prerestore')||''; if(pre){ var pc=stateCounts(pre), cc=stateCounts(cur); if(pc&&cc&&compareCounts(pc,cc).localAhead){ localStorage.setItem(KEY+'_prerestore2',cur); localStorage.setItem(KEY+'_prerestore2_at',new Date().toISOString()); return; } }
+    localStorage.setItem(KEY+'_prerestore',cur); localStorage.setItem(KEY+'_prerestore_at',new Date().toISOString()); }catch(e){}
+}
 function applyCloud(remoteStr, savedAt){
   // 묻지 않고 클라우드 내용을 받음. 직전 내용은 되돌리기용으로 보관.
   try{
     var obj=JSON.parse(remoteStr);
     remoteStr=JSON.stringify(mergeLocalPhotos(obj));
-    localStorage.setItem(KEY+'_prerestore', localStorage.getItem(KEY)||'');
-    localStorage.setItem(KEY+'_prerestore_at', new Date().toISOString());
+    savePrerestore();
     localStorage.setItem(KEY, remoteStr); localStorage.removeItem(REV_KEY);
     localStorage.setItem(SAVED_AT_KEY, savedAt||new Date().toISOString());
     setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt, lastHash:contentHash(remoteStr), lastPushOk:savedAt, lastAutoTake:new Date().toISOString()}));
@@ -11726,8 +11735,7 @@ function doRestore(remoteStr, savedAt){
     var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||'';
     if(savedAt&&localSavedAt&&savedAt<localSavedAt){ var rc=stateCounts(obj), lc=stateCounts(state); if(!confirm('⚠ 이 클라우드 백업('+fmtTime(savedAt)+')은 이 기기의 마지막 저장('+fmtTime(localSavedAt)+')보다 오래됐어요.\n\n클라우드: '+JSON.stringify(rc)+'\n이 기기: '+JSON.stringify(lc)+'\n\n불러오면 그 사이 작업이 사라져요. 정말 진행할까요?')) return; }
     remoteStr=JSON.stringify(mergeLocalPhotos(obj));
-    localStorage.setItem(KEY+'_prerestore', localStorage.getItem(KEY)||'');
-    localStorage.setItem(KEY+'_prerestore_at', new Date().toISOString());
+    savePrerestore();
     localStorage.setItem(KEY, remoteStr); localStorage.removeItem(REV_KEY);
     setSyncMeta({lastSync:savedAt, lastHash:contentHash(remoteStr), lastPushOk:savedAt});
     alert('클라우드 백업을 불러왔어요. 문제가 있으면 백업 탭 → "되돌리기"를 누르면 직전 상태로 복구돼요.');
@@ -11735,13 +11743,14 @@ function doRestore(remoteStr, savedAt){
   }catch(e){ alert('불러오기 실패: 데이터 형식 오류'); updateSyncUI('err'); }
 }
 function undoRestore(){
-  const prev=localStorage.getItem(KEY+'_prerestore');
+  let prev=localStorage.getItem(KEY+'_prerestore');
   if(!prev){ alert('되돌릴 백업이 없어요.'); return; }
   const at=localStorage.getItem(KEY+'_prerestore_at');
   var pc=stateCounts(prev), cc=stateCounts(state);
   if(!confirm('되돌리기 직전('+fmtTime(at)+') 상태로 복구할까요?\n\n[복구될 내용] '+JSON.stringify(pc)+'\n[지금 내용] '+JSON.stringify(cc)+'\n\n지금 데이터는 사라지고, 복구 후 클라우드에도 반영돼요.')) return;
-  localStorage.setItem(KEY, prev); localStorage.removeItem(REV_KEY);
-  setSyncMeta({}); // 다시 동기화되도록
+  try{ var po=JSON.parse(prev); po.updatedAt=new Date().toISOString(); prev=JSON.stringify(po); }catch(e){}
+  localStorage.setItem(KEY, prev); localStorage.removeItem(REV_KEY); localStorage.setItem(SAVED_AT_KEY,new Date().toISOString());
+  setSyncMeta({}); sessionStorage.setItem('pt_clinic_toast','↩ 되돌리기 완료 — 이 내용을 기준으로 클라우드에 올립니다.');
   location.reload();
 }
 function manualPush(){ _pausePush=false; pushSync(true).then(()=>{ if(!_syncing) showMsg('클라우드에 올렸어요.','ok'); }); }
