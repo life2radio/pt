@@ -2213,6 +2213,7 @@ function save(){
     var stored=parseInt(localStorage.getItem(REV_KEY)||'0',10);
     // (저장 차단 없음) 다른 탭에서 저장했더라도 지금 화면의 저장을 막지 않음 — 사용자가 1명이라 차단이 오히려 '저장 안 됨' 문제를 만들었음
     var next=(state._rev||0)+1; state._rev=next; state.updatedAt=new Date().toISOString();
+    try{ stampChanges(); }catch(e){}
     var str=JSON.stringify(state);
     localStorage.setItem(KEY,str);
     localStorage.setItem(REV_KEY,String(next));
@@ -11570,7 +11571,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-16-01';
+const APP_VERSION = '2026-10-16-02';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11604,6 +11605,71 @@ var SYNC_URL = (function(){ try{ var u=localStorage.getItem(SYNC_URL_KEY); if(u&
 function setSyncUrl(){ var inp=document.getElementById('sync-url-inp'); var u=(inp&&inp.value||'').trim(); if(!u){ localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; alert('기본 주소로 되돌렸어요.'); renderSafeCard(); return; } if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){ alert('주소 형식이 아니에요. https://script.google.com/macros/s/…/exec 형태여야 해요.'); return; } localStorage.setItem(SYNC_URL_KEY,u); SYNC_URL=u; setSyncMeta({}); alert('클라우드 주소를 바꿨어요. 연결 진단을 눌러 확인하세요.\n※ 폰과 컴퓨터 모두 같은 주소를 넣어야 해요.'); renderSafeCard(); }
 var SYNC_META_KEY = 'pt_clinic_sync';
 let _syncTimer=null, _syncing=false, _syncBusy=false, _pausePush=false;
+
+// ===== 기록 단위 합치기 (두 기기 내용을 골라 담기) =====
+var MERGE_CFG={ elders:'arr', counsels:'arr', needs:'arr', carePlans:'arr', evalResults:'arr', doctorVisits:'arr', todos:'arr', notes:'arr',
+  evals:'evals', records:'map2', briefings:'map', events:'map', bedLogs:'map', letters:'map', benefits:'map', slotPlans:'map', extraAssign:'map', highlights:'map', dayBlocks:'map', moveSlotsByDay:'map', programs:'map' };
+function _entriesOf(obj, coll){
+  var kind=MERGE_CFG[coll], v=obj[coll], out={};
+  if(v==null) return out;
+  if(kind==='arr'){ if(!Array.isArray(v)) return out; v.forEach(function(it,i){ var k=(it&&it.id!=null)?String(it.id):('#'+strHash(JSON.stringify(it))); out[k]=it; }); }
+  else if(kind==='map'){ Object.keys(v).forEach(function(k){ out[k]=v[k]; }); }
+  else if(kind==='map2'){ Object.keys(v).forEach(function(d){ var m=v[d]||{}; Object.keys(m).forEach(function(id){ out[d+'|'+id]=m[id]; }); }); }
+  else if(kind==='evals'){ Object.keys(v).forEach(function(id){ (v[id]||[]).forEach(function(ev){ var k=id+'|'+(ev&&(ev.id!=null?ev.id:ev.date)); out[k]=ev; }); }); }
+  return out;
+}
+function _rebuild(coll, entries, orderKeys){
+  var kind=MERGE_CFG[coll];
+  if(kind==='arr'){ var seen={}, arr=[]; (orderKeys||[]).concat(Object.keys(entries)).forEach(function(k){ if(seen[k]||!(k in entries)) return; seen[k]=1; arr.push(entries[k]); }); return arr; }
+  if(kind==='map'){ return entries; }
+  if(kind==='map2'){ var o={}; Object.keys(entries).forEach(function(k){ var p=k.indexOf('|'); var d=k.slice(0,p), id=k.slice(p+1); if(!o[d]) o[d]={}; o[d][id]=entries[k]; }); return o; }
+  if(kind==='evals'){ var o2={}; Object.keys(entries).forEach(function(k){ var p=k.indexOf('|'); var id=k.slice(0,p); if(!o2[id]) o2[id]=[]; o2[id].push(entries[k]); }); Object.keys(o2).forEach(function(id){ o2[id].sort(function(a,b){ return String(a.date||'').localeCompare(String(b.date||'')); }); }); return o2; }
+  return entries;
+}
+var _snap=null;
+function buildSnap(){ _snap={}; Object.keys(MERGE_CFG).forEach(function(c){ var en=_entriesOf(state,c); var m={}; Object.keys(en).forEach(function(k){ m[k]=JSON.stringify(en[k]); }); _snap[c]=m; }); }
+function stampChanges(){ // 저장 때 바뀐 기록에 수정 시각을 찍고, 사라진 기록은 삭제 시각을 남김
+  if(!_snap) { buildSnap(); return; }
+  var now=new Date().toISOString();
+  if(!state._mu) state._mu={}; if(!state._del) state._del={};
+  Object.keys(MERGE_CFG).forEach(function(c){
+    var en=_entriesOf(state,c), prev=_snap[c]||{}, cur={};
+    if(!state._mu[c]) state._mu[c]={}; if(!state._del[c]) state._del[c]={};
+    Object.keys(en).forEach(function(k){ var js=JSON.stringify(en[k]); cur[k]=js; if(prev[k]!==js){ state._mu[c][k]=now; delete state._del[c][k]; } });
+    Object.keys(prev).forEach(function(k){ if(!(k in cur)){ state._del[c][k]=now; delete state._mu[c][k]; } });
+    _snap[c]=cur;
+  });
+}
+function mergeStates(L, R){
+  var lNewer=String(L.updatedAt||'')>=String(R.updatedAt||'');
+  var out=JSON.parse(JSON.stringify(L));
+  var lmu=L._mu||{}, rmu=R._mu||{}, ldel=L._del||{}, rdel=R._del||{};
+  out._mu={}; out._del={};
+  // 설정류(기록이 아닌 것)는 더 나중에 편집된 기기 것을 씀
+  Object.keys(R).forEach(function(k){ if(k in MERGE_CFG||k==='_mu'||k==='_del'||k==='_cloud'||k==='_rev'||k==='updatedAt') return; if(!(k in out)||!lNewer) out[k]=R[k]; });
+  Object.keys(MERGE_CFG).forEach(function(c){
+    var le=_entriesOf(L,c), re=_entriesOf(R,c), lm=lmu[c]||{}, rm=rmu[c]||{}, ld=ldel[c]||{}, rd=rdel[c]||{};
+    var keys={}; Object.keys(le).concat(Object.keys(re),Object.keys(ld),Object.keys(rd)).forEach(function(k){ keys[k]=1; });
+    var res={}, mu={}, del={};
+    Object.keys(keys).forEach(function(k){
+      var lv=le[k], rv=re[k], lu=lm[k]||'', ru=rm[k]||'', lD=ld[k]||'', rD=rd[k]||'';
+      var hasL=(k in le), hasR=(k in re); var pick;
+      if(hasL&&hasR){ if(JSON.stringify(lv)===JSON.stringify(rv)) pick=lv; else if(lu||ru) pick=(lu>=ru?lv:rv); else pick=(lNewer?lv:rv); }
+      else if(hasL){ pick=(rD&&rD>lu)?undefined:lv; }
+      else if(hasR){ pick=(lD&&lD>ru)?undefined:rv; }
+      if(pick!==undefined){ res[k]=pick; var m=lu>ru?lu:ru; if(m) mu[k]=m; }
+      var d=lD>rD?lD:rD; if(d&&pick===undefined) del[k]=d;
+    });
+    // 사진은 클라우드에 없으므로 이 기기 것을 살림
+    if(c==='elders'){ Object.keys(res).forEach(function(k){ var e=res[k], l=le[k]; if(e&&l&&e.ltcPlan&&l.ltcPlan&&(!e.ltcPlan.photos||!e.ltcPlan.photos.length)&&l.ltcPlan.photos&&l.ltcPlan.photos.length){ e.ltcPlan.photos=l.ltcPlan.photos; } }); }
+    out[c]=_rebuild(c,res,Object.keys(le));
+    out._mu[c]=mu; out._del[c]=del;
+  });
+  out.updatedAt=(String(L.updatedAt||'')>String(R.updatedAt||'')?L.updatedAt:R.updatedAt)||new Date().toISOString();
+  return out;
+}
+
+function payloadStrOf(obj){ const copy=JSON.parse(JSON.stringify(obj)); (copy.elders||[]).forEach(e=>{ if(e.ltcPlan&&e.ltcPlan.photos&&e.ltcPlan.photos.length){ e.ltcPlan.photoCount=e.ltcPlan.photos.length; e.ltcPlan.photos=[]; } }); copy._cloud={savedAt:new Date().toISOString(), app:APP_VERSION, counts:stateCounts(obj)}; return JSON.stringify(copy); }
 function payloadStr(){
   // 사진(base64)은 용량이 커서 클라우드에 보내지 않고 이 기기에만 보관 — 클라우드에는 '사진 n장 있음'만 기록
   const copy=JSON.parse(JSON.stringify(state));
@@ -11617,7 +11683,7 @@ function mergeLocalPhotos(remoteObj){
   return remoteObj;
 }
 function contentHash(x){ // 내용만의 해시 (저장 시각·사진·버전 등 매번 달라지는 값 제외)
-  try{ var o=typeof x==='string'?JSON.parse(x):JSON.parse(JSON.stringify(x)); delete o._cloud; delete o._rev; delete o.lastBackup; delete o.updatedAt; (o.elders||[]).forEach(function(e){ if(e.ltcPlan){ delete e.ltcPlan.photos; delete e.ltcPlan.photoCount; } }); return strHash(JSON.stringify(o)); }catch(e){ return strHash(String(x)); }
+  try{ var o=typeof x==='string'?JSON.parse(x):JSON.parse(JSON.stringify(x)); delete o._cloud; delete o._rev; delete o.lastBackup; delete o.updatedAt; delete o._mu; delete o._del; (o.elders||[]).forEach(function(e){ if(e.ltcPlan){ delete e.ltcPlan.photos; delete e.ltcPlan.photoCount; } }); return strHash(JSON.stringify(o)); }catch(e){ return strHash(String(x)); }
 }
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return String(h>>>0); }
 function getSyncMeta(){ try{ return JSON.parse(localStorage.getItem(SYNC_META_KEY))||{}; }catch(e){ return {}; } }
@@ -11636,10 +11702,10 @@ function scheduleSync(){
   clearTimeout(_syncTimer); updateSyncUI('pending');
   _syncTimer=setTimeout(pushSync, 2500);
 }
-function pushSync(force){
+function pushSync(force, bodyStr){
   if(!SYNC_URL || _syncing) return;
   _syncing=true; updateSyncUI('syncing');
-  const body=payloadStr();
+  const body=bodyStr||payloadStr();
   const meta0=getSyncMeta();
   // 용량은 서버가 판단 (새 스크립트는 한도 없음). 실패하면 pushFailed로 안내.
   return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload:body})})
@@ -11701,33 +11767,39 @@ function pullSync(forced){
     if(!rc){ updateSyncUI('err'); return; }                  // 형식 이상 → 건드리지 않음
     if(forced){ showSyncChoice(remote,savedAt,lc,rc,compareCounts(lc,rc),true); updateSyncUI('ok'); return; }
     if(meta.ignoreHash===remoteHash){ pushSync(); return; }  // 사용자가 '무시'한 백업 → 이 기기 내용을 올림
-    var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||'';
-    var cloudChanged = meta.lastHash ? (remoteHash!==meta.lastHash) : true;   // 이 기기가 마지막으로 본 클라우드와 다른가
-    var localChanged = meta.lastHash ? (localHash!==meta.lastHash) : hasLocal; // 이 기기가 마지막 동기화 후 바뀌었는가
-    var ageDays=savedAt?Math.round((Date.now()-new Date(savedAt).getTime())/86400000):0;
-    var cmp=compareCounts(lc,rc);
-    var remoteObj=null; try{ remoteObj=JSON.parse(remote); }catch(e){}
-    var cloudEdit=(remoteObj&&(remoteObj.updatedAt||(remoteObj._cloud&&remoteObj._cloud.savedAt)))||savedAt||'';  // 클라우드 '내용'이 마지막으로 편집된 시각 (올린 시각 아님)
-    var localEdit=state.updatedAt||localSavedAt||'';
-    var cloudNewer = cloudEdit && (!localEdit || cloudEdit>localEdit);
-    var takeCloud=false;
-    if(!hasLocal) takeCloud=true;                                  // 이 기기가 비어있음 → 클라우드 받기
-    else if(!cloudChanged) takeCloud=false;                        // 클라우드 그대로, 이 기기만 변경 → 올리기
-    else if(!localChanged) takeCloud=true;                         // 다른 기기(폰)에서 저장 → 그대로 받기
-    else takeCloud = cloudNewer && !(ageDays>=14 && !cmp.cloudAhead);  // 둘 다 변경 → 더 나중에 편집된 쪽, 단 2주 이상 멈춘 백업은 제외
-    if(hasLocal && cmp.localAhead) takeCloud=false;                     // 이 기기에 더 많은 기록이 있으면 절대 자동으로 받지 않음
-    if(hasLocal && cmp.mixed && takeCloud){ showSyncChoice(remote,savedAt,lc,rc,cmp,true); updateSyncUI('ok'); return; } // 서로 더 많은 게 다르면 자동 결정하지 않고 물어봄
-    // 절대 규칙: 이 기기가 마지막으로 저장한 시각보다 오래된 클라우드는 받지 않음 (이 기기에 데이터가 있을 때)
-    if(hasLocal && localEdit && cloudEdit && cloudEdit<localEdit) takeCloud=false;
-    if(hasLocal && ageDays>=14) takeCloud=false;
-    if(takeCloud){ applyCloud(remote,savedAt); return; }
-    if(cmp.cloudAhead){ try{ localStorage.setItem(KEY+'_cloudprev', remote); localStorage.setItem(KEY+'_cloudprev_at', savedAt); }catch(e){} } // 덮어쓰기 전 클라우드 내용 보관(복구용)
-    pushSync();
+    if(!hasLocal){ applyCloud(remote,savedAt); return; }     // 이 기기가 비어있음 → 클라우드 그대로 받기
+    var remoteObj=null; try{ remoteObj=JSON.parse(remote); }catch(e){ updateSyncUI('err'); return; }
+    var cloudEdit=remoteObj.updatedAt||(remoteObj._cloud&&remoteObj._cloud.savedAt)||savedAt||'';
+    var ageDays=cloudEdit?Math.round((Date.now()-new Date(cloudEdit).getTime())/86400000):0;
+    if(ageDays>=14 && String(state.updatedAt||'')>cloudEdit){ setSyncMeta(Object.assign({},meta,{staleCloud:savedAt})); pushSync(); return; } // 2주 넘게 멈춘 옛 백업은 합치지 않고 이 기기 내용으로 덮어씀
+    // 두 기기 내용을 기록 단위로 합침 — 어느 쪽도 지워지지 않음 (삭제한 기록은 삭제 시각이 더 나중일 때만 삭제 유지)
+    var merged=mergeStates(state, remoteObj);
+    var mergedHash=contentHash(merged);
+    if(mergedHash!==localHash){
+      var body=payloadStrOf(merged);
+      var done=function(){ applyMerged(merged, savedAt, mergedHash!==remoteHash); };
+      if(mergedHash!==remoteHash){ var p=pushSync(true, body); if(p&&p.then) p.then(done); else done(); } else { setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt,lastHash:mergedHash})); done(); }
+      return;
+    }
+    if(mergedHash!==remoteHash){ pushSync(); return; }        // 클라우드에 빠진 게 있음 → 올리기
+    setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt,lastHash:localHash})); updateSyncUI('ok');
   }).catch(function(err){ var m=getSyncMeta(); m.lastPullErr='연결 실패 — '+(err&&err.message||''); m.lastPullAt=new Date().toISOString(); setSyncMeta(m); updateSyncUI('err'); }).finally(function(){ _syncBusy=false; });
 }
 function savePrerestore(){ // 되돌리기용 보관 — 이미 보관된 내용이 지금 것보다 많으면 덮어쓰지 않고 2번 칸에 보관
   try{ var cur=localStorage.getItem(KEY)||''; var pre=localStorage.getItem(KEY+'_prerestore')||''; if(pre){ var pc=stateCounts(pre), cc=stateCounts(cur); if(pc&&cc&&compareCounts(pc,cc).localAhead){ localStorage.setItem(KEY+'_prerestore2',cur); localStorage.setItem(KEY+'_prerestore2_at',new Date().toISOString()); return; } }
     localStorage.setItem(KEY+'_prerestore',cur); localStorage.setItem(KEY+'_prerestore_at',new Date().toISOString()); }catch(e){}
+}
+function applyMerged(merged, savedAt, pushed){
+  try{
+    var n=parseInt(sessionStorage.getItem('pt_merge_n')||'0',10)+1; sessionStorage.setItem('pt_merge_n',String(n)); if(n>3){ updateSyncUI('err'); var m0=getSyncMeta(); m0.lastPullErr='합치기가 반복돼 멈췄어요 — 백업 탭 → 클라우드 내용 확인'; setSyncMeta(m0); return; } // 무한 새로고침 방지
+    var str=JSON.stringify(merged);
+    savePrerestore();
+    localStorage.setItem(KEY, str); localStorage.removeItem(REV_KEY);
+    localStorage.setItem(SAVED_AT_KEY, new Date().toISOString());
+    var m=getSyncMeta(); m.lastHash=contentHash(str); if(!pushed) m.lastSync=savedAt; m.lastMerge=new Date().toISOString(); setSyncMeta(m);
+    sessionStorage.setItem('pt_clinic_toast','☁️ 다른 기기에서 저장한 내용을 이 기기 내용과 합쳤어요 ('+fmtTime(savedAt)+'). 문제가 있으면 백업 탭 → 되돌리기');
+    location.reload();
+  }catch(e){ updateSyncUI('err'); }
 }
 function applyCloud(remoteStr, savedAt){
   // 묻지 않고 클라우드 내용을 받음. 직전 내용은 되돌리기용으로 보관.
@@ -11769,6 +11841,7 @@ function undoRestore(){
 function manualPush(){ _pausePush=false; pushSync(true).then(()=>{ if(!_syncing) showMsg('클라우드에 올렸어요.','ok'); }); }
 function manualPull(){ pullSync(true); }
 
+try{ buildSnap(); }catch(e){}
 renderPlanForm(); renderElders(); renderDash(); initLock();
 updateSyncUI('ok');
 try{ if(localStorage.getItem('pt_clinic_last_ver')!==APP_VERSION){ localStorage.setItem('pt_clinic_last_ver',APP_VERSION); var _m=getSyncMeta(); delete _m.dismissed; _m.failCount=0; setSyncMeta(_m); } if(localStorage.getItem('pt_clinic_sync_default')!==SYNC_URL_DEFAULT){ localStorage.setItem('pt_clinic_sync_default',SYNC_URL_DEFAULT); localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; setSyncMeta({}); } }catch(e){}
