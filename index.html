@@ -11571,7 +11571,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-16-02';
+const APP_VERSION = '2026-10-16-03';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11750,40 +11750,44 @@ function testCloud(){
 }
 function hidePushBanner(){ const b=document.getElementById('push-banner'); if(b) b.style.display='none'; }
 function forceCloudOverwrite(){ if(!SYNC_URL){ alert('클라우드 주소가 설정되어 있지 않아요.'); return; } if(!confirm('이 기기 내용으로 클라우드 백업을 완전히 덮어쓸까요?\n(다른 기기의 옛 백업은 사라지고, 이 기기 내용이 기준이 돼요)')) return; var m=getSyncMeta(); delete m.ignoreHash; delete m.dismissed; m.failCount=0; m.bigOk=true; setSyncMeta(m); _pausePush=false; var p=pushSync(true); if(p&&p.then) p.then(function(){ var mm=getSyncMeta(); if(mm.failCount){ alert('덮어쓰기 실패: '+(mm.lastFailReason||'')); } else { alert('클라우드를 이 기기 내용으로 덮어썼어요 ('+fmtTime(mm.lastPushOk)+').'); if(typeof renderData==='function') try{ renderData(); }catch(e){} } }); }
+var _pullVerbose=false;
+function pullMerge(){ _pullVerbose=true; var p=pullSync(false); if(!p){ _pullVerbose=false; alert(!SYNC_URL?'클라우드 주소가 없어요.':'지금 동기화 중이에요. 잠시 후 다시 누르세요.'); } }
+function _pv(msg){ if(_pullVerbose){ _pullVerbose=false; alert(msg); } }
 function pullSync(forced){
   if(!SYNC_URL || _syncBusy) return;
   _syncBusy=true; updateSyncUI('syncing');
   return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.json();}).then(function(res){
     var meta=getSyncMeta();
-    if(!res||!res.ok){ meta.lastPullErr=(res&&res.error)||'응답 형식 오류'; meta.lastPullAt=new Date().toISOString(); setSyncMeta(meta); updateSyncUI('err'); return; }
+    if(!res||!res.ok){ meta.lastPullErr=(res&&res.error)||'응답 형식 오류'; meta.lastPullAt=new Date().toISOString(); setSyncMeta(meta); updateSyncUI('err'); _pv('❌ 클라우드 읽기 실패: '+meta.lastPullErr+'\n백업 탭 → 🩺 연결 진단을 눌러보세요.'); return; }
     var remote=res.payload||''; var savedAt=res.savedAt||'';
     meta.lastPullAt=new Date().toISOString(); meta.lastPullSavedAt=savedAt; meta.lastPullSize=remote.length; delete meta.lastPullErr; setSyncMeta(meta);
     var localHash=contentHash(state);
     var hasLocal=!!((state.elders||[]).length||(state.counsels||[]).length||(state.notes||[]).length);
-    if(!remote){ if(hasLocal) pushSync(true); else updateSyncUI('ok'); return; }      // 클라우드 비어있음 → 이 기기가 원본
+    if(!remote){ if(hasLocal){ pushSync(true); _pv('클라우드가 비어 있어서 이 기기 내용을 올렸어요.'); } else { updateSyncUI('ok'); _pv('클라우드와 이 기기 모두 비어 있어요.'); } return; }      // 클라우드 비어있음 → 이 기기가 원본
     var remoteHash=contentHash(remote);
-    if(remoteHash===localHash){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt, lastHash:localHash})); updateSyncUI('ok'); return; } // 동일
+    if(remoteHash===localHash){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt, lastHash:localHash})); updateSyncUI('ok'); _pv('✅ 이 기기와 클라우드 내용이 이미 같아요 ('+fmtTime(savedAt)+').\n'+JSON.stringify(stateCounts(state))); return; } // 동일
     var rc=stateCounts(remote), lc=stateCounts(state);
     if(!rc){ updateSyncUI('err'); return; }                  // 형식 이상 → 건드리지 않음
     if(forced){ showSyncChoice(remote,savedAt,lc,rc,compareCounts(lc,rc),true); updateSyncUI('ok'); return; }
-    if(meta.ignoreHash===remoteHash){ pushSync(); return; }  // 사용자가 '무시'한 백업 → 이 기기 내용을 올림
-    if(!hasLocal){ applyCloud(remote,savedAt); return; }     // 이 기기가 비어있음 → 클라우드 그대로 받기
+    if(meta.ignoreHash===remoteHash){ pushSync(); _pv('무시하기로 한 백업이라 이 기기 내용을 올렸어요.'); return; }  // 사용자가 '무시'한 백업 → 이 기기 내용을 올림
+    if(!hasLocal){ _pullVerbose=false; applyCloud(remote,savedAt); return; }     // 이 기기가 비어있음 → 클라우드 그대로 받기
     var remoteObj=null; try{ remoteObj=JSON.parse(remote); }catch(e){ updateSyncUI('err'); return; }
     var cloudEdit=remoteObj.updatedAt||(remoteObj._cloud&&remoteObj._cloud.savedAt)||savedAt||'';
     var ageDays=cloudEdit?Math.round((Date.now()-new Date(cloudEdit).getTime())/86400000):0;
-    if(ageDays>=14 && String(state.updatedAt||'')>cloudEdit){ setSyncMeta(Object.assign({},meta,{staleCloud:savedAt})); pushSync(); return; } // 2주 넘게 멈춘 옛 백업은 합치지 않고 이 기기 내용으로 덮어씀
+    if(ageDays>=14 && String(state.updatedAt||'')>cloudEdit){ setSyncMeta(Object.assign({},meta,{staleCloud:savedAt})); pushSync(); _pv('클라우드 내용이 '+ageDays+'일 전 것이라 합치지 않고 이 기기 내용을 올렸어요.'); return; } // 2주 넘게 멈춘 옛 백업은 합치지 않고 이 기기 내용으로 덮어씀
     // 두 기기 내용을 기록 단위로 합침 — 어느 쪽도 지워지지 않음 (삭제한 기록은 삭제 시각이 더 나중일 때만 삭제 유지)
     var merged=mergeStates(state, remoteObj);
     var mergedHash=contentHash(merged);
     if(mergedHash!==localHash){
       var body=payloadStrOf(merged);
+      _pullVerbose=false;
       var done=function(){ applyMerged(merged, savedAt, mergedHash!==remoteHash); };
       if(mergedHash!==remoteHash){ var p=pushSync(true, body); if(p&&p.then) p.then(done); else done(); } else { setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt,lastHash:mergedHash})); done(); }
       return;
     }
-    if(mergedHash!==remoteHash){ pushSync(); return; }        // 클라우드에 빠진 게 있음 → 올리기
-    setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt,lastHash:localHash})); updateSyncUI('ok');
-  }).catch(function(err){ var m=getSyncMeta(); m.lastPullErr='연결 실패 — '+(err&&err.message||''); m.lastPullAt=new Date().toISOString(); setSyncMeta(m); updateSyncUI('err'); }).finally(function(){ _syncBusy=false; });
+    if(mergedHash!==remoteHash){ pushSync(); _pv('이 기기에 새 내용이 있어 클라우드에 올렸어요. (받을 내용은 없음)\n이 기기: '+JSON.stringify(lc)+'\n클라우드: '+JSON.stringify(rc)); return; }        // 클라우드에 빠진 게 있음 → 올리기
+    setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt,lastHash:localHash})); updateSyncUI('ok'); _pv('✅ 내용이 같아요.');
+  }).catch(function(err){ var m=getSyncMeta(); m.lastPullErr='연결 실패 — '+(err&&err.message||''); m.lastPullAt=new Date().toISOString(); setSyncMeta(m); updateSyncUI('err'); _pv('❌ '+m.lastPullErr+'\n인터넷·클라우드 주소를 확인하거나 백업 탭 → 🩺 연결 진단을 눌러보세요.'); }).finally(function(){ _syncBusy=false; });
 }
 function savePrerestore(){ // 되돌리기용 보관 — 이미 보관된 내용이 지금 것보다 많으면 덮어쓰지 않고 2번 칸에 보관
   try{ var cur=localStorage.getItem(KEY)||''; var pre=localStorage.getItem(KEY+'_prerestore')||''; if(pre){ var pc=stateCounts(pre), cc=stateCounts(cur); if(pc&&cc&&compareCounts(pc,cc).localAhead){ localStorage.setItem(KEY+'_prerestore2',cur); localStorage.setItem(KEY+'_prerestore2_at',new Date().toISOString()); return; } }
@@ -11839,7 +11843,7 @@ function undoRestore(){
   location.reload();
 }
 function manualPush(){ _pausePush=false; pushSync(true).then(()=>{ if(!_syncing) showMsg('클라우드에 올렸어요.','ok'); }); }
-function manualPull(){ pullSync(true); }
+function manualPull(){ pullMerge(); }
 
 try{ buildSnap(); }catch(e){}
 renderPlanForm(); renderElders(); renderDash(); initLock();
