@@ -11591,7 +11591,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-18-02';
+const APP_VERSION = '2026-10-18-03';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11619,7 +11619,7 @@ function showUpdateBanner(v){
 }
 
 // ===== 구글 시트 자동 동기화 =====
-var SYNC_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwVRuspVvDsk1Zi_Kv4XWU-fDwe8AhuZeg-9MYlc6LhbmKOq_vAVNfu5xN7xPg5LkBDLA/exec';
+var SYNC_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbydMkYN_Yr_KG7i2KLNa_23VWSJaodla_JDnwI7QHvlqcFoqWsMWpfWm2vV8ykerrSV/exec';
 var SYNC_URL_KEY='pt_clinic_sync_url';
 var SYNC_URL = SYNC_URL_DEFAULT; try{ localStorage.removeItem(SYNC_URL_KEY); }catch(e){}  // 두 기기가 다른 클라우드를 보는 일이 없도록 주소는 앱에 고정
 function setSyncUrl(){ var inp=document.getElementById('sync-url-inp'); var u=(inp&&inp.value||'').trim(); if(!u){ localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; alert('기본 주소로 되돌렸어요.'); renderSafeCard(); return; } if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){ alert('주소 형식이 아니에요. https://script.google.com/macros/s/…/exec 형태여야 해요.'); return; } localStorage.setItem(SYNC_URL_KEY,u); SYNC_URL=u; setSyncMeta({}); alert('클라우드 주소를 바꿨어요. 연결 진단을 눌러 확인하세요.\n※ 폰과 컴퓨터 모두 같은 주소를 넣어야 해요.'); renderSafeCard(); }
