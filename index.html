@@ -2254,6 +2254,26 @@ function showSyncChoice(remote,savedAt,lc,rc,cmp,forced){
     '<button class="btn" onclick="syncCloseChoice()">닫기</button>'+
     '</div></div></div>';
 }
+var _mergeCtx=null;
+function showMergeChoice(ctx){
+  _mergeCtx=ctx; if(document.getElementById('merge-choice-modal')) return;
+  var mo=ensureModal('merge-choice-modal'); var lc=ctx.lc, rc=ctx.rc, mc=ctx.mc;
+  var rows=Object.keys(mc).filter(function(k){return lc[k]||rc[k]||mc[k];}).map(function(k){ var a=lc[k]||0,b=rc[k]||0,c=mc[k]||0; return '<tr><td>'+k+'</td><td style="text-align:center;">'+a+'</td><td style="text-align:center;">'+b+'</td><td style="text-align:center;font-weight:800;color:#1d7a5f;">'+c+'</td></tr>'; }).join('');
+  mo.innerHTML='<div class="modal-box" style="'+modalBoxStyle()+'"><div class="modal-head" style="'+modalHeadStyle()+'"><b>☁️ 다른 기기에서 저장한 내용이 있어요</b></div><div class="modal-body" style="'+modalBodyStyle()+'">'+
+    '<p style="font-size:13px;line-height:1.6;margin:0 0 8px;">클라우드 내용 편집 시각: <b>'+fmtTime(ctx.cloudEdit)+'</b> · 이 기기 마지막 편집: <b>'+fmtTime(state.updatedAt)+'</b><br>두 기기 내용을 <b>기록 단위로 합쳐요</b> — 어느 쪽도 지워지지 않고, 같은 기록은 더 나중에 수정한 쪽을 씁니다.</p>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;"><thead><tr style="background:#eef2f6;"><th style="text-align:left;padding:5px 8px;">항목</th><th style="padding:5px 8px;">이 기기</th><th style="padding:5px 8px;">클라우드</th><th style="padding:5px 8px;">합친 후</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div style="display:flex;flex-direction:column;gap:8px;">'+
+    '<button class="btn teal" style="padding:12px;" onclick="mergeAccept()">✓ 합쳐서 최신으로 맞추기 (권장)</button>'+
+    '<button class="btn" onclick="mergeLater()">나중에 (다음에 앱을 열 때 다시 물어요)</button>'+
+    '</div><p class="hint" style="margin-top:8px;">합친 뒤 문제가 있으면 백업 탭 → ↩ 되돌리기로 직전 상태로 돌아갈 수 있어요.</p></div></div>';
+}
+function mergeAccept(){
+  var ctx=_mergeCtx; if(!ctx) return; var m=document.getElementById('merge-choice-modal'); if(m) m.remove();
+  var done=function(){ applyMerged(ctx.merged, ctx.savedAt, ctx.needPush); };
+  if(ctx.needPush){ var p=pushSync(true, payloadStrOf(ctx.merged)); if(p&&p.then) p.then(done); else done(); }
+  else { setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:ctx.savedAt,lastHash:ctx.mergedHash})); done(); }
+}
+function mergeLater(){ var m=document.getElementById('merge-choice-modal'); if(m) m.remove(); updateSyncUI('pending'); var t=document.getElementById('sync-text'); if(t) t.textContent='다른 기기 내용 대기 중 — 백업 탭 "지금 불러오기"로 합칠 수 있어요'; }
 function syncCloseChoice(){ var m=document.getElementById('sync-choice-modal'); if(m) m.remove(); updateSyncUI('ok'); }
 function syncKeepLocal(){ if(_syncCtx){ setSyncMeta(Object.assign({},getSyncMeta(),{ignoreHash:contentHash(_syncCtx.remote),dismissed:''})); } syncCloseChoice(); _pausePush=false; pushSync(true); }
 function syncIgnoreRemote(){ if(_syncCtx){ setSyncMeta(Object.assign({},getSyncMeta(),{ignoreHash:contentHash(_syncCtx.remote),dismissed:_syncCtx.savedAt,ignoredAt:new Date().toISOString()})); } syncCloseChoice(); _pausePush=false; pushSync(true); alert('이 백업('+fmtTime(_syncCtx&&_syncCtx.savedAt)+')은 앞으로 무시해요.\n\n지금부터 이 기기 내용을 클라우드에 올립니다. 클라우드 저장이 계속 실패하면 백업 탭 → "클라우드 저장 상태"에서 원인을 확인하세요.'); }
@@ -2282,13 +2302,13 @@ function renderSafeCard(){
 function cloudStatusHtml(){
   const m=getSyncMeta(); const size=payloadStr().length; const over=size>CLOUD_LIMIT&&!m.bigOk;
   let h='<div style="margin:10px 0 6px;padding:9px 11px;border-radius:9px;font-size:12.5px;line-height:1.7;background:'+(over||m.failCount?'#FDE2E2':'#E6F6E6')+';">';
-  h+='<b>☁️ 클라우드 저장 상태</b> <span style="color:#666;">(앱 버전 '+APP_VERSION+')</span><br>올리기 마지막 성공: <b>'+fmtTime(m.lastPushOk)+'</b> · 보낼 크기 <b>'+Math.round(size/1000)+'천 자</b> (사진 제외)'+(m.failCount?'<br><span style="color:#B4452F;font-weight:700;">⚠ 올리기 실패 '+m.failCount+'회 — '+esc(m.lastFailReason||'')+'</span>':'')+
+  h+='<b>☁️ 클라우드 저장 상태</b> <span style="color:#666;">(앱 버전 '+APP_VERSION+' · 주소 끝 …'+esc(SYNC_URL.replace(/\/exec$/,'').slice(-8))+(SYNC_URL!==SYNC_URL_DEFAULT?' <b style="color:#B4452F;">직접 입력 주소</b>':'')+')</span><br>올리기 마지막 성공: <b>'+fmtTime(m.lastPushOk)+'</b> · 보낼 크기 <b>'+Math.round(size/1000)+'천 자</b> (사진 제외)'+(m.failCount?'<br><span style="color:#B4452F;font-weight:700;">⚠ 올리기 실패 '+m.failCount+'회 — '+esc(m.lastFailReason||'')+'</span>':'')+
   '<br>받기 마지막 확인: <b>'+fmtTime(m.lastPullAt)+'</b>'+(m.lastPullErr?' <span style="color:#B4452F;font-weight:700;">⚠ '+esc(m.lastPullErr)+'</span>':(m.lastPullAt?' → 클라우드에 저장된 시각 <b>'+fmtTime(m.lastPullSavedAt)+'</b>, 크기 '+Math.round((m.lastPullSize||0)/1000)+'천 자':''))+(m.lastAutoTake?'<br>최근 다른 기기 내용 받음: '+fmtTime(m.lastAutoTake):'')+
   '<br>이 기기 마지막 저장: <b>'+fmtTime(localStorage.getItem(SAVED_AT_KEY))+'</b>'+(!SYNC_URL?'<br><span style="color:#B4452F;font-weight:700;">⚠ 클라우드 주소가 비어 있어요</span>':'');
   if(over) h+='<br><span style="color:#B4452F;font-weight:700;">⚠ 구글 시트 한 칸 한도(50천 자)를 넘을 수 있어요. 저장 실패가 반복되면 아래 스크립트 교체가 필요해요.</span>';
   if(m.staleCloud||m.ignoreHash) h+='<br><span style="color:#8a5a00;">ℹ 오래된 클라우드 백업('+fmtTime(m.staleCloud||m.dismissed)+')은 불러오지 않도록 막아 두었어요. 이 기기가 기준이에요.</span>';
   h+='<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn teal" onclick="forceCloudOverwrite()">🔁 이 기기 기준으로 클라우드 강제 덮어쓰기</button><button class="btn" onclick="pullSync(true)">☁️ 클라우드 내용 확인</button><button class="btn" onclick="testCloud()">🩺 연결 진단</button>'+(localStorage.getItem(KEY+'_prerestore2')?'<button class="btn" onclick="restorePre2()">↩ 되돌리기 2번 칸('+fmtTime(localStorage.getItem(KEY+'_prerestore2_at'))+')</button>':'')+(localStorage.getItem(KEY+'_cloudprev')?'<button class="btn" onclick="restoreCloudPrev()">↩ 덮어쓰기 전 클라우드 내용 복구('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')</button>':'')+'<button class="btn" onclick="checkForUpdate(true)">🔄 앱 업데이트 확인</button></div>';
-  h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">🔗 클라우드 주소 '+(SYNC_URL!==SYNC_URL_DEFAULT?'(직접 입력한 주소 사용 중)':'(기본)')+'</summary><div style="margin-top:6px;"><input id="sync-url-inp" style="width:100%;font-size:11px;" value="'+esc(SYNC_URL)+'" placeholder="https://script.google.com/macros/s/…/exec"><div class="row" style="margin-top:4px;"><button class="btn" onclick="setSyncUrl()">주소 저장</button><button class="btn" onclick="document.getElementById(\'sync-url-inp\').value=\'\';setSyncUrl()">기본 주소로</button></div><div style="font-size:11.5px;color:#666;margin-top:4px;">옛 배포를 못 찾겠으면: 구글 스크립트에서 <b>배포 → 새 배포 → 웹 앱 → 액세스 "모든 사용자" → 배포</b> 후 나온 주소를 여기 붙여넣기 (폰·컴퓨터 둘 다).</div></div></details>';
+  h+='<details style="margin-top:6px;display:none;"><summary style="cursor:pointer;font-weight:700;">🔗 클라우드 주소</summary><div style="margin-top:6px;"><input id="sync-url-inp" style="width:100%;font-size:11px;" value="'+esc(SYNC_URL)+'" placeholder="https://script.google.com/macros/s/…/exec"><div class="row" style="margin-top:4px;"><button class="btn" onclick="setSyncUrl()">주소 저장</button><button class="btn" onclick="document.getElementById(\'sync-url-inp\').value=\'\';setSyncUrl()">기본 주소로</button></div><div style="font-size:11.5px;color:#666;margin-top:4px;">옛 배포를 못 찾겠으면: 구글 스크립트에서 <b>배포 → 새 배포 → 웹 앱 → 액세스 "모든 사용자" → 배포</b> 후 나온 주소를 여기 붙여넣기 (폰·컴퓨터 둘 다).</div></div></details>';
   h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (한도 없음, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 기존 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기<br>2) 배포 → 배포 관리 → <b>앱에 넣은 주소와 같은 배포</b>의 연필(수정) → 버전: <b>새 버전</b> → 배포 <span style="color:#B4452F;">(코드만 바꾸고 "새 버전"으로 배포하지 않으면 옛 코드가 계속 돌아가요!)</span><br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요. 배포가 2개 이상이면 앱의 주소가 어느 배포인지 확인하세요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
   return h;
 }
@@ -11571,7 +11591,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-16-03';
+const APP_VERSION = '2026-10-18-01';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11601,7 +11621,7 @@ function showUpdateBanner(v){
 // ===== 구글 시트 자동 동기화 =====
 var SYNC_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwVRuspVvDsk1Zi_Kv4XWU-fDwe8AhuZeg-9MYlc6LhbmKOq_vAVNfu5xN7xPg5LkBDLA/exec';
 var SYNC_URL_KEY='pt_clinic_sync_url';
-var SYNC_URL = (function(){ try{ var u=localStorage.getItem(SYNC_URL_KEY); if(u&&/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)) return u; }catch(e){} return SYNC_URL_DEFAULT; })();
+var SYNC_URL = SYNC_URL_DEFAULT; try{ localStorage.removeItem(SYNC_URL_KEY); }catch(e){}  // 두 기기가 다른 클라우드를 보는 일이 없도록 주소는 앱에 고정
 function setSyncUrl(){ var inp=document.getElementById('sync-url-inp'); var u=(inp&&inp.value||'').trim(); if(!u){ localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; alert('기본 주소로 되돌렸어요.'); renderSafeCard(); return; } if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){ alert('주소 형식이 아니에요. https://script.google.com/macros/s/…/exec 형태여야 해요.'); return; } localStorage.setItem(SYNC_URL_KEY,u); SYNC_URL=u; setSyncMeta({}); alert('클라우드 주소를 바꿨어요. 연결 진단을 눌러 확인하세요.\n※ 폰과 컴퓨터 모두 같은 주소를 넣어야 해요.'); renderSafeCard(); }
 var SYNC_META_KEY = 'pt_clinic_sync';
 let _syncTimer=null, _syncing=false, _syncBusy=false, _pausePush=false;
@@ -11710,7 +11730,14 @@ function pushSync(force, bodyStr){
   // 용량은 서버가 판단 (새 스크립트는 한도 없음). 실패하면 pushFailed로 안내.
   return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload:body})})
     .then(r=>r.json()).then(res=>{
-      if(res&&res.ok){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:contentHash(body), lastPushOk:new Date().toISOString(), failCount:0, bigOk: body.length>CLOUD_LIMIT?true:getSyncMeta().bigOk})); updateSyncUI('ok'); hidePushBanner(); }
+      if(res&&res.ok){
+        // 저장했다는 말만 믿지 않고 다시 읽어서 확인
+        return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.json();}).then(function(chk){
+          var got=(chk&&chk.payload)||''; var okv=contentHash(got)===contentHash(body);
+          if(okv){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:contentHash(body), lastPushOk:new Date().toISOString(), failCount:0, lastVerify:'ok'})); updateSyncUI('ok'); hidePushBanner(); }
+          else pushFailed('서버는 저장했다고 했지만 다시 읽으니 다른 내용이에요 (읽은 크기 '+Math.round(got.length/1000)+'천 자 / 올린 크기 '+Math.round(body.length/1000)+'천 자). 구글 스크립트가 옛 코드로 돌아가고 있어요 — 백업 탭 "해결 방법"의 새 스크립트로 교체 후 "새 배포"가 필요해요.', body.length);
+        }).catch(function(){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:contentHash(body), lastPushOk:new Date().toISOString(), failCount:0, lastVerify:'unverified'})); updateSyncUI('ok'); });
+      }
       else pushFailed(((res&&res.error)||'서버가 저장을 거부함')+(body.length>CLOUD_LIMIT?' — 데이터가 '+Math.round(body.length/1000)+'천 자로 커서 옛 구글 스크립트(시트 한 칸 50천 자 한도)로는 저장이 안 돼요. 백업 탭 → "해결 방법"의 새 스크립트로 교체하고, 배포 관리에서 반드시 "새 버전"으로 배포하세요.':''), body.length);
     }).catch(err=>pushFailed('연결 실패 — '+(err&&err.message||'인터넷·스크립트 주소 확인'), body.length)).finally(()=>{ _syncing=false; });
 }
@@ -11727,7 +11754,9 @@ function testCloud(){
   var L=[]; var t0=Date.now(); var localSize=payloadStr().length; var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||'';
   var get=function(){ return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.text();}).then(function(txt){ var res=null; try{ res=JSON.parse(txt); }catch(e){} if(!res) throw new Error('JSON 아님: '+txt.slice(0,80)); if(!res.ok) throw new Error('스크립트 오류: '+(res.error||'')); return res; }); };
   get().then(function(r1){
-    L.push('① 읽기 성공 ('+(Date.now()-t0)+'ms)'); L.push('   클라우드 저장 시각: '+fmtTime(r1.savedAt)+' / 크기 '+Math.round((r1.payload||'').length/1000)+'천 자');
+    var tail=SYNC_URL.replace(/\/exec$/,'').slice(-10); var pm=(r1.payload||'').match(/"_cloud":\{"savedAt":"([^"]+)","app":"([^"]+)"/);
+    L.push('주소 끝: …'+tail+(SYNC_URL!==SYNC_URL_DEFAULT?' (직접 입력한 주소!)':' (기본)')+' · 앱 '+APP_VERSION);
+    L.push('① 읽기 성공 ('+(Date.now()-t0)+'ms)'); L.push('   서버가 말하는 시각: '+fmtTime(r1.savedAt)+' / 올린 앱이 적은 시각: '+(pm?fmtTime(pm[1])+' (앱 '+pm[2]+')':'없음')+' / 크기 '+Math.round((r1.payload||'').length/1000)+'천 자');
     L.push('   이 기기 마지막 저장: '+fmtTime(localSavedAt)+' / 크기 '+Math.round(localSize/1000)+'천 자');
     var rc=stateCounts(r1.payload||'')||{}, lc=stateCounts(state)||{};
     L.push('   클라우드 개수: '+JSON.stringify(rc)); L.push('   이 기기 개수: '+JSON.stringify(lc));
@@ -11741,6 +11770,7 @@ function testCloud(){
       L.push('② 올리기 성공 (서버 시각 '+fmtTime(res.savedAt)+')');
       return get().then(function(r2){
         var ok=(r2.payload||'').length===body.length;
+        L.push('   다시 읽은 서버 시각: '+fmtTime(r2.savedAt)+(r2.savedAt===r1.savedAt?' ← 서버 시각이 안 바뀜 (스크립트가 시각을 안 적음)':''));
         L.push(ok?'③ 다시 읽기: 방금 올린 내용 그대로 확인됨 ✅':'③ 다시 읽기: 크기가 달라요 ('+Math.round((r2.payload||'').length/1000)+'천 자) ❌ → 스크립트가 옛 코드로 돌아가는 중. "새 버전" 배포 또는 "새 배포" 주소 입력');
         if(ok){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:r2.savedAt,lastHash:contentHash(body),lastPushOk:new Date().toISOString(),failCount:0})); hidePushBanner(); updateSyncUI('ok'); L.push('\n이제 다른 기기에서 앱을 열면 이 내용을 받아와요.'); }
         alert(L.join('\n')); renderSafeCard();
@@ -11760,6 +11790,7 @@ function pullSync(forced){
     var meta=getSyncMeta();
     if(!res||!res.ok){ meta.lastPullErr=(res&&res.error)||'응답 형식 오류'; meta.lastPullAt=new Date().toISOString(); setSyncMeta(meta); updateSyncUI('err'); _pv('❌ 클라우드 읽기 실패: '+meta.lastPullErr+'\n백업 탭 → 🩺 연결 진단을 눌러보세요.'); return; }
     var remote=res.payload||''; var savedAt=res.savedAt||'';
+    try{ var mm=remote.match(/"_cloud":\{"savedAt":"([^"]+)"/); if(mm&&mm[1]) savedAt=mm[1]; }catch(e){}  // 서버 칸이 아니라 올린 앱이 적은 시각을 신뢰
     meta.lastPullAt=new Date().toISOString(); meta.lastPullSavedAt=savedAt; meta.lastPullSize=remote.length; delete meta.lastPullErr; setSyncMeta(meta);
     var localHash=contentHash(state);
     var hasLocal=!!((state.elders||[]).length||(state.counsels||[]).length||(state.notes||[]).length);
@@ -11779,10 +11810,8 @@ function pullSync(forced){
     var merged=mergeStates(state, remoteObj);
     var mergedHash=contentHash(merged);
     if(mergedHash!==localHash){
-      var body=payloadStrOf(merged);
       _pullVerbose=false;
-      var done=function(){ applyMerged(merged, savedAt, mergedHash!==remoteHash); };
-      if(mergedHash!==remoteHash){ var p=pushSync(true, body); if(p&&p.then) p.then(done); else done(); } else { setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt,lastHash:mergedHash})); done(); }
+      showMergeChoice({merged:merged, savedAt:savedAt, needPush:mergedHash!==remoteHash, mergedHash:mergedHash, lc:lc, rc:rc, mc:stateCounts(merged), cloudEdit:cloudEdit});
       return;
     }
     if(mergedHash!==remoteHash){ pushSync(); _pv('이 기기에 새 내용이 있어 클라우드에 올렸어요. (받을 내용은 없음)\n이 기기: '+JSON.stringify(lc)+'\n클라우드: '+JSON.stringify(rc)); return; }        // 클라우드에 빠진 게 있음 → 올리기
@@ -11851,7 +11880,7 @@ updateSyncUI('ok');
 try{ if(localStorage.getItem('pt_clinic_last_ver')!==APP_VERSION){ localStorage.setItem('pt_clinic_last_ver',APP_VERSION); var _m=getSyncMeta(); delete _m.dismissed; _m.failCount=0; setSyncMeta(_m); } if(localStorage.getItem('pt_clinic_sync_default')!==SYNC_URL_DEFAULT){ localStorage.setItem('pt_clinic_sync_default',SYNC_URL_DEFAULT); localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; setSyncMeta({}); } }catch(e){}
 try{ var _t=sessionStorage.getItem('pt_clinic_toast'); if(_t){ sessionStorage.removeItem('pt_clinic_toast'); var tb=ensureBanner('toast-banner','#2E7D6B'); tb.style.display='flex'; tb.innerHTML='<span>'+_t+'</span><button style="'+_bbtn+'" onclick="this.parentNode.style.display=\'none\'">확인</button>'; setTimeout(function(){ tb.style.display='none'; },12000); } }catch(e){}
 setTimeout(()=>{ if(SYNC_URL) pullSync(false); }, 800);
-window.addEventListener('focus',function(){ if(SYNC_URL&&!document.getElementById('sync-choice-modal')) pullSync(false); });
+window.addEventListener('focus',function(){ if(SYNC_URL&&!document.getElementById('sync-choice-modal')&&!document.getElementById('merge-choice-modal')) pullSync(false); });
 setTimeout(checkForUpdate, 1500);
 function showAppVersion(){ const el=document.getElementById('app-version'); if(el) el.textContent='버전 '+APP_VERSION; }
 showAppVersion(); window.addEventListener('load', showAppVersion); setTimeout(showAppVersion, 300);
