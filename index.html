@@ -11591,7 +11591,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-18-01';
+const APP_VERSION = '2026-10-18-02';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11732,7 +11732,7 @@ function pushSync(force, bodyStr){
     .then(r=>r.json()).then(res=>{
       if(res&&res.ok){
         // 저장했다는 말만 믿지 않고 다시 읽어서 확인
-        return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.json();}).then(function(chk){
+        return fetch(SYNC_URL+'?t='+Date.now()+'&r='+Math.random().toString(36).slice(2),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json();}).then(function(chk){
           var got=(chk&&chk.payload)||''; var okv=contentHash(got)===contentHash(body);
           if(okv){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:contentHash(body), lastPushOk:new Date().toISOString(), failCount:0, lastVerify:'ok'})); updateSyncUI('ok'); hidePushBanner(); }
           else pushFailed('서버는 저장했다고 했지만 다시 읽으니 다른 내용이에요 (읽은 크기 '+Math.round(got.length/1000)+'천 자 / 올린 크기 '+Math.round(body.length/1000)+'천 자). 구글 스크립트가 옛 코드로 돌아가고 있어요 — 백업 탭 "해결 방법"의 새 스크립트로 교체 후 "새 배포"가 필요해요.', body.length);
@@ -11752,7 +11752,7 @@ function restoreCloudPrev(){ var p=localStorage.getItem(KEY+'_cloudprev'); if(!p
 function testCloud(){
   if(!SYNC_URL){ alert('클라우드 주소가 비어 있어요.'); return; }
   var L=[]; var t0=Date.now(); var localSize=payloadStr().length; var localSavedAt=localStorage.getItem(SAVED_AT_KEY)||'';
-  var get=function(){ return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.text();}).then(function(txt){ var res=null; try{ res=JSON.parse(txt); }catch(e){} if(!res) throw new Error('JSON 아님: '+txt.slice(0,80)); if(!res.ok) throw new Error('스크립트 오류: '+(res.error||'')); return res; }); };
+  var get=function(){ return fetch(SYNC_URL+'?t='+Date.now()+'&r='+Math.random().toString(36).slice(2),{cache:'no-store',redirect:'follow'}).then(function(r){return r.text();}).then(function(txt){ var res=null; try{ res=JSON.parse(txt); }catch(e){} if(!res) throw new Error('JSON 아님: '+txt.slice(0,80)); if(!res.ok) throw new Error('스크립트 오류: '+(res.error||'')); return res; }); };
   get().then(function(r1){
     var tail=SYNC_URL.replace(/\/exec$/,'').slice(-10); var pm=(r1.payload||'').match(/"_cloud":\{"savedAt":"([^"]+)","app":"([^"]+)"/);
     L.push('주소 끝: …'+tail+(SYNC_URL!==SYNC_URL_DEFAULT?' (직접 입력한 주소!)':' (기본)')+' · 앱 '+APP_VERSION);
@@ -11786,7 +11786,7 @@ function _pv(msg){ if(_pullVerbose){ _pullVerbose=false; alert(msg); } }
 function pullSync(forced){
   if(!SYNC_URL || _syncBusy) return;
   _syncBusy=true; updateSyncUI('syncing');
-  return fetch(SYNC_URL,{cache:'no-store'}).then(function(r){return r.json();}).then(function(res){
+  return fetch(SYNC_URL+'?t='+Date.now()+'&r='+Math.random().toString(36).slice(2),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json();}).then(function(res){
     var meta=getSyncMeta();
     if(!res||!res.ok){ meta.lastPullErr=(res&&res.error)||'응답 형식 오류'; meta.lastPullAt=new Date().toISOString(); setSyncMeta(meta); updateSyncUI('err'); _pv('❌ 클라우드 읽기 실패: '+meta.lastPullErr+'\n백업 탭 → 🩺 연결 진단을 눌러보세요.'); return; }
     var remote=res.payload||''; var savedAt=res.savedAt||'';
