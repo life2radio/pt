@@ -2305,17 +2305,18 @@ function cloudStatusHtml(){
   h+='<b>☁️ 클라우드 저장 상태</b> <span style="color:#666;">(앱 버전 '+APP_VERSION+' · 주소 끝 …'+esc(SYNC_URL.replace(/\/exec$/,'').slice(-8))+(SYNC_URL!==SYNC_URL_DEFAULT?' <b style="color:#B4452F;">직접 입력 주소</b>':'')+')</span><br>올리기 마지막 성공: <b>'+fmtTime(m.lastPushOk)+'</b> · 보낼 크기 <b>'+Math.round(size/1000)+'천 자</b> (사진 제외)'+(m.failCount?'<br><span style="color:#B4452F;font-weight:700;">⚠ 올리기 실패 '+m.failCount+'회 — '+esc(m.lastFailReason||'')+'</span>':'')+
   '<br>받기 마지막 확인: <b>'+fmtTime(m.lastPullAt)+'</b>'+(m.lastPullErr?' <span style="color:#B4452F;font-weight:700;">⚠ '+esc(m.lastPullErr)+'</span>':(m.lastPullAt?' → 클라우드에 저장된 시각 <b>'+fmtTime(m.lastPullSavedAt)+'</b>, 크기 '+Math.round((m.lastPullSize||0)/1000)+'천 자':''))+(m.lastAutoTake?'<br>최근 다른 기기 내용 받음: '+fmtTime(m.lastAutoTake):'')+
   '<br>이 기기 마지막 저장: <b>'+fmtTime(localStorage.getItem(SAVED_AT_KEY))+'</b>'+(!SYNC_URL?'<br><span style="color:#B4452F;font-weight:700;">⚠ 클라우드 주소가 비어 있어요</span>':'');
-  if(over) h+='<br><span style="color:#B4452F;font-weight:700;">⚠ 구글 시트 한 칸 한도(50천 자)를 넘을 수 있어요. 저장 실패가 반복되면 아래 스크립트 교체가 필요해요.</span>';
+
   if(m.staleCloud||m.ignoreHash) h+='<br><span style="color:#8a5a00;">ℹ 오래된 클라우드 백업('+fmtTime(m.staleCloud||m.dismissed)+')은 불러오지 않도록 막아 두었어요. 이 기기가 기준이에요.</span>';
   h+='<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn teal" onclick="forceCloudOverwrite()">🔁 이 기기 기준으로 클라우드 강제 덮어쓰기</button><button class="btn" onclick="pullSync(true)">☁️ 클라우드 내용 확인</button><button class="btn" onclick="testCloud()">🩺 연결 진단</button>'+(localStorage.getItem(KEY+'_prerestore2')?'<button class="btn" onclick="restorePre2()">↩ 되돌리기 2번 칸('+fmtTime(localStorage.getItem(KEY+'_prerestore2_at'))+')</button>':'')+(localStorage.getItem(KEY+'_cloudprev')?'<button class="btn" onclick="restoreCloudPrev()">↩ 덮어쓰기 전 클라우드 내용 복구('+fmtTime(localStorage.getItem(KEY+'_cloudprev_at'))+')</button>':'')+'<button class="btn" onclick="checkForUpdate(true)">🔄 앱 업데이트 확인</button></div>';
   h+='<details style="margin-top:6px;display:none;"><summary style="cursor:pointer;font-weight:700;">🔗 클라우드 주소</summary><div style="margin-top:6px;"><input id="sync-url-inp" style="width:100%;font-size:11px;" value="'+esc(SYNC_URL)+'" placeholder="https://script.google.com/macros/s/…/exec"><div class="row" style="margin-top:4px;"><button class="btn" onclick="setSyncUrl()">주소 저장</button><button class="btn" onclick="document.getElementById(\'sync-url-inp\').value=\'\';setSyncUrl()">기본 주소로</button></div><div style="font-size:11.5px;color:#666;margin-top:4px;">옛 배포를 못 찾겠으면: 구글 스크립트에서 <b>배포 → 새 배포 → 웹 앱 → 액세스 "모든 사용자" → 배포</b> 후 나온 주소를 여기 붙여넣기 (폰·컴퓨터 둘 다).</div></div></details>';
-  h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (한도 없음, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 기존 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기<br>2) 배포 → 배포 관리 → <b>앱에 넣은 주소와 같은 배포</b>의 연필(수정) → 버전: <b>새 버전</b> → 배포 <span style="color:#B4452F;">(코드만 바꾸고 "새 버전"으로 배포하지 않으면 옛 코드가 계속 돌아가요!)</span><br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요. 배포가 2개 이상이면 앱의 주소가 어느 배포인지 확인하세요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
+  h+='<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:700;">해결 방법 — 구글 스크립트 교체 (드라이브 용량 무관, 5분)</summary><div style="margin-top:6px;">1) script.google.com → 프로젝트 열기 → 코드 전체 삭제 → 아래 코드 붙여넣기 → 저장<br>2) 배포 → 배포 관리 → <b>앱에 넣은 주소와 같은 배포</b>의 연필(수정) → 버전: <b>새 버전</b> → 배포 <span style="color:#B4452F;">(코드만 바꾸고 "새 버전"으로 배포하지 않으면 옛 코드가 계속 돌아가요!)</span><br>3) 웹앱 주소는 그대로이므로 앱은 손댈 필요 없음. 이후 자동으로 저장돼요. 배포가 2개 이상이면 앱의 주소가 어느 배포인지 확인하세요.<br><textarea readonly rows="7" style="width:100%;font-size:11px;margin-top:6px;" onclick="this.select()">'+esc(GAS_CODE)+'</textarea><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(GAS_CODE).then(()=>alert(\'복사됐어요\'))">코드 복사</button></div></details></div>';
   return h;
 }
-const GAS_CODE=`// 물리치료실 관리앱 클라우드 저장 (Drive 파일 방식 — 용량 한도 없음)
-function _file(){ var name='pt_clinic_backup.json'; var it=DriveApp.getFilesByName(name); if(it.hasNext()) return it.next(); return DriveApp.createFile(name,'',MimeType.PLAIN_TEXT); }
-function doGet(e){ var f=_file(); var txt=f.getBlob().getDataAsString()||''; var savedAt=txt?f.getLastUpdated().toISOString():''; return ContentService.createTextOutput(JSON.stringify({ok:true,payload:txt,savedAt:savedAt})).setMimeType(ContentService.MimeType.JSON); }
-function doPost(e){ try{ var body=JSON.parse(e.postData.contents||'{}'); var p=body.payload||''; if(!p) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'빈 데이터'})).setMimeType(ContentService.MimeType.JSON); JSON.parse(p); var f=_file(); f.setContent(p); return ContentService.createTextOutput(JSON.stringify({ok:true,savedAt:new Date().toISOString(),size:p.length})).setMimeType(ContentService.MimeType.JSON); }catch(err){ return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err)})).setMimeType(ContentService.MimeType.JSON); } }`;
+const GAS_CODE=`// 물리치료실 관리앱 클라우드 저장 (스크립트 속성 방식 — Drive 용량과 무관, 시트 한도 없음)
+var KEY='pt_clinic_backup', CH=2500;
+function json(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+function doGet(e){ var p=PropertiesService.getScriptProperties(); var n=parseInt(p.getProperty(KEY+'_n')||'0',10); var out=''; for(var i=0;i<n;i++) out+=p.getProperty(KEY+'_'+i)||''; return json({ok:true,payload:out,savedAt:p.getProperty(KEY+'_at')||''}); }
+function doPost(e){ try{ var body=JSON.parse(e.postData.contents||'{}'); var s=body.payload||''; if(!s) return json({ok:false,error:'빈 데이터'}); JSON.parse(s); var p=PropertiesService.getScriptProperties(); var n=Math.ceil(s.length/CH); var obj={}; for(var i=0;i<n;i++) obj[KEY+'_'+i]=s.substr(i*CH,CH); obj[KEY+'_n']=String(n); obj[KEY+'_at']=new Date().toISOString(); var old=parseInt(p.getProperty(KEY+'_n')||'0',10); p.setProperties(obj,false); for(var j=n;j<old;j++) p.deleteProperty(KEY+'_'+j); return json({ok:true,savedAt:obj[KEY+'_at'],size:s.length}); }catch(err){ return json({ok:false,error:String(err)}); } }`;
 function compressAllPhotos(){
   var list=[]; (state.elders||[]).forEach(function(e){ if(e.ltcPlan&&e.ltcPlan.photos) e.ltcPlan.photos.forEach(function(p){ list.push(p); }); });
   if(!list.length){ alert('줄일 사진이 없어요.'); return; }
@@ -11591,7 +11592,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-18-03';
+const APP_VERSION = '2026-10-18-04';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11738,7 +11739,7 @@ function pushSync(force, bodyStr){
           else pushFailed('서버는 저장했다고 했지만 다시 읽으니 다른 내용이에요 (읽은 크기 '+Math.round(got.length/1000)+'천 자 / 올린 크기 '+Math.round(body.length/1000)+'천 자). 구글 스크립트가 옛 코드로 돌아가고 있어요 — 백업 탭 "해결 방법"의 새 스크립트로 교체 후 "새 배포"가 필요해요.', body.length);
         }).catch(function(){ setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:res.savedAt, lastHash:contentHash(body), lastPushOk:new Date().toISOString(), failCount:0, lastVerify:'unverified'})); updateSyncUI('ok'); });
       }
-      else pushFailed(((res&&res.error)||'서버가 저장을 거부함')+(body.length>CLOUD_LIMIT?' — 데이터가 '+Math.round(body.length/1000)+'천 자로 커서 옛 구글 스크립트(시트 한 칸 50천 자 한도)로는 저장이 안 돼요. 백업 탭 → "해결 방법"의 새 스크립트로 교체하고, 배포 관리에서 반드시 "새 버전"으로 배포하세요.':''), body.length);
+      else { var er=(res&&res.error)||'서버가 저장을 거부함'; var hint=/Drive/i.test(er)?' — 구글 드라이브 용량이 가득 찼거나 Drive 한도에 걸렸어요. 백업 탭 "해결 방법"의 새 스크립트(드라이브를 쓰지 않는 방식)로 교체하세요.':(/50000|characters|문자/i.test(er)?' — 시트 한 칸 한도(50천 자). 백업 탭 "해결 방법"의 새 스크립트로 교체하세요.':''); pushFailed(er+hint, body.length); }
     }).catch(err=>pushFailed('연결 실패 — '+(err&&err.message||'인터넷·스크립트 주소 확인'), body.length)).finally(()=>{ _syncing=false; });
 }
 var CLOUD_LIMIT=49000;
