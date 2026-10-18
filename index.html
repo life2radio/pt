@@ -11592,7 +11592,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-18-04';
+const APP_VERSION = '2026-10-18-05';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11636,7 +11636,7 @@ function _entriesOf(obj, coll){
   if(kind==='arr'){ if(!Array.isArray(v)) return out; v.forEach(function(it,i){ var k=(it&&it.id!=null)?String(it.id):('#'+strHash(JSON.stringify(it))); out[k]=it; }); }
   else if(kind==='map'){ Object.keys(v).forEach(function(k){ out[k]=v[k]; }); }
   else if(kind==='map2'){ Object.keys(v).forEach(function(d){ var m=v[d]||{}; Object.keys(m).forEach(function(id){ out[d+'|'+id]=m[id]; }); }); }
-  else if(kind==='evals'){ Object.keys(v).forEach(function(id){ (v[id]||[]).forEach(function(ev){ var k=id+'|'+(ev&&(ev.id!=null?ev.id:ev.date)); out[k]=ev; }); }); }
+  else if(kind==='evals'){ Object.keys(v).forEach(function(id){ var arr=Array.isArray(v[id])?v[id]:[]; arr.forEach(function(ev){ var k=id+'|'+(ev&&ev.id!=null?ev.id:(String(ev&&ev.date||'')+'#'+strHash(JSON.stringify(ev)))); out[k]=ev; }); }); }
   return out;
 }
 function _rebuild(coll, entries, orderKeys){
@@ -11644,7 +11644,7 @@ function _rebuild(coll, entries, orderKeys){
   if(kind==='arr'){ var seen={}, arr=[]; (orderKeys||[]).concat(Object.keys(entries)).forEach(function(k){ if(seen[k]||!(k in entries)) return; seen[k]=1; arr.push(entries[k]); }); return arr; }
   if(kind==='map'){ return entries; }
   if(kind==='map2'){ var o={}; Object.keys(entries).forEach(function(k){ var p=k.indexOf('|'); var d=k.slice(0,p), id=k.slice(p+1); if(!o[d]) o[d]={}; o[d][id]=entries[k]; }); return o; }
-  if(kind==='evals'){ var o2={}; Object.keys(entries).forEach(function(k){ var p=k.indexOf('|'); var id=k.slice(0,p); if(!o2[id]) o2[id]=[]; o2[id].push(entries[k]); }); Object.keys(o2).forEach(function(id){ o2[id].sort(function(a,b){ return String(a.date||'').localeCompare(String(b.date||'')); }); }); return o2; }
+  if(kind==='evals'){ var o2={}; (orderKeys||[]).concat(Object.keys(entries)).forEach(function(k){ if(!(k in entries)) return; var p=k.indexOf('|'); var id=k.slice(0,p); if(!o2[id]) o2[id]=[]; if(o2[id].indexOf(entries[k])<0) o2[id].push(entries[k]); }); return o2; }
   return entries;
 }
 var _snap=null;
@@ -11660,6 +11660,12 @@ function stampChanges(){ // 저장 때 바뀐 기록에 수정 시각을 찍고,
     Object.keys(prev).forEach(function(k){ if(!(k in cur)){ state._del[c][k]=now; delete state._mu[c][k]; } });
     _snap[c]=cur;
   });
+}
+function recordDiff(A, B){ // 기록 단위로 실제 달라진 키 목록 (내부 정리·순서 차이는 무시)
+  var diff=[];
+  Object.keys(MERGE_CFG).forEach(function(c){ var a=_entriesOf(A,c), b=_entriesOf(B,c); var keys={}; Object.keys(a).concat(Object.keys(b)).forEach(function(k){ keys[k]=1; }); Object.keys(keys).forEach(function(k){ if(JSON.stringify(a[k])!==JSON.stringify(b[k])) diff.push(c+':'+k); }); });
+  Object.keys(Object.assign({},A,B)).forEach(function(k){ if(k in MERGE_CFG||k==='_mu'||k==='_del'||k==='_cloud'||k==='_rev'||k==='updatedAt'||k==='lastBackup') return; if(JSON.stringify(A[k])!==JSON.stringify(B[k])) diff.push('설정:'+k); });
+  return diff;
 }
 function mergeStates(L, R){
   var lNewer=String(L.updatedAt||'')>=String(R.updatedAt||'');
@@ -11683,8 +11689,8 @@ function mergeStates(L, R){
     });
     // 사진은 클라우드에 없으므로 이 기기 것을 살림
     if(c==='elders'){ Object.keys(res).forEach(function(k){ var e=res[k], l=le[k]; if(e&&l&&e.ltcPlan&&l.ltcPlan&&(!e.ltcPlan.photos||!e.ltcPlan.photos.length)&&l.ltcPlan.photos&&l.ltcPlan.photos.length){ e.ltcPlan.photos=l.ltcPlan.photos; } }); }
-    out[c]=_rebuild(c,res,Object.keys(le));
-    out._mu[c]=mu; out._del[c]=del;
+    if((c in L)||(c in R)) out[c]=_rebuild(c,res,Object.keys(le)); else delete out[c];
+    if(Object.keys(mu).length) out._mu[c]=mu; if(Object.keys(del).length) out._del[c]=del;
   });
   out.updatedAt=(String(L.updatedAt||'')>String(R.updatedAt||'')?L.updatedAt:R.updatedAt)||new Date().toISOString();
   return out;
@@ -11810,6 +11816,11 @@ function pullSync(forced){
     // 두 기기 내용을 기록 단위로 합침 — 어느 쪽도 지워지지 않음 (삭제한 기록은 삭제 시각이 더 나중일 때만 삭제 유지)
     var merged=mergeStates(state, remoteObj);
     var mergedHash=contentHash(merged);
+    var realDiff=recordDiff(state, merged);
+    if(mergedHash!==localHash && !realDiff.length){ // 순서·빈 목록 같은 내부 차이뿐 → 묻지 않고 정리만
+      if(mergedHash!==remoteHash) pushSync(true, payloadStrOf(merged)); else setSyncMeta(Object.assign({},getSyncMeta(),{lastSync:savedAt,lastHash:mergedHash}));
+      _pv('✅ 내용이 같아요.'); return;
+    }
     if(mergedHash!==localHash){
       _pullVerbose=false;
       showMergeChoice({merged:merged, savedAt:savedAt, needPush:mergedHash!==remoteHash, mergedHash:mergedHash, lc:lc, rc:rc, mc:stateCounts(merged), cloudEdit:cloudEdit});
