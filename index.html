@@ -1534,14 +1534,14 @@
     </div>
     <button class="lock-now-btn" onclick="lockNow()" title="잠그기">🔒 잠그기</button>
     <nav class="tabs">
-      <button class="active" data-tab="elders" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>어르신</button>
+      <button class="active" data-tab="briefing" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v14H7l-4 4z"/><path d="M8 8h8M8 12h5"/></svg>조회·석회</button>
+      <button data-tab="record" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>치료기록</button>
+      <button data-tab="elders" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>어르신</button>
       <button data-tab="dash" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>오늘</button>
-      <button data-tab="briefing" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v14H7l-4 4z"/><path d="M8 8h8M8 12h5"/></svg>조회·석회</button>
       <button data-tab="counsel" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>상담</button>
       <button data-tab="needs" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>욕구사정</button>
       <button data-tab="plan" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>계획·평가</button>
       <button data-tab="sched" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>스케줄</button>
-      <button data-tab="record" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>치료기록</button>
       <button data-tab="eval" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>평가</button>
       <button data-tab="doctor" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></svg>촉탁의</button>
       <button data-tab="history" onclick="go(this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>기록</button>
@@ -1618,7 +1618,7 @@
   </section>
 
   <!-- 어르신 -->
-  <section id="elders" class="panel active">
+  <section id="elders" class="panel ">
     <div class="card ltc-top no-print">
       <div class="ltc-top-row">
         <button class="ltc-top-btn" onclick="openLtcImport()"><span class="ltc-top-ic">📑</span><span><b>개장 등록</b><small>붙여넣기 → 어르신 자동 등록 + 개장 저장</small></span></button>
@@ -2003,7 +2003,7 @@
   </section>
 
   <!-- 조회·석회 -->
-  <section id="briefing" class="panel">
+  <section id="briefing" class="panel active">
     <div id="briefing-body"></div>
   </section>
 
@@ -11592,7 +11592,7 @@ function importData(ev){
 function showMsg(t,c){ const m=document.getElementById('d-msg'); m.textContent=t; m.className='msg show '+c; }
 
 // ===== 자동 업데이트 (최신 버전 확인 후 새로고침) =====
-const APP_VERSION = '2026-10-18-05';
+const APP_VERSION = '2026-10-18-06';
 function checkForUpdate(manual){
   try{
     const base=location.pathname;
@@ -11887,7 +11887,7 @@ function manualPush(){ _pausePush=false; pushSync(true).then(()=>{ if(!_syncing)
 function manualPull(){ pullMerge(); }
 
 try{ buildSnap(); }catch(e){}
-renderPlanForm(); renderElders(); renderDash(); initLock();
+renderPlanForm(); renderElders(); renderDash(); try{ renderBriefing(); }catch(e){} initLock();
 updateSyncUI('ok');
 try{ if(localStorage.getItem('pt_clinic_last_ver')!==APP_VERSION){ localStorage.setItem('pt_clinic_last_ver',APP_VERSION); var _m=getSyncMeta(); delete _m.dismissed; _m.failCount=0; setSyncMeta(_m); } if(localStorage.getItem('pt_clinic_sync_default')!==SYNC_URL_DEFAULT){ localStorage.setItem('pt_clinic_sync_default',SYNC_URL_DEFAULT); localStorage.removeItem(SYNC_URL_KEY); SYNC_URL=SYNC_URL_DEFAULT; setSyncMeta({}); } }catch(e){}
 try{ var _t=sessionStorage.getItem('pt_clinic_toast'); if(_t){ sessionStorage.removeItem('pt_clinic_toast'); var tb=ensureBanner('toast-banner','#2E7D6B'); tb.style.display='flex'; tb.innerHTML='<span>'+_t+'</span><button style="'+_bbtn+'" onclick="this.parentNode.style.display=\'none\'">확인</button>'; setTimeout(function(){ tb.style.display='none'; },12000); } }catch(e){}
